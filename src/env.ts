@@ -15,6 +15,7 @@ export const env = createEnv({
     QSTASH_CURRENT_SIGNING_KEY: z.string().optional(),
     QSTASH_NEXT_SIGNING_KEY: z.string().optional(),
     ADMIN_SECRET: z.string().min(16).optional(),
+    GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
   },
   client: {
     NEXT_PUBLIC_SITE_URL: z.string().url(),
@@ -28,6 +29,7 @@ export const env = createEnv({
     QSTASH_CURRENT_SIGNING_KEY: process.env.QSTASH_CURRENT_SIGNING_KEY,
     QSTASH_NEXT_SIGNING_KEY: process.env.QSTASH_NEXT_SIGNING_KEY,
     ADMIN_SECRET: process.env.ADMIN_SECRET,
+    GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
@@ -48,4 +50,8 @@ export function isQStashConfigured() {
 
 export function isAdminConfigured() {
   return Boolean(env.ADMIN_SECRET);
+}
+
+export function isGoogleMapsConfigured() {
+  return Boolean(env.GOOGLE_MAPS_API_KEY);
 }

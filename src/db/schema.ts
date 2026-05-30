@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -37,6 +38,13 @@ export const venues = pgTable(
     name: text("name").notNull(),
     address: text("address"),
     city: text("city").notNull().default("Toulouse"),
+    latitude: doublePrecision("latitude"),
+    longitude: doublePrecision("longitude"),
+    googlePlaceId: text("google_place_id"),
+    formattedAddress: text("formatted_address"),
+    addressConfirmedAt: timestamp("address_confirmed_at", {
+      withTimezone: true,
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

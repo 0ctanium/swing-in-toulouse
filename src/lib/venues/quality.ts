@@ -9,15 +9,36 @@ export type VenueQualityEntry = VenueWithStats & {
   issues: VenueQualityIssue[];
 };
 
+export function getVenueIcalIssues(venue: {
+  name: string;
+  address: string | null;
+}): VenueQualityIssue[] {
+  const report = assessVenueQuality(venue);
+
+  if (report.incoherent || report.issues.includes("missing_address")) {
+    return report.issues;
+  }
+
+  return [];
+}
+
+export function countActiveVenuesWithIcalIssues(
+  venues: Array<{ eventCount: number; iCalIssues: VenueQualityIssue[] }>,
+) {
+  return venues.filter(
+    (venue) => venue.eventCount > 0 && venue.iCalIssues.length > 0,
+  ).length;
+}
+
 export function findVenuesNeedingReview(venues: VenueWithStats[]) {
   const entries: VenueQualityEntry[] = [];
 
   for (const venue of venues) {
-    const report = assessVenueQuality(venue);
-    if (report.incoherent || report.issues.includes("missing_address")) {
+    const issues = getVenueIcalIssues(venue);
+    if (issues.length > 0) {
       entries.push({
         ...venue,
-        issues: report.issues,
+        issues,
       });
     }
   }

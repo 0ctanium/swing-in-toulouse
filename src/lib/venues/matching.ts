@@ -7,7 +7,12 @@ import {
   computeEffectiveVenueEventCounts,
   loadMasterVenueOverrides,
 } from "@/lib/venues/effective-venue";
-import { findVenuesNeedingReview } from "@/lib/venues/quality";
+import { findVenuesNeedingReview, getVenueIcalIssues } from "@/lib/venues/quality";
+import {
+  buildVenueConfirmPageData,
+  isVenueAddressConfirmed,
+  type VenueConfirmationEntry,
+} from "@/lib/venues/confirmation";
 import {
   summarizeDebug,
   venueMatchingLog,
@@ -28,6 +33,11 @@ export type VenueWithStats = {
   name: string;
   address: string | null;
   city: string;
+  latitude: number | null;
+  longitude: number | null;
+  googlePlaceId: string | null;
+  formattedAddress: string | null;
+  addressConfirmedAt: Date | null;
   eventCount: number;
   overrideCount: number;
 };
@@ -123,6 +133,11 @@ export async function listVenuesWithStats(): Promise<VenueWithStats[]> {
     name: venue.name,
     address: venue.address,
     city: venue.city,
+    latitude: venue.latitude,
+    longitude: venue.longitude,
+    googlePlaceId: venue.googlePlaceId,
+    formattedAddress: venue.formattedAddress,
+    addressConfirmedAt: venue.addressConfirmedAt,
     eventCount: effectiveCounts.get(venue.id) ?? 0,
     overrideCount: overrideCountByVenue.get(venue.id) ?? 0,
   }));
@@ -520,6 +535,17 @@ export async function getVenueMatchingOverview() {
     venueList.filter((venue) => venue.eventCount > 0),
   );
   const venuesNeedingReview = findVenuesNeedingReview(venueList);
+  const confirmationEntries: VenueConfirmationEntry[] = venueList.map(
+    (venue) => ({
+      ...venue,
+      needsConfirmation:
+        venue.eventCount > 0 && !isVenueAddressConfirmed(venue),
+      iCalIssues: getVenueIcalIssues(venue),
+    }),
+  );
+  const pendingConfirmationCount = confirmationEntries.filter(
+    (venue) => venue.needsConfirmation,
+  ).length;
 
   venueMatchingLog("overview", {
     venueCount: venueList.length,
@@ -536,12 +562,27 @@ export async function getVenueMatchingOverview() {
     })),
     locationConflictCount: locationConflicts.length,
     venuesNeedingReviewCount: venuesNeedingReview.length,
+    pendingConfirmationCount,
   });
 
   return {
     venues: venueList,
     similarGroups,
     locationConflicts,
-    venuesNeedingReview,
+    pendingConfirmationCount,
+    activeQualityIssueCount: venuesNeedingReview.filter(
+      (venue) => venue.eventCount > 0,
+    ).length,
   };
+}
+
+export async function getVenueConfirmationOverview() {
+  const venueList = await listVenuesWithStats();
+  const entries: VenueConfirmationEntry[] = venueList.map((venue) => ({
+    ...venue,
+    needsConfirmation: venue.eventCount > 0 && !isVenueAddressConfirmed(venue),
+    iCalIssues: getVenueIcalIssues(venue),
+  }));
+
+  return buildVenueConfirmPageData(entries);
 }

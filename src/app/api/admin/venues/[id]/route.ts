@@ -40,6 +40,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Lieu introuvable." }, { status: 404 });
   }
 
+  const clearsConfirmation =
+    (parsed.data.name !== undefined &&
+      parsed.data.name.trim() !== existing.name) ||
+    (parsed.data.address !== undefined &&
+      (parsed.data.address?.trim() || null) !== existing.address) ||
+    (parsed.data.city !== undefined && parsed.data.city.trim() !== existing.city);
+
   const [updated] = await db
     .update(venues)
     .set({
@@ -48,6 +55,15 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         ? { address: parsed.data.address?.trim() || null }
         : {}),
       ...(parsed.data.city !== undefined ? { city: parsed.data.city.trim() } : {}),
+      ...(clearsConfirmation
+        ? {
+            latitude: null,
+            longitude: null,
+            googlePlaceId: null,
+            formattedAddress: null,
+            addressConfirmedAt: null,
+          }
+        : {}),
     })
     .where(eq(venues.id, id))
     .returning();
