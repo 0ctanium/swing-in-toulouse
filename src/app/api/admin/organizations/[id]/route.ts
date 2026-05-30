@@ -44,7 +44,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     );
   }
 
-  if (parsed.data.venueId !== undefined) {
+  if (parsed.data.venueId) {
     const venue = await getSelectableVenueById(parsed.data.venueId);
 
     if (!venue) {

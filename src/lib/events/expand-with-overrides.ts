@@ -62,6 +62,31 @@ async function loadRelationMaps(overrides: OverrideIndex) {
   };
 }
 
+export async function mergeMastersWithMasterOverrides<T extends EventMaster>(
+  masters: T[],
+): Promise<T[]> {
+  if (masters.length === 0) {
+    return [];
+  }
+
+  const overrides = await loadOverridesForEvents(masters.map((master) => master.id));
+  const relations = await loadRelationMaps(overrides);
+
+  return masters.map((master) => {
+    const merged = applyMasterOverride(
+      master,
+      overrides.master.get(master.id),
+      relations,
+    );
+
+    if (!("overrides" in master)) {
+      return merged as T;
+    }
+
+    return { ...merged, overrides: master.overrides } as T;
+  });
+}
+
 export async function expandEventsWithOverrides(
   masters: EventMaster[],
   window: ExpansionWindow,

@@ -1,4 +1,4 @@
-import { and, asc, count, eq, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, isNull, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { events, organizations, sources } from "@/db/schema";
@@ -68,6 +68,7 @@ export async function listAdminSources(): Promise<AdminSourceRow[]> {
         value: count(),
       })
       .from(events)
+      .where(isNull(events.canonicalEventId))
       .groupBy(events.sourceId),
   ]);
 

@@ -35,7 +35,11 @@ export const organizationWriteSchema = z.object({
   description: z.string().trim().nullable().optional(),
   website: z.string().trim().nullable().optional(),
   category: z.enum(organizationCategoryValues).nullable().optional(),
-  venueId: z.string().uuid("Le lieu sélectionné est invalide."),
+  venueId: z
+    .string()
+    .uuid("Le lieu sélectionné est invalide.")
+    .nullable()
+    .optional(),
   isActive: z.boolean().optional(),
 });
 

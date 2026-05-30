@@ -1,8 +1,9 @@
 import { and, asc, count, eq, isNull, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { events, organizations, sources, venues } from "@/db/schema";
+import { organizations, sources, venues } from "@/db/schema";
 import type { OrganizationCategory } from "@/db/schema";
+import { computeEffectiveOrganizationEventCounts } from "@/lib/organizations/effective-organization";
 import { generateOrganizationSlug } from "@/lib/slug";
 
 export type AdminOrganizationRow = {
@@ -54,7 +55,7 @@ export async function resolveUniqueOrganizationSlug(
 }
 
 export async function listAdminOrganizations(): Promise<AdminOrganizationRow[]> {
-  const [organizationRows, sourceCountRows, eventCountRows] = await Promise.all([
+  const [organizationRows, sourceCountRows, eventCounts] = await Promise.all([
     db.query.organizations.findMany({
       orderBy: asc(organizations.name),
       with: {
@@ -74,21 +75,11 @@ export async function listAdminOrganizations(): Promise<AdminOrganizationRow[]> 
       .from(sources)
       .where(sql`${sources.organizationId} is not null`)
       .groupBy(sources.organizationId),
-    db
-      .select({
-        organizationId: events.organizationId,
-        value: count(),
-      })
-      .from(events)
-      .where(sql`${events.organizationId} is not null`)
-      .groupBy(events.organizationId),
+    computeEffectiveOrganizationEventCounts(),
   ]);
 
   const sourceCounts = new Map(
     sourceCountRows.map((row) => [row.organizationId!, Number(row.value)]),
-  );
-  const eventCounts = new Map(
-    eventCountRows.map((row) => [row.organizationId!, Number(row.value)]),
   );
 
   return organizationRows.map((organization) => ({

@@ -10,6 +10,7 @@ import {
   type AdminEventStateFilter,
   type AdminEventsQuery,
 } from "@/lib/events/admin-events-params";
+import { mergeMastersWithMasterOverrides } from "@/lib/events/expand-with-overrides";
 import {
   buildNextOccurrenceMap,
   getEventDisplayDate,
@@ -233,8 +234,13 @@ async function loadMasterEvents() {
   });
 }
 
+async function loadMergedMasterEvents() {
+  const rows = (await loadMasterEvents()) as AdminEventRow[];
+  return mergeMastersWithMasterOverrides(rows);
+}
+
 export async function getAdminEventsFilterOptions(): Promise<AdminEventsFilterOptions> {
-  const rows = await loadMasterEvents();
+  const rows = await loadMergedMasterEvents();
 
   const venues = new Map<string, AdminEventFilterOption>();
   const organizations = new Map<string, AdminEventFilterOption>();
@@ -304,13 +310,12 @@ export async function listAdminEventsTable(
   const pageSize = options?.pageSize ?? ADMIN_EVENTS_PAGE_SIZE;
   const page = Math.max(1, query.page);
 
-  const rows = await loadMasterEvents();
-  const recurringMasters = rows.filter((row) => row.recurrenceRule) as EventMaster[];
+  const rows = await loadMergedMasterEvents();
+  const recurringMasters = rows.filter((row) => row.recurrenceRule);
   const nextOccurrenceById = await buildNextOccurrenceMap(recurringMasters);
 
   const tableRows = sortEventsForAdmin(rows, nextOccurrenceById).map(
-    ({ row, isUpcoming }) =>
-      toTableRow(row as AdminEventRow, nextOccurrenceById, isUpcoming),
+    ({ row, isUpcoming }) => toTableRow(row, nextOccurrenceById, isUpcoming),
   );
 
   const filtered = tableRows.filter((row) => matchesFilters(row, query));

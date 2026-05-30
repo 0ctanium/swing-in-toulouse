@@ -39,13 +39,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const venue = await getSelectableVenueById(parsed.data.venueId);
+  let venueId: string | null = null;
 
-  if (!venue) {
-    return NextResponse.json(
-      { error: "Lieu introuvable ou non sélectionnable (alias)." },
-      { status: 400 },
-    );
+  if (parsed.data.venueId) {
+    const venue = await getSelectableVenueById(parsed.data.venueId);
+
+    if (!venue) {
+      return NextResponse.json(
+        { error: "Lieu introuvable ou non sélectionnable (alias)." },
+        { status: 400 },
+      );
+    }
+
+    venueId = venue.id;
   }
 
   const baseSlug =
@@ -60,7 +66,7 @@ export async function POST(request: NextRequest) {
       description: parsed.data.description?.trim() || null,
       website: normalizeOrganizationWebsite(parsed.data.website),
       category: parsed.data.category ?? null,
-      venueId: venue.id,
+      venueId,
       isActive: parsed.data.isActive ?? true,
     })
     .returning();

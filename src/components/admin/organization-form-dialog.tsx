@@ -79,7 +79,7 @@ export function OrganizationFormDialog({
   const [isActive, setIsActive] = useState(true);
 
   const pending = createOrganization.isPending || updateOrganization.isPending;
-  const canSubmit = Boolean(name.trim() && slug.trim() && venueId);
+  const canSubmit = Boolean(name.trim() && slug.trim());
 
   useEffect(() => {
     if (!open) {
@@ -110,18 +110,13 @@ export function OrganizationFormDialog({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
-    if (!venueId) {
-      toast.error("Choisissez un lieu existant.");
-      return;
-    }
-
     const payload = {
       name: name.trim(),
       slug: slug.trim(),
       description: description.trim() || null,
       website: website.trim() || null,
       category: category ? (category as OrganizationCategory) : null,
-      venueId,
+      venueId: venueId || null,
       isActive,
     };
 
@@ -152,7 +147,7 @@ export function OrganizationFormDialog({
           <DialogDescription>
             {isEdit
               ? "Mettez à jour les informations publiques et le lieu associé."
-              : "Créez un organisateur lié à un lieu existant dans la base."}
+              : "Créez un organisateur. Le lieu peut être renseigné plus tard."}
           </DialogDescription>
         </DialogHeader>
 
@@ -231,7 +226,7 @@ export function OrganizationFormDialog({
               venues={venues}
               value={venueId}
               onChange={setVenueId}
-              allowEmpty={false}
+              allowEmpty
               placeholder="Choisir un lieu…"
               disabled={pending}
             />
