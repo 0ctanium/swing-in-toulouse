@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        source: "/api/ical/organisateur/:slug.ics",
+        destination: "/api/ical/organisateur/:slug",
+      },
+      {
         source: "/organisateur/:slug.ics",
         destination: "/api/ical/organisateur/:slug",
       },
