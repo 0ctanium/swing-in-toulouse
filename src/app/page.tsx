@@ -41,7 +41,7 @@ export default async function HomePage() {
             Voir l&apos;agenda
           </Link>
           <Link
-            href="/agenda.ics"
+            href="/ical/e30.ical"
             className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
           >
             S&apos;abonner au calendrier

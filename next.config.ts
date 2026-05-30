@@ -7,9 +7,9 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: "/association/:slug",
-        destination: "/organisateur/:slug",
-        permanent: true,
+        source: "/agenda.ics",
+        destination: "/api/ical/e30.ics",
+        statusCode: 307,
       },
     ];
   },
@@ -17,10 +17,6 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/organisateur/:slug.ics",
-        destination: "/api/ical/organisateur/:slug",
-      },
-      {
-        source: "/association/:slug.ics",
         destination: "/api/ical/organisateur/:slug",
       },
       {

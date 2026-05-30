@@ -115,7 +115,7 @@
   Les événements récurrents sont stockés **une seule fois** en base avec leur `RRULE`.
 
   - **Affichage web** : expansion à la volée (12 prochains mois)
-  - **Export iCal** (`/agenda.ics`, `/organisateur/[slug].ics`) : règle de récurrence conservée
+  - **Export iCal** (`/ical/{payload}.ical`, global = `/ical/e30.ical`) : règle de récurrence conservée ; anciennes URL (`/agenda.ics`, etc.) redirigent vers le payload canonique
 
   ## Overrides admin
 
@@ -177,5 +177,3 @@
   1. `pnpm run db:push` — validez les prompts Drizzle (création de `sources`, retrait de `calendar_url`)
   2. Si Drizzle demande de tronquer `events` (ajout de `source_id` obligatoire), acceptez puis relancez la sync
   3. `pnpm run db:seed` puis `pnpm run sync`
-
-  Les anciennes URLs `/association/*` redirigent vers `/organisateur/*`.
