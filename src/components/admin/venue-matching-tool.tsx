@@ -1,16 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { VenueAliasBadge } from "@/components/admin/venue-picker";
 import {
   VenueMergeCard,
   VenueMergeCardGrid,
 } from "@/components/admin/venue-merge-card";
 import { VenueRedirectsPanel } from "@/components/admin/venue-redirects-panel";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
 import type { VenueRedirectEntry } from "@/lib/venues/canonical";
 import type {
   LocationVenueConflict,
@@ -18,7 +22,7 @@ import type {
   VenueAssignment,
   VenueWithStats,
 } from "@/lib/venues/matching";
-import type { VenueAssignmentDebug } from "@/lib/venues/matching-debug";
+import { cn } from "@/lib/utils";
 
 type VenueMatchingToolProps = {
   venues: VenueWithStats[];
@@ -57,9 +61,9 @@ export function VenueMatchingTool({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [targetVenueId, setTargetVenueId] = useState("");
-  const [selectedSourceVenueIds, setSelectedSourceVenueIds] = useState<string[]>(
-    [],
-  );
+  const [selectedSourceVenueIds, setSelectedSourceVenueIds] = useState<
+    string[]
+  >([]);
   const [permanentBySourceId, setPermanentBySourceId] = useState<
     Record<string, boolean>
   >({});
@@ -194,18 +198,65 @@ export function VenueMatchingTool({
     <div className="flex flex-col gap-6">
       <VenueRedirectsPanel redirects={venueRedirects} />
 
+      {similarGroups.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Lieux similaires</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <p className="text-muted-foreground text-sm">
+              Ces lieux semblent identiques. Définissez le principal sur une
+              carte — les autres seront fusionnés vers lui.
+            </p>
+            {similarGroups.map((group) => (
+              <SimilarGroupRow
+                key={group.key}
+                group={group}
+                pendingKey={pendingKey}
+                onApply={(payload) =>
+                  runBulkAssign(payload, `group:${group.key}`)
+                }
+              />
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {locationConflicts.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">
+              LOCATION iCal incohérentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {locationConflicts.map((conflict) => (
+              <LocationConflictRow
+                key={conflict.locationKey}
+                conflict={conflict}
+                venues={venues}
+                pendingKey={pendingKey}
+                onApply={(payload) =>
+                  runBulkAssign(payload, `location:${conflict.locationKey}`)
+                }
+              />
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Réassignation manuelle</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="text-muted-foreground text-sm">
-            Choisissez un lieu principal sur une carte, incluez les autres lieux
-            à fusionner, puis appliquez.
+            Cochez les lieux à fusionner, définissez le principal sur une ligne,
+            puis appliquez.
           </p>
 
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Rechercher</span>
+            <span className="font-medium">Rechercher un lieu</span>
             <input
               className="rounded-lg border bg-background px-3 py-2"
               value={search}
@@ -214,27 +265,96 @@ export function VenueMatchingTool({
             />
           </label>
 
-          <VenueMergeCardGrid>
-            {filteredVenues.map((venue) => {
-              const isPrimary = venue.id === targetVenueId;
-              const isSource = manualSourceIds.includes(venue.id);
+          <div className="max-h-80 overflow-y-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 border-b bg-background text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium">Fusionner</th>
+                  <th className="px-3 py-2 text-left font-medium">Lieu</th>
+                  <th className="px-3 py-2 text-left font-medium">Principal</th>
+                  <th className="px-3 py-2 text-left font-medium">Alias</th>
+                  <th className="px-3 py-2 text-right font-medium" />
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {filteredVenues.map((venue) => {
+                  const isPrimary = venue.id === targetVenueId;
+                  const isSource = manualSourceIds.includes(venue.id);
+                  const confirmed = isVenueAddressConfirmed(venue);
 
-              return (
-                <VenueMergeCard
-                  key={venue.id}
-                  venue={venue}
-                  isPrimary={isPrimary}
-                  isSource={isSource}
-                  permanent={permanentBySourceId[venue.id] ?? false}
-                  showSourceToggle
-                  disabled={pendingKey !== null}
-                  onSetPrimary={() => setPrimary(venue.id)}
-                  onToggleSource={() => toggleSourceVenue(venue.id)}
-                  onTogglePermanent={() => togglePermanent(venue.id)}
-                />
-              );
-            })}
-          </VenueMergeCardGrid>
+                  return (
+                    <tr
+                      key={venue.id}
+                      className={cn(isPrimary && "bg-primary/5")}
+                    >
+                      <td className="px-3 py-2 align-top">
+                        <input
+                          type="checkbox"
+                          checked={isSource}
+                          disabled={isPrimary || pendingKey !== null}
+                          onChange={() => toggleSourceVenue(venue.id)}
+                        />
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium">{venue.name}</span>
+                            <VenueAliasBadge venue={venue} />
+                          </div>
+                          <span className="text-muted-foreground text-xs">
+                            {venue.eventCount} événement
+                            {venue.eventCount > 1 ? "s" : ""} ·{" "}
+                            {confirmed ? "Google confirmé" : "Non confirmé"}
+                            {venue.address ? ` · ${venue.address}` : ""}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        {isPrimary ? (
+                          <Badge>Lieu principal</Badge>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={pendingKey !== null}
+                            onClick={() => setPrimary(venue.id)}
+                          >
+                            Définir principal
+                          </Button>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        {isSource && !isPrimary ? (
+                          <label className="flex items-center gap-2 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={permanentBySourceId[venue.id] ?? false}
+                              disabled={pendingKey !== null}
+                              onChange={() => togglePermanent(venue.id)}
+                            />
+                            Permanent
+                          </label>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">
+                            —
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 align-top text-right">
+                        <Link
+                          href={`/lieu/${venue.slug}`}
+                          className="text-muted-foreground text-xs hover:underline"
+                        >
+                          Voir
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -282,51 +402,6 @@ export function VenueMatchingTool({
           </div>
         </CardContent>
       </Card>
-
-      {similarGroups.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Lieux similaires</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <p className="text-muted-foreground text-sm">
-              Ces lieux semblent identiques. Définissez le principal sur une
-              carte — les autres seront fusionnés vers lui.
-            </p>
-            {similarGroups.map((group) => (
-              <SimilarGroupRow
-                key={group.key}
-                group={group}
-                pendingKey={pendingKey}
-                onApply={(payload) =>
-                  runBulkAssign(payload, `group:${group.key}`)
-                }
-              />
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {locationConflicts.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">LOCATION iCal incohérentes</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {locationConflicts.map((conflict) => (
-              <LocationConflictRow
-                key={conflict.locationKey}
-                conflict={conflict}
-                venues={venues}
-                pendingKey={pendingKey}
-                onApply={(payload) =>
-                  runBulkAssign(payload, `location:${conflict.locationKey}`)
-                }
-              />
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   );
 }
@@ -380,7 +455,9 @@ function SimilarGroupRow({
       <Button
         type="button"
         className="w-fit"
-        disabled={!targetVenueId || assignments.length === 0 || pendingKey !== null}
+        disabled={
+          !targetVenueId || assignments.length === 0 || pendingKey !== null
+        }
         onClick={() =>
           onApply({
             targetVenueId,
