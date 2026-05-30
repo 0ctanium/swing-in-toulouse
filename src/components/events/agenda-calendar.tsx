@@ -86,7 +86,7 @@ export function AgendaCalendar({
     isPending,
     isError,
     refetch,
-  } = useEvents(range.from, range.to);
+  } = useEvents({ from: range.from, to: range.to });
 
   const filteredEvents = useMemo(
     () => filterAgendaOccurrences(events, filters, venueSlugById),
