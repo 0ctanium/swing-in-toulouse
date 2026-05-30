@@ -30,6 +30,11 @@ export const syncStatusEnum = pgEnum("sync_status", [
 
 export const sourceTypeEnum = pgEnum("source_type", ["ical"]);
 
+export const organizationCategoryEnum = pgEnum("organization_category", [
+  "school",
+  "association",
+]);
+
 export const venueCategoryEnum = pgEnum("venue_category", [
   "school",
   "bar",
@@ -81,6 +86,11 @@ export const organizations = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     website: text("website"),
+    locationRaw: text("location_raw"),
+    venueId: uuid("venue_id").references(() => venues.id, {
+      onDelete: "set null",
+    }),
+    category: organizationCategoryEnum("category"),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -93,6 +103,7 @@ export const organizations = pgTable(
   (table) => [
     index("organizations_slug_idx").on(table.slug),
     index("organizations_active_idx").on(table.isActive),
+    index("organizations_venue_id_idx").on(table.venueId),
   ],
 );
 
@@ -246,7 +257,11 @@ export const venuesRelations = relations(venues, ({ many, one }) => ({
   aliasVenues: many(venues, { relationName: "venueAliases" }),
 }));
 
-export const organizationsRelations = relations(organizations, ({ many }) => ({
+export const organizationsRelations = relations(organizations, ({ one, many }) => ({
+  venue: one(venues, {
+    fields: [organizations.venueId],
+    references: [venues.id],
+  }),
   sources: many(sources),
   events: many(events),
 }));
@@ -298,6 +313,8 @@ export const syncLogsRelations = relations(syncLogs, ({ one }) => ({
 
 export type Organization = typeof organizations.$inferSelect;
 export type NewOrganization = typeof organizations.$inferInsert;
+export type OrganizationCategory =
+  (typeof organizationCategoryEnum.enumValues)[number];
 export type Source = typeof sources.$inferSelect;
 export type NewSource = typeof sources.$inferInsert;
 export type Venue = typeof venues.$inferSelect;

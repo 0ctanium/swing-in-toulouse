@@ -26,6 +26,10 @@ export default function AdminHomePage() {
             <Link href="/admin/sources" className="font-medium underline">
               Valeurs par défaut des sources
             </Link>
+            {" · "}
+            <Link href="/admin/organizations" className="font-medium underline">
+              Organisateurs
+            </Link>
           </p>
         </div>
         <AdminLogoutButton />

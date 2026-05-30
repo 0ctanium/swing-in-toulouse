@@ -11,6 +11,7 @@ import {
   fetchMastersForVenue,
   filterOccurrencesForVenue,
 } from "@/lib/venues/effective-venue";
+import { loadOrganizationDisplayVenue } from "@/lib/organizations/location";
 import { resolveVenueBySlug } from "@/lib/venues/canonical";
 import {
   getDefaultExpansionWindow,
@@ -229,6 +230,8 @@ export async function getOrganizerBySlug(slug: string) {
     return null;
   }
 
+  const venue = await loadOrganizationDisplayVenue(organization.venueId);
+
   const masters = await db.query.events.findMany({
     where: and(
       eq(events.organizationId, organization.id),
@@ -248,6 +251,7 @@ export async function getOrganizerBySlug(slug: string) {
 
   return {
     ...organization,
+    venue,
     events: filterOccurrences(occurrences, window),
   };
 }

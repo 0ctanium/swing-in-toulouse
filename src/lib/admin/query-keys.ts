@@ -2,6 +2,9 @@ export const adminQueryKeys = {
   all: ["admin"] as const,
   sources: () => [...adminQueryKeys.all, "sources"] as const,
   source: (id: string) => [...adminQueryKeys.sources(), id] as const,
+  organizations: () => [...adminQueryKeys.all, "organizations"] as const,
+  organization: (id: string) =>
+    [...adminQueryKeys.organizations(), id] as const,
   venues: () => [...adminQueryKeys.all, "venues"] as const,
   events: () => [...adminQueryKeys.all, "events"] as const,
   event: (id: string) => [...adminQueryKeys.events(), id] as const,

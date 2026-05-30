@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { EventList } from "@/components/events/event-list";
+import { OrganizerHeader } from "@/components/organizations/organizer-header";
 import { getOrganizerBySlug } from "@/lib/events/queries";
+import { formatOrganizationCategory } from "@/lib/organizations/categories";
+import { getVenueDisplayAddress } from "@/lib/venues/display";
 
 export const dynamic = "force-dynamic";
 
@@ -21,11 +23,20 @@ export async function generateMetadata({
     return { title: "Organisateur introuvable" };
   }
 
+  const categoryLabel = formatOrganizationCategory(organizer.category);
+  const venueAddress = organizer.venue
+    ? getVenueDisplayAddress(organizer.venue)
+    : null;
+
   return {
     title: organizer.name,
     description:
       organizer.description ??
-      `Événements swing proposés par ${organizer.name} à Toulouse.`,
+      [
+        categoryLabel ? `${categoryLabel} swing` : "Événements swing",
+        `proposés par ${organizer.name}`,
+        venueAddress ? `à ${venueAddress}` : "à Toulouse",
+      ].join(" ") + ".",
   };
 }
 
@@ -39,34 +50,7 @@ export default async function OrganizerPage({ params }: OrganizerPageProps) {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">
-          {organizer.name}
-        </h1>
-        {organizer.description ? (
-          <p className="text-muted-foreground max-w-2xl text-lg">
-            {organizer.description}
-          </p>
-        ) : null}
-        <div className="flex flex-wrap gap-3">
-          {organizer.website ? (
-            <a
-              href={organizer.website}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
-            >
-              Site web
-            </a>
-          ) : null}
-          <Link
-            href={`/organisateur/${slug}.ics`}
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
-          >
-            Calendrier iCal
-          </Link>
-        </div>
-      </section>
+      <OrganizerHeader organizer={organizer} venue={organizer.venue} />
 
       <section className="flex flex-col gap-4">
         <h2 className="font-heading text-2xl font-semibold">
