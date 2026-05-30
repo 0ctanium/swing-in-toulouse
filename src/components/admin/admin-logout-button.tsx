@@ -1,21 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
+import { useAdminLogout } from "@/lib/admin/use-auth";
 import { Button } from "@/components/ui/button";
 
 export function AdminLogoutButton() {
-  const router = useRouter();
-
-  async function logout() {
-    await fetch("/api/admin/login", { method: "DELETE" });
-    router.push("/admin/login");
-    router.refresh();
-  }
+  const logout = useAdminLogout();
 
   return (
-    <Button variant="outline" onClick={logout}>
-      Déconnexion
+    <Button
+      variant="outline"
+      onClick={() => logout.mutate()}
+      disabled={logout.isPending}
+    >
+      {logout.isPending ? "Déconnexion…" : "Déconnexion"}
     </Button>
   );
 }

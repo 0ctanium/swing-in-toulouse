@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { addMonths, startOfDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 
+import { fetchJson } from "@/lib/api/fetch-json";
+import { eventsQueryKeys } from "@/lib/admin/query-keys";
 import {
   parseOccurrences,
   type SerializableEventOccurrence,
@@ -21,15 +23,11 @@ async function fetchEvents(
     to: to.toISOString(),
   });
 
-  const response = await fetch(`/api/events?${params.toString()}`);
-
-  if (!response.ok) {
-    throw new Error("Impossible de charger les événements.");
-  }
-
-  const data = (await response.json()) as {
-    events: SerializableEventOccurrence[];
-  };
+  const data = await fetchJson<{ events: SerializableEventOccurrence[] }>(
+    `/api/events?${params.toString()}`,
+    undefined,
+    "Impossible de charger les événements.",
+  );
 
   return data.events;
 }
@@ -39,7 +37,7 @@ export function useEvents(from: Date, to: Date, enabled = true) {
   const toKey = to.toISOString();
 
   return useQuery({
-    queryKey: ["events", fromKey, toKey],
+    queryKey: eventsQueryKeys.range(fromKey, toKey),
     queryFn: () => fetchEvents(from, to),
     enabled,
     select: parseOccurrences,

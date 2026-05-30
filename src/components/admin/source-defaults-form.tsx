@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { VenuePicker } from "@/components/admin/venue-picker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useUpdateSourceDefaults } from "@/lib/admin/use-sources";
 import { formatVenueAsDefaultLocation } from "@/lib/sources/defaults";
 import type { VenueWithStats } from "@/lib/venues/matching";
 
@@ -32,6 +33,7 @@ function parseCategoriesInput(value: string) {
 }
 
 export function SourceDefaultsForm({ source, venues }: SourceDefaultsFormProps) {
+  const updateDefaults = useUpdateSourceDefaults(source.id);
   const [defaultLocationRaw, setDefaultLocationRaw] = useState(
     source.defaultLocationRaw ?? "",
   );
@@ -40,7 +42,8 @@ export function SourceDefaultsForm({ source, venues }: SourceDefaultsFormProps) 
   );
   const [selectedVenueId, setSelectedVenueId] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+
+  const pending = updateDefaults.isPending;
 
   const hasDefaults = useMemo(
     () =>
@@ -65,32 +68,20 @@ export function SourceDefaultsForm({ source, venues }: SourceDefaultsFormProps) 
   }
 
   async function save() {
-    setPending(true);
     setMessage(null);
 
     try {
-      const response = await fetch(`/api/admin/sources/${source.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          defaultLocationRaw: defaultLocationRaw.trim() || null,
-          defaultCategories: parseCategoriesInput(defaultCategories),
-        }),
+      await updateDefaults.mutateAsync({
+        defaultLocationRaw: defaultLocationRaw.trim() || null,
+        defaultCategories: parseCategoriesInput(defaultCategories),
       });
-
-      const payload = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Enregistrement impossible.");
-      }
-
-      setMessage("Valeurs par défaut enregistrées. Relancez une sync pour les appliquer.");
+      setMessage(
+        "Valeurs par défaut enregistrées. Relancez une sync pour les appliquer.",
+      );
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Enregistrement impossible.",
       );
-    } finally {
-      setPending(false);
     }
   }
 
@@ -98,32 +89,18 @@ export function SourceDefaultsForm({ source, venues }: SourceDefaultsFormProps) 
     setDefaultLocationRaw("");
     setDefaultCategories("");
     setSelectedVenueId("");
-    setPending(true);
     setMessage(null);
 
     try {
-      const response = await fetch(`/api/admin/sources/${source.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          defaultLocationRaw: null,
-          defaultCategories: null,
-        }),
+      await updateDefaults.mutateAsync({
+        defaultLocationRaw: null,
+        defaultCategories: null,
       });
-
-      const payload = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Suppression impossible.");
-      }
-
       setMessage("Valeurs par défaut supprimées.");
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Suppression impossible.",
       );
-    } finally {
-      setPending(false);
     }
   }
 

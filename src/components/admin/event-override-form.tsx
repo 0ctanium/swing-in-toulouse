@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  useDeleteEventOverride,
+  useSaveEventOverride,
+} from "@/lib/admin/use-events-admin";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
 
 type OrganizationOption = { id: string; name: string };
@@ -61,7 +64,8 @@ export function EventOverrideForm({
   organizations,
   venues,
 }: EventOverrideFormProps) {
-  const router = useRouter();
+  const saveOverride = useSaveEventOverride(eventId);
+  const deleteOverride = useDeleteEventOverride(eventId);
   const [title, setTitle] = useState(currentPatch.title ?? "");
   const [description, setDescription] = useState(
     currentPatch.description ?? synced.description ?? "",
@@ -87,7 +91,7 @@ export function EventOverrideForm({
   const [hidden, setHidden] = useState(currentPatch.hidden ?? false);
   const [notes, setNotes] = useState(currentPatch.notes ?? "");
   const [message, setMessage] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const pending = saveOverride.isPending || deleteOverride.isPending;
 
   const scopeLabel = useMemo(
     () =>
@@ -98,7 +102,6 @@ export function EventOverrideForm({
   );
 
   async function save() {
-    setPending(true);
     setMessage(null);
 
     const patch: EventOverridePatch = {};
@@ -147,40 +150,28 @@ export function EventOverrideForm({
       patch.notes = notes.trim();
     }
 
-    const response = await fetch(`/api/admin/events/${eventId}/override`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      await saveOverride.mutateAsync({
         patch,
         occurrenceStartAt: scope === "occurrence" ? occurrenceStartAt : null,
-      }),
-    });
-
-    setPending(false);
-
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setMessage(data.error ?? "Enregistrement impossible.");
-      return;
+      });
+      setMessage("Override enregistré.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Enregistrement impossible.",
+      );
     }
-
-    setMessage("Override enregistré.");
-    router.refresh();
   }
 
   async function resetOverride() {
-    setPending(true);
-    const params =
-      scope === "occurrence" && occurrenceStartAt
-        ? `?occurrenceStartAt=${encodeURIComponent(occurrenceStartAt)}`
-        : "";
-
-    await fetch(`/api/admin/events/${eventId}/override${params}`, {
-      method: "DELETE",
-    });
-
-    setPending(false);
-    router.refresh();
+    try {
+      await deleteOverride.mutateAsync({
+        occurrenceStartAt:
+          scope === "occurrence" ? occurrenceStartAt : undefined,
+      });
+    } catch {
+      setMessage("Suppression impossible.");
+    }
   }
 
   return (

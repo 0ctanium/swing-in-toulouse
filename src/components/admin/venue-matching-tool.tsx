@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,6 +13,10 @@ import { VenueRedirectsPanel } from "@/components/admin/venue-redirects-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  useBulkAssignVenues,
+  type BulkAssignPayload,
+} from "@/lib/admin/use-venues";
 import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
 import type { VenueRedirectEntry } from "@/lib/venues/canonical";
 import type {
@@ -29,14 +32,6 @@ type VenueMatchingToolProps = {
   similarGroups: SimilarVenueGroup[];
   locationConflicts: LocationVenueConflict[];
   venueRedirects: VenueRedirectEntry[];
-};
-
-type BulkAssignPayload = {
-  targetVenueId: string;
-  assignments?: VenueAssignment[];
-  sourceVenueIds?: string[];
-  locationKey?: string;
-  locationKeys?: string[];
 };
 
 function buildAssignments(
@@ -58,7 +53,7 @@ export function VenueMatchingTool({
   locationConflicts,
   venueRedirects,
 }: VenueMatchingToolProps) {
-  const router = useRouter();
+  const bulkAssign = useBulkAssignVenues();
   const [search, setSearch] = useState("");
   const [targetVenueId, setTargetVenueId] = useState("");
   const [selectedSourceVenueIds, setSelectedSourceVenueIds] = useState<
@@ -122,24 +117,7 @@ export function VenueMatchingTool({
     setPendingKey(pendingId);
 
     try {
-      const body = { ...payload, dryRun, debug: true };
-
-      const response = await fetch("/api/admin/venues/bulk-assign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = (await response.json()) as {
-        error?: string;
-        matched?: number;
-        updated?: number;
-        aliasesCreated?: number;
-      };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Correction impossible.");
-      }
+      const data = await bulkAssign.mutateAsync({ payload, dryRun });
 
       if (dryRun) {
         setPreviewCount(data.matched ?? 0);
@@ -173,7 +151,6 @@ export function VenueMatchingTool({
       setTargetVenueId("");
       setPermanentBySourceId({});
       setPreviewCount(null);
-      router.refresh();
     } catch (assignError) {
       toast.error(
         assignError instanceof Error

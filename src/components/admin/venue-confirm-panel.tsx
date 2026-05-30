@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -10,6 +9,7 @@ import { VenueIcalQualityBadge } from "@/components/admin/venue-ical-quality-bad
 import { VenuesQualityAlert } from "@/components/admin/venues-quality-alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useConfirmVenue } from "@/lib/admin/use-venues";
 import type { PlaceDetails } from "@/lib/google/places";
 import type { VenueConfirmationEntry } from "@/lib/venues/confirmation";
 
@@ -294,7 +294,7 @@ function VenueConfirmRow({
   onCancel,
   onSaved,
 }: VenueConfirmRowProps) {
-  const router = useRouter();
+  const confirmVenue = useConfirmVenue();
   const addressPlaceholder = useMemo(() => initialSearchQuery(venue), [venue]);
   const initialPlace = useMemo(
     () => (mode === "edit" ? venueToPlaceDetails(venue) : null),
@@ -304,7 +304,7 @@ function VenueConfirmRow({
   const [selectedPlace, setSelectedPlace] = useState<PlaceDetails | null>(
     initialPlace,
   );
-  const [pending, setPending] = useState(false);
+  const pending = confirmVenue.isPending;
 
   const googleName = selectedPlace?.name.trim() ?? "";
   const showGoogleNameHint =
@@ -323,23 +323,12 @@ function VenueConfirmRow({
       return;
     }
 
-    setPending(true);
-
     try {
-      const response = await fetch(`/api/admin/venues/${venue.id}/confirm`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          placeId: selectedPlace.placeId,
-          name: trimmedName,
-        }),
+      await confirmVenue.mutateAsync({
+        venueId: venue.id,
+        placeId: selectedPlace.placeId,
+        name: trimmedName,
       });
-
-      const data = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Confirmation impossible.");
-      }
 
       toast.success(
         mode === "edit"
@@ -347,13 +336,10 @@ function VenueConfirmRow({
           : `${trimmedName} confirmé.`,
       );
       onSaved?.();
-      router.refresh();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Confirmation impossible.",
       );
-    } finally {
-      setPending(false);
     }
   }
 

@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  useLinkDuplicateEvent,
+  useUnlinkDuplicateEvent,
+} from "@/lib/admin/use-events-admin";
 import { formatEventDate } from "@/lib/events/format";
 
 type DuplicateEventSummary = {
@@ -67,70 +70,44 @@ export function DuplicateMergePanel({
   linkedDuplicates,
   candidates,
 }: DuplicateMergePanelProps) {
-  const router = useRouter();
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const linkDuplicate = useLinkDuplicateEvent();
+  const unlinkDuplicate = useUnlinkDuplicateEvent();
   const [error, setError] = useState<string | null>(null);
+
+  const busyId = linkDuplicate.isPending
+    ? `${linkDuplicate.variables?.duplicateEventId}:${linkDuplicate.variables?.canonicalEventId}`
+    : unlinkDuplicate.isPending
+      ? unlinkDuplicate.variables
+      : null;
 
   async function linkDuplicateToCanonical(
     duplicateEventId: string,
     canonicalEventId: string,
   ) {
-    setBusyId(`${duplicateEventId}:${canonicalEventId}`);
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/admin/events/${duplicateEventId}/duplicate`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ canonicalEventId }),
-        },
-      );
-
-      const payload = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Impossible de lier les événements.");
-      }
-
-      router.refresh();
+      await linkDuplicate.mutateAsync({ duplicateEventId, canonicalEventId });
     } catch (linkError) {
       setError(
         linkError instanceof Error
           ? linkError.message
           : "Impossible de lier les événements.",
       );
-    } finally {
-      setBusyId(null);
     }
   }
 
-  async function unlinkDuplicate(duplicateId: string) {
-    setBusyId(duplicateId);
+  async function unlinkDuplicateEvent(duplicateId: string) {
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/admin/events/${duplicateId}/duplicate`,
-        { method: "DELETE" },
-      );
-
-      const payload = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Impossible de délier le doublon.");
-      }
-
-      router.refresh();
+      await unlinkDuplicate.mutateAsync(duplicateId);
     } catch (unlinkError) {
       setError(
         unlinkError instanceof Error
           ? unlinkError.message
           : "Impossible de délier le doublon.",
       );
-    } finally {
-      setBusyId(null);
     }
   }
 
@@ -163,7 +140,7 @@ export function DuplicateMergePanel({
                   variant="outline"
                   size="sm"
                   disabled={busyId !== null}
-                  onClick={() => unlinkDuplicate(eventId)}
+                  onClick={() => unlinkDuplicateEvent(eventId)}
                 >
                   {busyId === eventId ? "Déliaison…" : "Délier"}
                 </Button>
@@ -186,7 +163,7 @@ export function DuplicateMergePanel({
                       variant="outline"
                       size="sm"
                       disabled={busyId !== null}
-                      onClick={() => unlinkDuplicate(duplicate.id)}
+                      onClick={() => unlinkDuplicateEvent(duplicate.id)}
                     >
                       {busyId === duplicate.id ? "Déliaison…" : "Délier"}
                     </Button>

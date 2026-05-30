@@ -1,37 +1,28 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useAdminLogin } from "@/lib/admin/use-auth";
 import { Button } from "@/components/ui/button";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
+  const login = useAdminLogin();
   const [secret, setSecret] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setPending(true);
     setError(null);
 
-    const response = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ secret }),
-    });
-
-    setPending(false);
-
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setError(data.error ?? "Connexion impossible.");
-      return;
+    try {
+      await login.mutateAsync(secret);
+    } catch (loginError) {
+      setError(
+        loginError instanceof Error
+          ? loginError.message
+          : "Connexion impossible.",
+      );
     }
-
-    router.push("/admin");
-    router.refresh();
   }
 
   return (
@@ -55,8 +46,8 @@ export default function AdminLoginPage() {
           />
         </label>
         {error ? <p className="text-destructive text-sm">{error}</p> : null}
-        <Button type="submit" disabled={pending}>
-          {pending ? "Connexion…" : "Se connecter"}
+        <Button type="submit" disabled={login.isPending}>
+          {login.isPending ? "Connexion…" : "Se connecter"}
         </Button>
       </form>
     </div>
