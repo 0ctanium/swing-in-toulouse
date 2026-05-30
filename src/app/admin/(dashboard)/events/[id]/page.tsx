@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -20,12 +21,29 @@ import {
 } from "@/lib/events/queries";
 import { formatEventDate } from "@/lib/events/format";
 import type { EventMaster } from "@/db/schema";
+import { adminMetadata } from "@/lib/metadata";
 
 export const dynamic = "force-dynamic";
 
 type AdminEventPageProps = {
   params: Promise<{ id: string }>;
 };
+
+export async function generateMetadata({
+  params,
+}: AdminEventPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const eventData = await getEventWithOverrides(id);
+
+  if (!eventData) {
+    return adminMetadata({ title: "Événement introuvable" });
+  }
+
+  return adminMetadata({
+    title: eventData.synced.title,
+    description: `Corrections et occurrences pour « ${eventData.synced.title} ».`,
+  });
+}
 
 export default async function AdminEventPage({ params }: AdminEventPageProps) {
   const { id } = await params;

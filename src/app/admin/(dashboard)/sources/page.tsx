@@ -1,10 +1,18 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { asc, isNull } from "drizzle-orm";
 
 import { SourceDefaultsForm } from "@/components/admin/source-defaults-form";
 import { db } from "@/db";
 import { sources, venues } from "@/db/schema";
+import { adminMetadata } from "@/lib/metadata";
 import type { VenueWithStats } from "@/lib/venues/matching";
+
+export const metadata: Metadata = adminMetadata({
+  title: "Sources",
+  description:
+    "Lieux et catégories par défaut pour chaque flux iCal synchronisé.",
+});
 
 export const dynamic = "force-dynamic";
 

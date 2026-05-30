@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { EventList } from "@/components/events/event-list";
 import { OrganizerHeader } from "@/components/organizations/organizer-header";
 import { getOrganizerBySlug } from "@/lib/events/queries";
+import { publicMetadata } from "@/lib/metadata";
 import { formatOrganizationCategory } from "@/lib/organizations/categories";
 import { getVenueDisplayAddress } from "@/lib/venues/display";
 
@@ -28,7 +29,7 @@ export async function generateMetadata({
     ? getVenueDisplayAddress(organizer.venue)
     : null;
 
-  return {
+  return publicMetadata({
     title: organizer.name,
     description:
       organizer.description ??
@@ -37,7 +38,8 @@ export async function generateMetadata({
         `proposés par ${organizer.name}`,
         venueAddress ? `à ${venueAddress}` : "à Toulouse",
       ].join(" ") + ".",
-  };
+    path: `/organisateur/${slug}`,
+  });
 }
 
 export default async function OrganizerPage({ params }: OrganizerPageProps) {

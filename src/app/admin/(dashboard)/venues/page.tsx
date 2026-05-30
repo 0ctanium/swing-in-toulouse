@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { VenuesAdminAlerts } from "@/components/admin/venues-admin-alerts";
 import { VenueMatchingTool } from "@/components/admin/venue-matching-tool";
+import { adminMetadata } from "@/lib/metadata";
 import { getVenueMatchingOverview } from "@/lib/venues/matching";
+
+export const metadata: Metadata = adminMetadata({
+  title: "Lieux",
+  description:
+    "Fusion des doublons, conflits d’adresse et qualité des lieux d’événements.",
+});
 
 export const dynamic = "force-dynamic";
 

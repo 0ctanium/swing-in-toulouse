@@ -1,10 +1,18 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { asc, isNull } from "drizzle-orm";
 
 import { OrganizationSettingsForm } from "@/components/admin/organization-settings-form";
 import { db } from "@/db";
 import { organizations, venues } from "@/db/schema";
+import { adminMetadata } from "@/lib/metadata";
 import type { VenueWithStats } from "@/lib/venues/matching";
+
+export const metadata: Metadata = adminMetadata({
+  title: "Organisateurs",
+  description:
+    "Catégories des écoles et associations, liaison des lieux par location_raw.",
+});
 
 export const dynamic = "force-dynamic";
 

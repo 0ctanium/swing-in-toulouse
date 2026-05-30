@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 
+import { EventsPendingAlert } from "@/components/admin/events-pending-alert";
 import { isAdminConfigured } from "@/env";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
+import { getEventConfirmQueueStats } from "@/lib/events/confirm-queue";
 
 export default async function AdminDashboardLayout({
   children,
@@ -26,8 +28,11 @@ export default async function AdminDashboardLayout({
     redirect("/admin/login");
   }
 
+  const { pendingCount } = await getEventConfirmQueueStats();
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 py-4">
+      <EventsPendingAlert pendingCount={pendingCount} />
       {children}
     </div>
   );

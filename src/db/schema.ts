@@ -169,6 +169,7 @@ export const events = pgTable(
       .notNull()
       .defaultNow(),
     syncedAt: timestamp("synced_at", { withTimezone: true }),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
     canonicalEventId: uuid("canonical_event_id").references(
       (): AnyPgColumn => events.id,
       { onDelete: "set null" },

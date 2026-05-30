@@ -37,6 +37,35 @@ export function resolveSyncedCategories(
   return null;
 }
 
+export function resolveSyncedCategoriesForUpsert(
+  source: Pick<SourceWithOrganization, "defaultCategories" | "id">,
+  normalized: Pick<NormalizedEvent, "categories">,
+  existing?: Pick<{ sourceId: string; categories: string[] | null }, "sourceId" | "categories"> | null,
+) {
+  if (existing && existing.sourceId !== source.id) {
+    return existing.categories;
+  }
+
+  return resolveSyncedCategories(source, normalized);
+}
+
+export function resolveSyncedLocationForUpsert(
+  source: Pick<SourceWithOrganization, "defaultLocationRaw" | "id">,
+  normalized: Pick<NormalizedEvent, "location">,
+  existing?: Pick<{ sourceId: string; locationRaw: string | null }, "sourceId" | "locationRaw"> | null,
+) {
+  const fromIcal = normalized.location?.trim();
+  if (fromIcal) {
+    return fromIcal;
+  }
+
+  if (existing && existing.sourceId !== source.id) {
+    return existing.locationRaw;
+  }
+
+  return resolveSyncedLocation(source, normalized);
+}
+
 export function formatVenueAsDefaultLocation(venue: {
   name: string;
   address?: string | null;

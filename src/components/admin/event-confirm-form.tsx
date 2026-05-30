@@ -1,0 +1,269 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useConfirmEvent } from "@/lib/admin/use-events-admin";
+import type { EventConfirmQueueItem } from "@/lib/events/confirm-queue";
+import { formatEventDate } from "@/lib/events/format";
+import {
+  buildMasterOverridePatch,
+  hasMasterOverrideChangesFromForm,
+} from "@/lib/events/override-patch";
+import type { EventOverridePatch } from "@/lib/events/overrides.types";
+
+type OrganizationOption = { id: string; name: string };
+type VenueOption = { id: string; name: string };
+
+type EventConfirmFormProps = {
+  item: EventConfirmQueueItem;
+  organizations: OrganizationOption[];
+  venues: VenueOption[];
+  onConfirmed: () => void;
+  onSkip: () => void;
+};
+
+function Field({
+  label,
+  syncedValue,
+  children,
+}: {
+  label: string;
+  syncedValue?: string | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-sm">
+      <span className="font-medium">{label}</span>
+      {syncedValue ? (
+        <span className="text-muted-foreground text-xs">iCal : {syncedValue}</span>
+      ) : null}
+      {children}
+    </label>
+  );
+}
+
+export function EventConfirmForm({
+  item,
+  organizations,
+  venues,
+  onConfirmed,
+  onSkip,
+}: EventConfirmFormProps) {
+  const confirmEvent = useConfirmEvent();
+  const { synced, currentPatch } = item;
+
+  const [title, setTitle] = useState(currentPatch.title ?? synced.title);
+  const [description, setDescription] = useState(
+    currentPatch.description ?? synced.description ?? "",
+  );
+  const [organizationId, setOrganizationId] = useState(
+    currentPatch.organizationId ?? synced.organizationId ?? "",
+  );
+  const [venueId, setVenueId] = useState(
+    currentPatch.venueId ?? synced.venueId ?? "",
+  );
+  const [categories, setCategories] = useState(
+    (currentPatch.categories ?? synced.categories ?? []).join(", "),
+  );
+  const [status, setStatus] = useState(currentPatch.status ?? synced.status);
+  const [sourceUrl, setSourceUrl] = useState(
+    currentPatch.sourceUrl ?? synced.sourceUrl ?? "",
+  );
+  const [notes, setNotes] = useState(currentPatch.notes ?? "");
+  const pending = confirmEvent.isPending;
+
+  const hasChanges = hasMasterOverrideChangesFromForm(
+    {
+      title,
+      description,
+      organizationId,
+      venueId,
+      categories,
+      status,
+      sourceUrl,
+      notes,
+    },
+    synced,
+  );
+  const confirmLabel = hasChanges
+    ? "Confirmer les modifications"
+    : "Confirmer sans modification";
+
+  async function handleConfirm() {
+    const patch = buildMasterOverridePatch(
+      {
+        title,
+        description,
+        organizationId,
+        venueId,
+        categories,
+        status,
+        sourceUrl,
+        notes,
+      },
+      synced,
+    );
+
+    try {
+      await confirmEvent.mutateAsync({
+        eventId: item.id,
+        patch,
+      });
+      toast.success("Événement confirmé.");
+      onConfirmed();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Confirmation impossible.",
+      );
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-col gap-2">
+            <CardTitle className="text-xl">{item.title}</CardTitle>
+            <p className="text-muted-foreground text-sm">
+              {item.recurrenceRule && item.nextOccurrenceAt
+                ? `Prochaine occurrence : ${formatEventDate(
+                    new Date(item.nextOccurrenceAt),
+                    item.endAt ? new Date(item.endAt) : null,
+                    item.isAllDay,
+                  )}`
+                : formatEventDate(
+                    new Date(item.startAt),
+                    item.endAt ? new Date(item.endAt) : null,
+                    item.isAllDay,
+                  )}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              Source : {item.sourceName}
+              {item.recurrenceRule ? " · série récurrente" : ""}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {item.venueNeedsConfirmation ? (
+              <Badge variant="outline">Lieu non confirmé</Badge>
+            ) : null}
+            {item.recurrenceRule ? (
+              <Badge variant="secondary">Série récurrente</Badge>
+            ) : null}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <Field label="Titre" syncedValue={synced.title}>
+          <input
+            className="rounded-lg border bg-background px-3 py-2"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+          />
+        </Field>
+
+        <Field label="Description" syncedValue={synced.description}>
+          <textarea
+            className="min-h-24 rounded-lg border bg-background px-3 py-2"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </Field>
+
+        <Field label="Organisateur">
+          <select
+            className="rounded-lg border bg-background px-3 py-2"
+            value={organizationId}
+            onChange={(event) => setOrganizationId(event.target.value)}
+          >
+            <option value="">— Aucun —</option>
+            {organizations.map((organization) => (
+              <option key={organization.id} value={organization.id}>
+                {organization.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Lieu">
+          <select
+            className="rounded-lg border bg-background px-3 py-2"
+            value={venueId}
+            onChange={(event) => setVenueId(event.target.value)}
+          >
+            <option value="">— Aucun —</option>
+            {venues.map((venue) => (
+              <option key={venue.id} value={venue.id}>
+                {venue.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field
+          label="Catégories (séparées par des virgules)"
+          syncedValue={synced.categories?.join(", ")}
+        >
+          <input
+            className="rounded-lg border bg-background px-3 py-2"
+            value={categories}
+            onChange={(event) => setCategories(event.target.value)}
+          />
+        </Field>
+
+        <Field label="Statut">
+          <select
+            className="rounded-lg border bg-background px-3 py-2"
+            value={status}
+            onChange={(event) =>
+              setStatus(event.target.value as "published" | "cancelled")
+            }
+          >
+            <option value="published">Publié</option>
+            <option value="cancelled">Annulé</option>
+          </select>
+        </Field>
+
+        <Field label="URL externe" syncedValue={synced.sourceUrl}>
+          <input
+            className="rounded-lg border bg-background px-3 py-2"
+            value={sourceUrl}
+            onChange={(event) => setSourceUrl(event.target.value)}
+          />
+        </Field>
+
+        <Field label="Notes internes">
+          <textarea
+            className="min-h-16 rounded-lg border bg-background px-3 py-2"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+          />
+        </Field>
+
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handleConfirm} disabled={pending}>
+            {pending ? "Confirmation…" : confirmLabel}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={onSkip}
+          >
+            Passer
+          </Button>
+          <Button
+            variant="ghost"
+            render={<Link href={`/admin/events/${item.id}`} />}
+          >
+            Fiche complète
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
