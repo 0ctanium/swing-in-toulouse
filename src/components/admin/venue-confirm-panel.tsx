@@ -301,10 +301,16 @@ function VenueConfirmRow({
     [mode, venue],
   );
   const [venueName, setVenueName] = useState(venue.name);
+  const [originalPlace] = useState<PlaceDetails | null>(initialPlace);
   const [selectedPlace, setSelectedPlace] = useState<PlaceDetails | null>(
     initialPlace,
   );
   const pending = confirmVenue.isPending;
+  const hasNewAddressSelection =
+    mode === "edit" &&
+    originalPlace != null &&
+    selectedPlace != null &&
+    selectedPlace.placeId !== originalPlace.placeId;
 
   const googleName = selectedPlace?.name.trim() ?? "";
   const showGoogleNameHint =
@@ -413,18 +419,55 @@ function VenueConfirmRow({
           htmlFor={`venue-address-${venue.id}`}
           className="text-sm font-medium"
         >
-          Adresse
+          {mode === "edit" && originalPlace ? "Adresse actuelle" : "Adresse"}
+        </label>
+        {mode === "edit" && originalPlace ? (
+          <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+            <p className="font-medium">{originalPlace.formattedAddress}</p>
+            <p className="text-muted-foreground text-xs">
+              {originalPlace.city} · {originalPlace.latitude.toFixed(5)},{" "}
+              {originalPlace.longitude.toFixed(5)}
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor={`venue-address-search-${venue.id}`}
+          className="text-sm font-medium"
+        >
+          {mode === "edit" ? "Modifier l'adresse" : "Adresse"}
         </label>
         <GooglePlacesAutocomplete
-          id={`venue-address-${venue.id}`}
-          defaultQuery={addressPlaceholder}
+          key={`${venue.id}-${mode}`}
+          id={`venue-address-search-${venue.id}`}
+          defaultQuery={mode === "edit" ? "" : addressPlaceholder}
+          placeholder={
+            mode === "edit"
+              ? "Rechercher une nouvelle adresse sur Google…"
+              : "Rechercher une adresse sur Google…"
+          }
           disabled={pending}
           onSelect={setSelectedPlace}
         />
       </div>
 
-      {selectedPlace ? (
+      {selectedPlace && mode === "create" ? (
         <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+          <p className="font-medium">{selectedPlace.formattedAddress}</p>
+          <p className="text-muted-foreground text-xs">
+            {selectedPlace.city} · {selectedPlace.latitude.toFixed(5)},{" "}
+            {selectedPlace.longitude.toFixed(5)}
+          </p>
+        </div>
+      ) : null}
+
+      {hasNewAddressSelection && selectedPlace ? (
+        <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2 text-sm">
+          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+            Nouvelle sélection
+          </p>
           <p className="font-medium">{selectedPlace.formattedAddress}</p>
           <p className="text-muted-foreground text-xs">
             {selectedPlace.city} · {selectedPlace.latitude.toFixed(5)},{" "}

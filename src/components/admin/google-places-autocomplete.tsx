@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import type { PlaceDetails } from "@/lib/google/places";
 import {
@@ -18,6 +18,12 @@ type GooglePlacesAutocompleteProps = {
   onSelect: (place: PlaceDetails) => void;
 };
 
+function scrollInputToStart(input: HTMLInputElement | null) {
+  if (input) {
+    input.scrollLeft = 0;
+  }
+}
+
 export function GooglePlacesAutocomplete({
   id,
   defaultQuery = "",
@@ -26,6 +32,7 @@ export function GooglePlacesAutocomplete({
   onSelect,
 }: GooglePlacesAutocompleteProps) {
   const listId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState(defaultQuery);
   const [isEditing, setIsEditing] = useState(false);
   const [open, setOpen] = useState(false);
@@ -34,6 +41,10 @@ export function GooglePlacesAutocomplete({
   const containerRef = useRef<HTMLDivElement>(null);
   const debouncedQuery = useDebouncedValue(query, 280);
   const fetchPlaceDetails = usePlaceDetailsFetcher();
+
+  useEffect(() => {
+    scrollInputToStart(inputRef.current);
+  }, [query]);
 
   const {
     data: suggestions = [],
@@ -67,8 +78,9 @@ export function GooglePlacesAutocomplete({
   return (
     <div ref={containerRef} className="relative flex flex-col gap-1">
       <input
+        ref={inputRef}
         id={id}
-        className="rounded-lg border bg-background px-3 py-2 text-sm"
+        className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
         autoComplete="off"
         data-lpignore="true"
         data-form-type="other"
@@ -83,7 +95,8 @@ export function GooglePlacesAutocomplete({
           setQuery(event.target.value);
           setOpen(true);
         }}
-        onFocus={() => {
+        onFocus={(event) => {
+          scrollInputToStart(event.currentTarget);
           setIsEditing(true);
           if (query.trim().length >= 3) {
             setOpen(true);

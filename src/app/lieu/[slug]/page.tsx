@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { EventList } from "@/components/events/event-list";
+import { VenueHeader } from "@/components/venues/venue-header";
 import { getVenueBySlug, resolveVenueBySlug } from "@/lib/events/queries";
+import { getVenueDisplayAddress } from "@/lib/venues/display";
 
 export const dynamic = "force-dynamic";
 
@@ -26,17 +28,24 @@ export async function generateMetadata({
       return { title: "Lieu introuvable" };
     }
 
+    const displayAddress = getVenueDisplayAddress(canonical);
+
     return {
       title: canonical.name,
-      description: `Événements swing à ${canonical.name}, ${canonical.city}.`,
+      description: displayAddress
+        ? `Événements swing à ${canonical.name} — ${displayAddress}.`
+        : `Événements swing à ${canonical.name}, ${canonical.city}.`,
     };
   }
 
   const venue = resolution.venue;
+  const displayAddress = getVenueDisplayAddress(venue);
 
   return {
     title: venue.name,
-    description: `Événements swing à ${venue.name}, ${venue.city}.`,
+    description: displayAddress
+      ? `Événements swing à ${venue.name} — ${displayAddress}.`
+      : `Événements swing à ${venue.name}, ${venue.city}.`,
   };
 }
 
@@ -60,15 +69,7 @@ export default async function VenuePage({ params }: VenuePageProps) {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-2">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">
-          {venue.name}
-        </h1>
-        {venue.address ? (
-          <p className="text-muted-foreground text-lg">{venue.address}</p>
-        ) : null}
-        <p className="text-muted-foreground text-sm">{venue.city}</p>
-      </section>
+      <VenueHeader venue={venue} />
 
       <section className="flex flex-col gap-4">
         <h2 className="font-heading text-2xl font-semibold">

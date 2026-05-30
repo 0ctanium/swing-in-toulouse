@@ -201,6 +201,114 @@ function routeFromAddressComponents(
     ?.longText;
 }
 
+function postalCodeFromAddressComponents(
+  components: Array<{ longText?: string; types?: string[] }>,
+) {
+  return components.find((component) =>
+    component.types?.includes("postal_code"),
+  )?.longText;
+}
+
+function countryFromAddressComponents(
+  components: Array<{ longText?: string; types?: string[] }>,
+) {
+  return components.find((component) => component.types?.includes("country"))
+    ?.longText;
+}
+
+/** Google Places sometimes splits "Chemin de {route}" into establishment "de" + route. */
+function hasSpuriousFrenchDeComponent(
+  components: Array<{ longText?: string; types?: string[] }>,
+) {
+  return components.some(
+    (component) =>
+      component.longText?.trim().toLowerCase() === "de" &&
+      component.types?.some(
+        (type) => type === "establishment" || type === "point_of_interest",
+      ),
+  );
+}
+
+function repairFrenchCheminDeStreet(route: string) {
+  return `Chemin de ${route}`;
+}
+
+function isBrokenDeRouteFormattedAddress(
+  formattedAddress: string,
+  route: string,
+) {
+  const parts = formattedAddress.split(",").map((part) => part.trim());
+  return (
+    parts[0]?.toLowerCase() === "de" &&
+    parts[1]?.toLowerCase() === route.toLowerCase()
+  );
+}
+
+function buildFormattedAddressFromComponents(
+  components: Array<{ longText?: string; types?: string[] }>,
+) {
+  const route = routeFromAddressComponents(components);
+  if (!route) {
+    return null;
+  }
+
+  const postalCode = postalCodeFromAddressComponents(components);
+  const city = cityFromAddressComponents(components);
+  const country = countryFromAddressComponents(components);
+  const streetLine = hasSpuriousFrenchDeComponent(components)
+    ? repairFrenchCheminDeStreet(route)
+    : route;
+  const cityLine = [postalCode, city].filter(Boolean).join(" ");
+  const parts = [streetLine];
+
+  if (cityLine) {
+    parts.push(cityLine);
+  }
+
+  if (country) {
+    parts.push(country);
+  }
+
+  return parts.join(", ");
+}
+
+function resolveFormattedAddress(
+  components: Array<{ longText?: string; types?: string[] }>,
+  formattedAddress?: string,
+  shortFormattedAddress?: string,
+) {
+  const route = routeFromAddressComponents(components);
+  const rebuilt = buildFormattedAddressFromComponents(components);
+
+  if (
+    route &&
+    formattedAddress &&
+    hasSpuriousFrenchDeComponent(components) &&
+    isBrokenDeRouteFormattedAddress(formattedAddress, route)
+  ) {
+    return rebuilt ?? formattedAddress;
+  }
+
+  return formattedAddress ?? shortFormattedAddress ?? rebuilt ?? "";
+}
+
+function resolveStreetAddress(
+  components: Array<{ longText?: string; types?: string[] }>,
+) {
+  const street = streetAddressFromComponents(components);
+  const route = routeFromAddressComponents(components);
+
+  if (street && route && street !== route) {
+    return street;
+  }
+
+  if (route && hasSpuriousFrenchDeComponent(components)) {
+    return repairFrenchCheminDeStreet(route);
+  }
+
+  return street ?? route ?? null;
+}
+
 function streetAddressFromComponents(
   components: Array<{ longText?: string; types?: string[] }>,
 ) {
@@ -257,18 +365,22 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
   const components = data.addressComponents ?? [];
   const city = cityFromAddressComponents(components);
   const route = routeFromAddressComponents(components);
-  const street = streetAddressFromComponents(components);
+  const formattedAddress = resolveFormattedAddress(
+    components,
+    data.formattedAddress,
+    data.shortFormattedAddress,
+  );
+  const address = resolveStreetAddress(components);
 
   return {
     placeId: data.id ?? placeId,
     name:
       data.displayName?.text ??
       route ??
-      data.formattedAddress?.split(",")[0]?.trim() ??
+      formattedAddress.split(",")[0]?.trim() ??
       "Lieu",
-    formattedAddress:
-      data.formattedAddress ?? data.shortFormattedAddress ?? street ?? "",
-    address: street ?? route ?? data.shortFormattedAddress ?? null,
+    formattedAddress,
+    address,
     city,
     latitude,
     longitude,
