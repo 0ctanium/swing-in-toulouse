@@ -1,7 +1,8 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -109,6 +110,22 @@ export function createSourcesTableColumns({
 
         return (
           <div className="flex justify-end gap-1">
+            {source.organizationSlug ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                render={
+                  <Link
+                    href={`/organisateur/${source.organizationSlug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  />
+                }
+              >
+                <Eye data-icon="inline-start" />
+                Voir
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="ghost"

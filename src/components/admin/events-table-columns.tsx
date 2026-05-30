@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Eye } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
@@ -216,6 +216,20 @@ export function createEventsTableColumns({
 
         return (
           <div className="flex justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              render={
+                <Link
+                  href={`/evenement/${event.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                />
+              }
+            >
+              <Eye data-icon="inline-start" />
+              Voir
+            </Button>
             {!event.isConfirmed ? (
               <Button
                 variant="outline"
