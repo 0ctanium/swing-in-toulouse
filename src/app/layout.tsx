@@ -5,6 +5,7 @@ import { AdminModeBanner } from "@/components/admin/admin-mode-banner";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Providers } from "@/components/providers";
+import { ThemeProvider } from "@/components/theme-provider";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
 import { siteConfig } from "@/lib/site";
 
@@ -63,15 +64,17 @@ export default async function RootLayout({
         className="flex min-h-full flex-col antialiased"
         suppressHydrationWarning
       >
-        <AdminModeBanner />
-        <SiteHeader isAdminMode={isAdminMode} />
-        <main
-          className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10"
-          suppressHydrationWarning
-        >
-          <Providers isAdminMode={isAdminMode}>{children}</Providers>
-        </main>
-        <SiteFooter />
+        <ThemeProvider>
+          <AdminModeBanner />
+          <SiteHeader isAdminMode={isAdminMode} />
+          <main
+            className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10"
+            suppressHydrationWarning
+          >
+            <Providers isAdminMode={isAdminMode}>{children}</Providers>
+          </main>
+          <SiteFooter />
+        </ThemeProvider>
       </body>
     </html>
   );
