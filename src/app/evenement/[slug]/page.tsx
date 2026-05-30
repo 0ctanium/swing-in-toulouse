@@ -11,8 +11,11 @@ import {
   EventDescriptionBlock,
   EventLocationLine,
 } from "@/components/events/event-details";
+import { AdminEventActions } from "@/components/admin/admin-event-actions";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { isAdminAuthenticated } from "@/lib/admin/auth";
+import { getEventWithOverrides } from "@/lib/events/overrides";
 import { getEventBySlug } from "@/lib/events/queries";
 
 export const dynamic = "force-dynamic";
@@ -60,6 +63,12 @@ export default async function EventPage({ params }: EventPageProps) {
     notFound();
   }
 
+  const isAdmin = await isAdminAuthenticated();
+  const overrideInfo = isAdmin ? await getEventWithOverrides(event.id) : null;
+  const overrideCount =
+    (overrideInfo?.masterOverride ? 1 : 0) +
+    (overrideInfo?.occurrenceOverrides.length ?? 0);
+
   return (
     <article className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
@@ -88,6 +97,17 @@ export default async function EventPage({ params }: EventPageProps) {
       ) : null}
 
       <Separator />
+
+      {isAdmin ? (
+        <AdminEventActions
+          masterEventId={event.id}
+          admin={{
+            masterOverridden: Boolean(overrideInfo?.masterOverride),
+            occurrenceOverridden: false,
+            overrideCount,
+          }}
+        />
+      ) : null}
 
       <div className="flex flex-wrap gap-3">
         <Button render={<a href={`/evenement/${event.slug}.ics`} download />}>

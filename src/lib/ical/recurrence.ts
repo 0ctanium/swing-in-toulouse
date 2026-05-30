@@ -14,6 +14,7 @@ type ParsedIcalEvent = import("node-ical").VEvent;
 
 export type EventOccurrence = {
   id: string;
+  masterEventId: string;
   slug: string;
   title: string;
   description: string | null;
@@ -29,6 +30,7 @@ export type EventOccurrence = {
   organization: Organization | null;
   source: Source;
   venue: Venue | null;
+  isOverridden?: boolean;
 };
 
 export type ExpansionWindow = {
@@ -175,6 +177,7 @@ function buildOccurrence(
 ): EventOccurrence {
   return {
     id: `${master.id}#${startAt.toISOString()}`,
+    masterEventId: master.id,
     slug: master.slug,
     title,
     description: master.description,

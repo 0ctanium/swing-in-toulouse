@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminEventActions } from "@/components/admin/admin-event-actions";
 import {
   EventActionLinks,
   EventBadges,
@@ -16,11 +17,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { formatEventChipTime } from "@/lib/events/format";
+import type { AdminEventMeta } from "@/lib/events/admin-meta";
 import type { EventOccurrence } from "@/lib/events/queries";
 import { cn } from "@/lib/utils";
 
 type EventPreviewPopoverProps = {
-  event: EventOccurrence;
+  event: EventOccurrence & { admin?: AdminEventMeta };
   triggerClassName?: string;
 };
 
@@ -77,7 +79,14 @@ export function EventPreviewPopover({
           </PopoverDescription>
 
           <div className="border-t bg-muted/30 px-3 py-2">
-            <EventActionLinks event={event} layout="stack" showFullPageLink />
+            <div className="flex flex-col gap-2">
+              <AdminEventActions
+                masterEventId={event.masterEventId}
+                admin={event.admin}
+                compact
+              />
+              <EventActionLinks event={event} layout="stack" showFullPageLink />
+            </div>
           </div>
         </div>
       </PopoverContent>

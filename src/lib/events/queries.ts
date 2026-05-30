@@ -1,9 +1,13 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { events, organizations, venues } from "@/db/schema";
+import { expandEventsWithOverrides } from "@/lib/events/expand-with-overrides";
 import {
-  expandMasterEventsToOccurrences,
+  applyMasterOverride,
+  loadOverridesForEvents,
+} from "@/lib/events/overrides";
+import {
   getDefaultExpansionWindow,
   getDefaultFromDate,
   isMasterRelevantForExport,
@@ -98,19 +102,55 @@ export async function getUpcomingEvents(options?: {
     includeCancelled: options?.includeCancelled,
   });
 
-  const occurrences = await expandMasterEventsToOccurrences(masters, window);
+  const occurrences = await expandEventsWithOverrides(masters, window);
 
   return filterOccurrences(occurrences, window, options?.limit);
 }
 
 export async function getEventBySlug(slug: string) {
-  return db.query.events.findFirst({
+  const event = await db.query.events.findFirst({
     where: eq(events.slug, slug),
     with: {
       source: true,
       organization: true,
       venue: true,
     },
+  });
+
+  if (!event) {
+    return null;
+  }
+
+  const overrides = await loadOverridesForEvents([event.id]);
+  const masterOverride = overrides.master.get(event.id);
+
+  if (!masterOverride) {
+    return event;
+  }
+
+  const organization =
+    masterOverride.patch.organizationId !== undefined
+      ? masterOverride.patch.organizationId
+        ? await db.query.organizations.findFirst({
+            where: eq(organizations.id, masterOverride.patch.organizationId),
+          })
+        : null
+      : event.organization;
+
+  const venue =
+    masterOverride.patch.venueId !== undefined
+      ? masterOverride.patch.venueId
+        ? await db.query.venues.findFirst({
+            where: eq(venues.id, masterOverride.patch.venueId),
+          })
+        : null
+      : event.venue;
+
+  return applyMasterOverride(event, masterOverride, {
+    organizations: new Map(
+      organization ? [[organization.id, organization]] : [],
+    ),
+    venues: new Map(venue ? [[venue.id, venue]] : []),
   });
 }
 
@@ -137,7 +177,7 @@ export async function getOrganizerBySlug(slug: string) {
   }) as EventMaster[];
 
   const window = getDefaultExpansionWindow();
-  const occurrences = await expandMasterEventsToOccurrences(masters, window);
+  const occurrences = await expandEventsWithOverrides(masters, window);
 
   return {
     ...organization,
@@ -168,7 +208,7 @@ export async function getVenueBySlug(slug: string) {
   }) as EventMaster[];
 
   const window = getDefaultExpansionWindow();
-  const occurrences = await expandMasterEventsToOccurrences(masters, window);
+  const occurrences = await expandEventsWithOverrides(masters, window);
 
   return {
     ...venue,
@@ -186,7 +226,42 @@ export async function getEventsForExport(options?: {
     venueSlug: options?.venueSlug,
   });
 
-  return masters.filter((master) => isMasterRelevantForExport(master, from));
+  const overrides = await loadOverridesForEvents(masters.map((m) => m.id));
+  const merged = await Promise.all(
+    masters.map(async (master) => {
+      const masterOverride = overrides.master.get(master.id);
+      if (!masterOverride) {
+        return master;
+      }
+
+      const organization =
+        masterOverride.patch.organizationId !== undefined
+          ? masterOverride.patch.organizationId
+            ? await db.query.organizations.findFirst({
+                where: eq(organizations.id, masterOverride.patch.organizationId),
+              })
+            : null
+          : master.organization;
+
+      const venue =
+        masterOverride.patch.venueId !== undefined
+          ? masterOverride.patch.venueId
+            ? await db.query.venues.findFirst({
+                where: eq(venues.id, masterOverride.patch.venueId),
+              })
+            : null
+          : master.venue;
+
+      return applyMasterOverride(master, masterOverride, {
+        organizations: new Map(
+          organization ? [[organization.id, organization]] : [],
+        ),
+        venues: new Map(venue ? [[venue.id, venue]] : []),
+      });
+    }),
+  );
+
+  return merged.filter((master) => isMasterRelevantForExport(master, from));
 }
 
 export async function listOrganizers() {
@@ -198,5 +273,47 @@ export async function listOrganizers() {
 
 /** @deprecated Use listOrganizers */
 export const listOrganizations = listOrganizers;
+
+export async function listVenues() {
+  return db.query.venues.findMany({
+    orderBy: (table, { asc }) => [asc(table.name)],
+  });
+}
+
+export async function listAdminEvents(limit = 50) {
+  return db.query.events.findMany({
+    with: {
+      source: true,
+      organization: true,
+      venue: true,
+      overrides: true,
+    },
+    orderBy: [desc(events.updatedAt)],
+    limit,
+  });
+}
+
+export async function getAdminEventOccurrences(eventId: string) {
+  const event = await db.query.events.findFirst({
+    where: eq(events.id, eventId),
+    with: {
+      source: true,
+      organization: true,
+      venue: true,
+    },
+  });
+
+  if (!event) {
+    return null;
+  }
+
+  const window = getDefaultExpansionWindow();
+  const occurrences = await expandEventsWithOverrides([event], window);
+
+  return {
+    event,
+    occurrences: occurrences.filter((occurrence) => occurrence.startAt >= window.from),
+  };
+}
 
 export type { EventOccurrence };

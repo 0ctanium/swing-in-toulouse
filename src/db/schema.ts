@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import type { IcalStoredData } from "@/lib/ical/types";
+import type { EventOverridePatch } from "@/lib/events/overrides.types";
 
 export const eventStatusEnum = pgEnum("event_status", [
   "published",
@@ -151,6 +152,38 @@ export const events = pgTable(
   ],
 );
 
+export const eventOverrides = pgTable(
+  "event_overrides",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    occurrenceStartAt: timestamp("occurrence_start_at", {
+      withTimezone: true,
+    }),
+    patch: jsonb("patch").$type<EventOverridePatch>().notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("event_overrides_event_id_idx").on(table.eventId),
+    uniqueIndex("event_overrides_master_unique_idx")
+      .on(table.eventId)
+      .where(sql`${table.occurrenceStartAt} is null`),
+    uniqueIndex("event_overrides_occurrence_unique_idx").on(
+      table.eventId,
+      table.occurrenceStartAt,
+    ),
+  ],
+);
+
 export const syncLogs = pgTable(
   "sync_logs",
   {
@@ -188,7 +221,7 @@ export const sourcesRelations = relations(sources, ({ one, many }) => ({
   syncLogs: many(syncLogs),
 }));
 
-export const eventsRelations = relations(events, ({ one }) => ({
+export const eventsRelations = relations(events, ({ one, many }) => ({
   source: one(sources, {
     fields: [events.sourceId],
     references: [sources.id],
@@ -200,6 +233,14 @@ export const eventsRelations = relations(events, ({ one }) => ({
   venue: one(venues, {
     fields: [events.venueId],
     references: [venues.id],
+  }),
+  overrides: many(eventOverrides),
+}));
+
+export const eventOverridesRelations = relations(eventOverrides, ({ one }) => ({
+  event: one(events, {
+    fields: [eventOverrides.eventId],
+    references: [events.id],
   }),
 }));
 
@@ -218,6 +259,8 @@ export type Venue = typeof venues.$inferSelect;
 export type NewVenue = typeof venues.$inferInsert;
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
+export type EventOverride = typeof eventOverrides.$inferSelect;
+export type NewEventOverride = typeof eventOverrides.$inferInsert;
 export type SyncLog = typeof syncLogs.$inferSelect;
 
 export type SourceWithOrganization = Source & {

@@ -3,7 +3,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+import { AdminModeProvider } from "@/components/admin/admin-mode-provider";
+
+export function Providers({
+  children,
+  isAdminMode = false,
+}: {
+  children: React.ReactNode;
+  isAdminMode?: boolean;
+}) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -16,6 +24,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <AdminModeProvider isAdminMode={isAdminMode}>{children}</AdminModeProvider>
+    </QueryClientProvider>
   );
 }

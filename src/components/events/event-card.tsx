@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminEventActions } from "@/components/admin/admin-event-actions";
 import {
   Card,
   CardContent,
@@ -14,10 +15,11 @@ import {
   EventDescriptionBlock,
   EventLocationLine,
 } from "@/components/events/event-details";
+import type { AdminEventMeta } from "@/lib/events/admin-meta";
 import type { EventOccurrence } from "@/lib/events/queries";
 
 type EventCardProps = {
-  event: EventOccurrence;
+  event: EventOccurrence & { admin?: AdminEventMeta };
 };
 
 export function EventCard({ event }: EventCardProps) {
@@ -52,6 +54,10 @@ export function EventCard({ event }: EventCardProps) {
       >
         <EventBadges event={event} />
         <EventActionLinks event={event} />
+        <AdminEventActions
+          masterEventId={event.masterEventId}
+          admin={event.admin}
+        />
       </CardContent>
     </Card>
   );

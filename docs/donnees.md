@@ -97,6 +97,27 @@
   - **Affichage web** : expansion à la volée (12 prochains mois)
   - **Export iCal** (`/agenda.ics`, `/organisateur/[slug].ics`) : règle de récurrence conservée
 
+  ## Overrides admin
+
+  Les données iCal restent la source synchronisée. Les corrections manuelles sont stockées dans `event_overrides` et appliquées à l'affichage sans être écrasées par la sync.
+
+  | Scope | Usage |
+  |---|---|
+  | **Série** (`occurrence_start_at` null) | Corrige toutes les occurrences (organisateur, lieu, tags, titre…) |
+  | **Occurrence** | Corrige ou masque une seule date d'un événement récurrent |
+
+  ### Activer l'admin
+
+  1. Ajoutez dans `.env.local` : `ADMIN_SECRET="…"` (16 caractères minimum)
+  2. `pnpm run db:push` pour créer la table `event_overrides`
+  3. Connectez-vous sur `/admin/login`
+
+  **Mode admin sur le site public** : une fois connecté, une bannière apparaît sur toutes les pages. Sur l'agenda et les fiches événement, un bouton **Corriger** mène vers les overrides (avec le nombre d'overrides actifs).
+
+  **`/admin`** affiche le même calendrier que l'agenda public — la liste d'événements a été retirée au profit de cette vue contextuelle.
+
+  Champs overrideables : titre, description, dates, lieu, venue, organisateur, catégories, statut, URL externe, masquage d'occurrence.
+
   ## Commandes utiles
 
   | Commande | Action |

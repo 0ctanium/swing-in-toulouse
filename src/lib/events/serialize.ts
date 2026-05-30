@@ -1,4 +1,5 @@
 import type { EventOccurrence } from "@/lib/events/queries";
+import type { AdminEventMeta } from "@/lib/events/admin-meta";
 
 export type SerializableEventOccurrence = Omit<
   EventOccurrence,
@@ -6,6 +7,7 @@ export type SerializableEventOccurrence = Omit<
 > & {
   startAt: string;
   endAt: string | null;
+  admin?: AdminEventMeta;
 };
 
 export function serializeOccurrence(
@@ -20,7 +22,7 @@ export function serializeOccurrence(
 
 export function parseOccurrence(
   event: SerializableEventOccurrence,
-): EventOccurrence {
+): EventOccurrence & { admin?: AdminEventMeta } {
   return {
     ...event,
     startAt: new Date(event.startAt),
