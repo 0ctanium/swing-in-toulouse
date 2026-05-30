@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarPlus, MapPin } from "lucide-react";
+import { CalendarPlus } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import {
+  EventActionLinks,
+  EventBadges,
+  EventDateLine,
+  EventDescriptionBlock,
+  EventLocationLine,
+} from "@/components/events/event-details";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { formatEventDate } from "@/lib/events/format";
 import { getEventBySlug } from "@/lib/events/queries";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +21,9 @@ type EventPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-function organizerLabel(event: NonNullable<Awaited<ReturnType<typeof getEventBySlug>>>) {
+function organizerLabel(
+  event: NonNullable<Awaited<ReturnType<typeof getEventBySlug>>>,
+) {
   return event.organization?.name ?? event.source.name;
 }
 
@@ -54,58 +60,31 @@ export default async function EventPage({ params }: EventPageProps) {
     notFound();
   }
 
-  const dateLabel = formatEventDate(
-    event.startAt,
-    event.endAt ?? null,
-    event.isAllDay,
-  );
-  const location = event.venue?.name ?? event.locationRaw;
-
   return (
     <article className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {event.organization ? (
-            <Badge variant="secondary">
-              <Link href={`/organisateur/${event.organization.slug}`}>
-                {event.organization.name}
-              </Link>
-            </Badge>
-          ) : (
-            <Badge variant="outline">{event.source.name}</Badge>
-          )}
-          {event.status === "cancelled" ? (
-            <Badge variant="destructive">Annulé</Badge>
-          ) : null}
-          {event.categories?.map((category) => (
-            <Badge key={category} variant="outline">
-              {category}
-            </Badge>
-          ))}
-        </div>
+        <EventBadges event={event} />
         <h1 className="font-heading text-4xl font-semibold tracking-tight">
           {event.title}
         </h1>
-        <p className="text-muted-foreground text-lg">{dateLabel}</p>
+        <p className="text-muted-foreground text-lg">
+          <EventDateLine event={event} />
+        </p>
       </div>
 
-      {location ? (
-        <p className="inline-flex items-center gap-2 text-base">
-          <MapPin />
-          {event.venue ? (
-            <Link href={`/lieu/${event.venue.slug}`} className="underline">
-              {location}
-            </Link>
-          ) : (
-            location
-          )}
-        </p>
-      ) : null}
+      <EventLocationLine event={event} className="text-base" />
 
       {event.description ? (
-        <div className="prose prose-neutral dark:prose-invert max-w-none whitespace-pre-wrap">
-          {event.description}
-        </div>
+        <EventDescriptionBlock
+          description={event.description}
+          className="prose prose-neutral dark:prose-invert max-w-none text-base"
+        />
+      ) : null}
+
+      {event.source?.name ? (
+        <p className="text-muted-foreground text-sm">
+          Source : {event.source.name}
+        </p>
       ) : null}
 
       <Separator />
@@ -115,16 +94,7 @@ export default async function EventPage({ params }: EventPageProps) {
           <CalendarPlus data-icon="inline-start" />
           Ajouter au calendrier
         </Button>
-        {event.sourceUrl ? (
-          <Button
-            variant="outline"
-            render={
-              <a href={event.sourceUrl} target="_blank" rel="noreferrer" />
-            }
-          >
-            Lien externe
-          </Button>
-        ) : null}
+        <EventActionLinks event={event} />
         {event.organization?.website ? (
           <Button
             variant="outline"

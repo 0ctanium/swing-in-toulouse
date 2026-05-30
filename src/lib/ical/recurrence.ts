@@ -4,6 +4,7 @@ import { toZonedTime } from "date-fns-tz";
 import { formatInTimeZone } from "date-fns-tz";
 
 import type { Event, Organization, Source, Venue } from "@/db/schema";
+import type { IcalStoredData } from "@/lib/ical/types";
 import { siteConfig } from "@/lib/site";
 
 const EXPANSION_MONTHS = 12;
@@ -22,6 +23,7 @@ export type EventOccurrence = {
   locationRaw: string | null;
   sourceUrl: string | null;
   url: string;
+  icalData: IcalStoredData | null;
   status: Event["status"];
   categories: string[] | null;
   organization: Organization | null;
@@ -182,6 +184,7 @@ function buildOccurrence(
     locationRaw: master.locationRaw,
     sourceUrl: master.sourceUrl,
     url: master.url ?? "",
+    icalData: master.icalData,
     status: master.status,
     categories: master.categories,
     organization: master.organization,
