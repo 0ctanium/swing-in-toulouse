@@ -9,8 +9,8 @@ import {
 } from "@/db/schema";
 import { generateEventSlug } from "@/lib/slug";
 import {
-  resolveSyncedCategories,
-  resolveSyncedLocation,
+  resolveSyncedCategoriesForUpsert,
+  resolveSyncedLocationForUpsert,
 } from "@/lib/sources/defaults";
 import { findOrCreateVenue } from "@/lib/venues/find-or-create";
 import { resolveVenueForSync } from "@/lib/venues/canonical";
@@ -20,6 +20,10 @@ import {
 } from "@/lib/events/confirmation";
 import { eventUrl } from "@/lib/site";
 
+import {
+  hasIcalDataChanges,
+  hasIcalRevisionChanges,
+} from "./changes";
 import { fetchAndParseIcalFeed } from "./parser";
 import type { NormalizedEvent } from "./types";
 import { resolveEventUid } from "./uid";
@@ -27,6 +31,7 @@ import { resolveEventUid } from "./uid";
 type UpsertStats = {
   created: number;
   updated: number;
+  unchanged: number;
   cancelled: number;
 };
 
@@ -64,30 +69,38 @@ async function upsertEvent(
     `${slugPrefix(source)}-${normalized.title}`,
     normalized.startAt,
   );
-  const location = resolveSyncedLocation(source, normalized);
-  const categories = resolveSyncedCategories(source, normalized);
+
+  let existing = await db.query.events.findFirst({
+    where: and(
+      eq(events.sourceId, source.id),
+      eq(events.sourceUid, sourceUid),
+    ),
+  });
+
+  if (!existing) {
+    existing = await db.query.events.findFirst({
+      where: eq(events.uid, uid),
+    });
+  }
+
+  const location = resolveSyncedLocationForUpsert(source, normalized, existing);
+  const categories = resolveSyncedCategoriesForUpsert(
+    source,
+    normalized,
+    existing,
+  );
   const venue = location
     ? await resolveVenueForSync(await findOrCreateVenue(location))
     : null;
 
-  let existing = await db.query.events.findFirst({
-    where: eq(events.uid, uid),
-  });
-
-  if (!existing && sourceUid) {
-    existing = await db.query.events.findFirst({
-      where: and(
-        eq(events.sourceId, source.id),
-        eq(events.sourceUid, sourceUid),
-      ),
-    });
-  }
-
   const slug = existing?.slug ?? (await resolveUniqueSlug(baseSlug, uid));
   const now = new Date();
+  const ownedBySource = !existing || existing.sourceId === source.id;
   const values = {
-    sourceId: source.id,
-    organizationId: source.organizationId,
+    sourceId: existing?.sourceId ?? source.id,
+    organizationId: ownedBySource
+      ? source.organizationId
+      : existing!.organizationId,
     venueId: venue?.id ?? null,
     uid,
     sourceUid,
@@ -113,10 +126,19 @@ async function upsertEvent(
     const materialChanges = hasMaterialEventChanges(existing, values);
     const hasChanges =
       materialChanges ||
-      JSON.stringify(existing.icalData ?? null) !==
-        JSON.stringify(values.icalData ?? null);
+      hasIcalDataChanges(existing.icalData, values.icalData) ||
+      hasIcalRevisionChanges(existing, {
+        sequence: normalized.sequence,
+        lastModified: normalized.lastModified,
+      });
 
     if (!hasChanges) {
+      await db
+        .update(events)
+        .set({ syncedAt: now })
+        .where(eq(events.id, existing.id));
+
+      stats.unchanged += 1;
       return;
     }
 
@@ -126,8 +148,6 @@ async function upsertEvent(
         ...values,
         slug: existing.slug,
         url: eventUrl(existing.slug),
-        sequence: existing.sequence + 1,
-        lastModified: now,
         syncedAt: now,
         ...(shouldClearEventConfirmation(existing, values)
           ? { confirmedAt: null }
@@ -188,7 +208,7 @@ export async function syncSource(source: SourceWithOrganization) {
     throw new Error(`Unsupported source type: ${source.type}`);
   }
 
-  const stats: UpsertStats = { created: 0, updated: 0, cancelled: 0 };
+  const stats: UpsertStats = { created: 0, updated: 0, unchanged: 0, cancelled: 0 };
 
   try {
     const parsedEvents = await fetchAndParseIcalFeed(source.url);

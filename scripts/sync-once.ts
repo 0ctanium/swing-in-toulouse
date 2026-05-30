@@ -16,7 +16,7 @@ async function main() {
 
     const organizer = result.source.organization?.name ?? "sans organisateur";
     console.log(
-      `✓ ${result.source.name} (${organizer}): ${result.stats?.created ?? 0} created, ${result.stats?.updated ?? 0} updated, ${result.stats?.cancelled ?? 0} removed from feed`,
+      `✓ ${result.source.name} (${organizer}): ${result.stats?.created ?? 0} created, ${result.stats?.updated ?? 0} updated, ${result.stats?.unchanged ?? 0} unchanged, ${result.stats?.cancelled ?? 0} removed from feed`,
     );
   }
 }
