@@ -18,7 +18,7 @@ export function SiteHeader({ isAdminMode = false }: SiteHeaderProps) {
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4">
         <Link href="/" className="flex flex-col gap-0.5">
           <span className="font-heading text-xl font-semibold tracking-tight">
-            Swing Toulouse
+            Swing in Toulouse
           </span>
           <span className="text-muted-foreground text-xs">
             Lindy Hop · Boogie · Bal swing
@@ -43,14 +43,7 @@ export function SiteHeader({ isAdminMode = false }: SiteHeaderProps) {
             >
               Admin
             </Link>
-          ) : (
-            <Link
-              href="/admin/login"
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              Connexion
-            </Link>
-          )}
+          ) : null}
         </nav>
       </div>
     </header>

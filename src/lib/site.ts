@@ -12,7 +12,7 @@ export const siteConfig = {
   url: env.NEXT_PUBLIC_SITE_URL,
   locale: "fr-FR",
   timezone: "Europe/Paris",
-  icalProdId: "-//Swing Toulouse//Agenda//FR",
+  icalProdId: "-//Swing in Toulouse//Agenda//FR",
   icalDomain: "swing-toulouse.fr",
 } as const;
 

@@ -1,4 +1,4 @@
-# Swing Toulouse
+# Swing in Toulouse
 
 Agenda swing à Toulouse — import automatique depuis des sources iCal, avec export iCal public.
 
