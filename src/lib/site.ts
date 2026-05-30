@@ -1,7 +1,7 @@
 import { env, getCronSyncUrl, isQStashConfigured } from "@/env";
 
 export const siteConfig = {
-  name: "Swing Toulouse",
+  name: "Swing In Toulouse",
   description:
     "L'agenda swing à Toulouse — soirées, cours, stages et festivals de Lindy Hop, Boogie Woogie et plus.",
   url: env.NEXT_PUBLIC_SITE_URL,

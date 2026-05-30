@@ -27,6 +27,10 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   metadataBase: new URL(siteConfig.url),
+  appleWebApp: {
+    capable: true,
+    title: "Swing In Toulouse",
+  },
 };
 
 export default async function RootLayout({
@@ -37,7 +41,10 @@ export default async function RootLayout({
   const isAdminMode = await isAdminAuthenticated();
 
   return (
-    <html lang="fr" className={`${dmSans.variable} ${fraunces.variable} h-full`}>
+    <html
+      lang="fr"
+      className={`${dmSans.variable} ${fraunces.variable} h-full`}
+    >
       <body className="flex min-h-full flex-col antialiased">
         <AdminModeBanner />
         <SiteHeader isAdminMode={isAdminMode} />
