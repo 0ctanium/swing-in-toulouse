@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { VenueConfirmPanel } from "@/components/admin/venue-confirm-panel";
 import { getVenueConfirmationOverview } from "@/lib/venues/matching";
 import { isGoogleMapsConfigured } from "@/env";
+import { adminMetadata } from "@/lib/metadata";
+
+export const metadata: Metadata = adminMetadata({
+  title: "Confirmer les adresses",
+  description:
+    "Validation des lieux avec Google Places — adresses formatées et coordonnées GPS.",
+});
 
 export const dynamic = "force-dynamic";
 

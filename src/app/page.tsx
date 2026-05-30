@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { addDays } from "date-fns";
 
@@ -10,7 +11,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getUpcomingEvents, listOrganizers } from "@/lib/events/queries";
+import { publicMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
+
+export const metadata: Metadata = publicMetadata({
+  title: { absolute: siteConfig.name },
+  description: siteConfig.description,
+  path: "/",
+});
 
 export const dynamic = "force-dynamic";
 

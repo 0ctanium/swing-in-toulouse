@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
 import { getEventWithOverrides } from "@/lib/events/overrides";
 import { getEventBySlug, resolveEventBySlug } from "@/lib/events/queries";
+import { publicMetadata } from "@/lib/metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -41,18 +42,16 @@ export async function generateMetadata({
   }
 
   const dateLabel = format(event.startAt, "d MMMM yyyy", { locale: fr });
+  const title = `${event.title} – ${dateLabel}`;
+  const description =
+    event.description ??
+    `${event.title} à Toulouse le ${dateLabel}, proposé par ${organizerLabel(event)}.`;
 
-  return {
-    title: `${event.title} – ${dateLabel}`,
-    description:
-      event.description ??
-      `${event.title} à Toulouse le ${dateLabel}, proposé par ${organizerLabel(event)}.`,
-    openGraph: {
-      title: event.title,
-      description: event.description ?? undefined,
-      type: "website",
-    },
-  };
+  return publicMetadata({
+    title,
+    description,
+    path: `/evenement/${slug}`,
+  });
 }
 
 export default async function EventPage({ params }: EventPageProps) {

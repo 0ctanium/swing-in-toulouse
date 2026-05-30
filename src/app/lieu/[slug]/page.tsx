@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { EventList } from "@/components/events/event-list";
 import { VenueHeader } from "@/components/venues/venue-header";
 import { getVenueBySlug, resolveVenueBySlug } from "@/lib/events/queries";
+import { publicMetadata } from "@/lib/metadata";
 import { getVenueDisplayAddress } from "@/lib/venues/display";
 
 export const dynamic = "force-dynamic";
@@ -22,31 +23,26 @@ export async function generateMetadata({
     return { title: "Lieu introuvable" };
   }
 
-  if (resolution.kind === "redirect") {
-    const canonical = await getVenueBySlug(resolution.targetSlug);
-    if (!canonical) {
-      return { title: "Lieu introuvable" };
-    }
+  const venue =
+    resolution.kind === "redirect"
+      ? await getVenueBySlug(resolution.targetSlug)
+      : resolution.venue;
 
-    const displayAddress = getVenueDisplayAddress(canonical);
-
-    return {
-      title: canonical.name,
-      description: displayAddress
-        ? `Événements swing à ${canonical.name} — ${displayAddress}.`
-        : `Événements swing à ${canonical.name}, ${canonical.city}.`,
-    };
+  if (!venue) {
+    return { title: "Lieu introuvable" };
   }
 
-  const venue = resolution.venue;
   const displayAddress = getVenueDisplayAddress(venue);
+  const canonicalSlug =
+    resolution.kind === "redirect" ? resolution.targetSlug : slug;
 
-  return {
+  return publicMetadata({
     title: venue.name,
     description: displayAddress
       ? `Événements swing à ${venue.name} — ${displayAddress}.`
       : `Événements swing à ${venue.name}, ${venue.city}.`,
-  };
+    path: `/lieu/${canonicalSlug}`,
+  });
 }
 
 export default async function VenuePage({ params }: VenuePageProps) {

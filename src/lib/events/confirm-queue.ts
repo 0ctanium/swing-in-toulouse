@@ -1,6 +1,6 @@
-import { and, isNull } from "drizzle-orm";
 import { startOfDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
+import { and, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { events } from "@/db/schema";
@@ -8,12 +8,12 @@ import { isEventConfirmed } from "@/lib/events/confirmation";
 import { loadOverridesForEvents } from "@/lib/events/overrides";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
 import {
-  expandMasterEventsToOccurrences,
-  getDefaultExpansionWindow,
-  getDefaultFromDate,
-} from "@/lib/ical/recurrence";
-import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
+  buildNextOccurrenceMap,
+  getEventScheduling,
+  sortEventsForAdmin,
+} from "@/lib/events/event-scheduling";
 import { siteConfig } from "@/lib/site";
+import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
 import type { EventMaster } from "@/db/schema";
 
 export type EventConfirmQueueItem = {
@@ -44,75 +44,6 @@ export type EventConfirmQueueItem = {
   currentPatch: EventOverridePatch;
 };
 
-async function buildNextOccurrenceMap(recurringMasters: EventMaster[]) {
-  const nextOccurrenceById = new Map<string, Date>();
-  if (recurringMasters.length === 0) {
-    return nextOccurrenceById;
-  }
-
-  const today = getDefaultFromDate();
-  const window = getDefaultExpansionWindow();
-  const occurrences = await expandMasterEventsToOccurrences(
-    recurringMasters,
-    window,
-  );
-
-  for (const occurrence of occurrences) {
-    if (occurrence.startAt < today) {
-      continue;
-    }
-
-    const existing = nextOccurrenceById.get(occurrence.masterEventId);
-    if (!existing || occurrence.startAt < existing) {
-      nextOccurrenceById.set(occurrence.masterEventId, occurrence.startAt);
-    }
-  }
-
-  return nextOccurrenceById;
-}
-
-function getQueueScheduling(
-  event: Pick<EventMaster, "id" | "startAt" | "endAt" | "recurrenceRule">,
-  today: Date,
-  nextOccurrenceById: Map<string, Date>,
-) {
-  if (event.recurrenceRule) {
-    const nextOccurrence = nextOccurrenceById.get(event.id);
-    if (nextOccurrence) {
-      return { isUpcoming: true, sortAt: nextOccurrence };
-    }
-  }
-
-  const end = event.endAt ?? event.startAt;
-  return {
-    isUpcoming: end >= today,
-    sortAt: event.startAt,
-  };
-}
-
-function partitionQueue<T extends Pick<EventMaster, "id" | "startAt" | "endAt" | "recurrenceRule">>(
-  rows: T[],
-  nextOccurrenceById: Map<string, Date>,
-) {
-  const today = startOfDay(toZonedTime(new Date(), siteConfig.timezone));
-  const upcoming: Array<{ row: T; sortAt: Date }> = [];
-  const past: Array<{ row: T; sortAt: Date }> = [];
-
-  for (const row of rows) {
-    const scheduling = getQueueScheduling(row, today, nextOccurrenceById);
-    if (scheduling.isUpcoming) {
-      upcoming.push({ row, sortAt: scheduling.sortAt });
-    } else {
-      past.push({ row, sortAt: scheduling.sortAt });
-    }
-  }
-
-  upcoming.sort((left, right) => left.sortAt.getTime() - right.sortAt.getTime());
-  past.sort((left, right) => right.sortAt.getTime() - left.sortAt.getTime());
-
-  return [...upcoming, ...past].map((entry) => entry.row);
-}
-
 export async function getEventConfirmQueue(): Promise<EventConfirmQueueItem[]> {
   const rows = await db.query.events.findMany({
     where: and(isNull(events.canonicalEventId), isNull(events.confirmedAt)),
@@ -125,10 +56,12 @@ export async function getEventConfirmQueue(): Promise<EventConfirmQueueItem[]> {
 
   const recurringMasters = rows.filter((row) => row.recurrenceRule) as EventMaster[];
   const nextOccurrenceById = await buildNextOccurrenceMap(recurringMasters);
-  const ordered = partitionQueue(rows, nextOccurrenceById);
-  const overrides = await loadOverridesForEvents(ordered.map((row) => row.id));
+  const sorted = sortEventsForAdmin(rows, nextOccurrenceById).filter(
+    (entry) => entry.isUpcoming,
+  );
+  const overrides = await loadOverridesForEvents(sorted.map((entry) => entry.row.id));
 
-  return ordered.map((event) => {
+  return sorted.map(({ row: event }) => {
     const masterOverride = overrides.master.get(event.id);
 
     return {
@@ -167,8 +100,20 @@ export async function getEventConfirmQueue(): Promise<EventConfirmQueueItem[]> {
 export async function getEventConfirmQueueStats() {
   const masters = await db.query.events.findMany({
     where: isNull(events.canonicalEventId),
-    columns: { id: true, confirmedAt: true },
+    columns: {
+      id: true,
+      confirmedAt: true,
+      startAt: true,
+      endAt: true,
+      recurrenceRule: true,
+    },
   });
+
+  const recurringMasters = masters.filter(
+    (event) => event.recurrenceRule,
+  ) as EventMaster[];
+  const nextOccurrenceById = await buildNextOccurrenceMap(recurringMasters);
+  const today = startOfDay(toZonedTime(new Date(), siteConfig.timezone));
 
   let pendingCount = 0;
   let confirmedCount = 0;
@@ -176,7 +121,7 @@ export async function getEventConfirmQueueStats() {
   for (const event of masters) {
     if (isEventConfirmed(event)) {
       confirmedCount += 1;
-    } else {
+    } else if (getEventScheduling(event, today, nextOccurrenceById).isUpcoming) {
       pendingCount += 1;
     }
   }

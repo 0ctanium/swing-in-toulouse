@@ -6,12 +6,14 @@ import {
   AGENDA_PREFERENCES_COOKIE,
   parseAgendaPreferences,
 } from "@/lib/events/agenda-preferences";
+import { publicMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicMetadata({
   title: "Agenda",
   description:
     "Calendrier complet des soirées, cours et stages swing à Toulouse.",
-};
+  path: "/agenda",
+});
 
 export default async function AgendaPage() {
   const cookieStore = await cookies();
