@@ -9,6 +9,10 @@ import {
   type SourceWithOrganization,
 } from "@/db/schema";
 import { generateEventSlug } from "@/lib/slug";
+import {
+  resolveSyncedCategories,
+  resolveSyncedLocation,
+} from "@/lib/sources/defaults";
 import { parseIcalLocation, venueSlugFromLocation } from "@/lib/venues/parse-location";
 import { resolveVenueForSync } from "@/lib/venues/canonical";
 import { eventUrl } from "@/lib/site";
@@ -89,8 +93,10 @@ async function upsertEvent(
     `${slugPrefix(source)}-${normalized.title}`,
     normalized.startAt,
   );
-  const venue = normalized.location
-    ? await resolveVenueForSync(await findOrCreateVenue(normalized.location))
+  const location = resolveSyncedLocation(source, normalized);
+  const categories = resolveSyncedCategories(source, normalized);
+  const venue = location
+    ? await resolveVenueForSync(await findOrCreateVenue(location))
     : null;
 
   let existing = await db.query.events.findFirst({
@@ -120,13 +126,13 @@ async function upsertEvent(
     startAt: normalized.startAt,
     endAt: normalized.endAt ?? null,
     isAllDay: normalized.isAllDay,
-    locationRaw: normalized.location ?? null,
+    locationRaw: location,
     url: eventUrl(slug),
     sourceUrl: normalized.sourceUrl ?? null,
     icalData: normalized.icalData ?? null,
     status: dbStatusFromNormalized(normalized.status),
     recurrenceRule: normalized.recurrenceRule ?? null,
-    categories: normalized.categories ?? null,
+    categories,
     sequence: normalized.sequence,
     lastModified: normalized.lastModified,
     syncedAt: now,

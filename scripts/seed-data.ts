@@ -17,6 +17,8 @@ type SeedSource = {
   url: string;
   type?: "ical";
   organizerSlug?: string;
+  defaultLocationRaw?: string;
+  defaultCategories?: string[];
 };
 
 const seedOrganizers: SeedOrganizer[] = [
@@ -46,6 +48,9 @@ const seedSources: SeedSource[] = [
     url: "https://calendar.google.com/calendar/ical/isa2a0r8gba8117gt13l9hr9b8%40group.calendar.google.com/public/basic.ics",
     type: "ical",
     organizerSlug: "trac",
+    defaultLocationRaw:
+      "TRAC L'Ecole, 43 Rue Alfred Dumeril, 31400 Toulouse, France",
+    defaultCategories: ["Lindy Hop", "Rock", "Blues", "Swing", "Boogie"],
   },
   {
     name: "Toulouse Tripe Swing — Balboa",
@@ -127,6 +132,8 @@ async function upsertSource(source: SeedSource) {
     type: source.type ?? "ical",
     url: source.url,
     organizationId,
+    defaultLocationRaw: source.defaultLocationRaw ?? null,
+    defaultCategories: source.defaultCategories ?? null,
   });
 
   console.log(`Source créée : ${source.name}`);

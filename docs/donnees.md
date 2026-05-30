@@ -76,6 +76,15 @@
     },
     ```
 
+  ### Valeurs par défaut (lieu et catégories)
+
+  Si un calendrier iCal omet souvent le lieu ou les catégories, vous pouvez définir des défauts **par source** :
+
+  - **Interface admin** — `/admin/sources` (lieu `location_raw` et catégories)
+  - **Seed** — champs optionnels `defaultLocationRaw` et `defaultCategories` dans `seedSources`
+
+  Les défauts s'appliquent à la synchronisation uniquement quand l'événement iCal n'a pas déjà ces champs. Relancez `pnpm run sync` après modification.
+
   ## Lieux : comment ça marche ?
 
   **Oui, les lieux sont créés automatiquement pendant la sync.**

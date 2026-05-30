@@ -97,6 +97,8 @@ export const sources = pgTable(
     organizationId: uuid("organization_id").references(() => organizations.id, {
       onDelete: "set null",
     }),
+    defaultLocationRaw: text("default_location_raw"),
+    defaultCategories: text("default_categories").array(),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

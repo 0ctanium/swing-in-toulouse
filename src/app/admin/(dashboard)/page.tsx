@@ -22,6 +22,10 @@ export default function AdminHomePage() {
             <Link href="/admin/venues" className="font-medium underline">
               Corriger les lieux en masse
             </Link>
+            {" · "}
+            <Link href="/admin/sources" className="font-medium underline">
+              Valeurs par défaut des sources
+            </Link>
           </p>
         </div>
         <AdminLogoutButton />
