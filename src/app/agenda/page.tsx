@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 
 import { AgendaView } from "@/components/events/agenda-view";
+import {
+  AGENDA_PREFERENCES_COOKIE,
+  parseAgendaPreferences,
+} from "@/lib/events/agenda-preferences";
 
 export const metadata: Metadata = {
   title: "Agenda",
@@ -8,7 +13,12 @@ export const metadata: Metadata = {
     "Calendrier complet des soirées, cours et stages swing à Toulouse.",
 };
 
-export default function AgendaPage() {
+export default async function AgendaPage() {
+  const cookieStore = await cookies();
+  const initialPreferences = parseAgendaPreferences(
+    cookieStore.get(AGENDA_PREFERENCES_COOKIE)?.value,
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -19,7 +29,7 @@ export default function AgendaPage() {
           Vue calendrier par mois ou sur 4 semaines, ou liste chronologique dans le planning.
         </p>
       </div>
-      <AgendaView />
+      <AgendaView initialPreferences={initialPreferences} />
     </div>
   );
 }

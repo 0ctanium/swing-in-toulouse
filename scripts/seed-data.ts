@@ -40,6 +40,30 @@ const seedOrganizers: SeedOrganizer[] = [
       "Studio Hop est une école de danse qui propose des cours de danse à Toulouse.",
     website: "https://www.studiohop.com/",
   },
+  {
+    name: "La Candela",
+    description:
+      "La Candela est une association qui organise des événements et propose de cours de swing à Toulouse.",
+    website: "https://www.lacandelatoulouse.com",
+  },
+  {
+    name: "144 Dance Avenue",
+    description:
+      "144 Dance Avenue est une école de danse qui propose des cours de danse à Toulouse.",
+    website: "https://www.144danceavenue.com",
+  },
+  {
+    name: "King Louis Club",
+    description:
+      "King Louis Club est un club de swing qui propose des cours de swing à Toulouse.",
+    website: "https://www.kinglouisclub.com",
+  },
+  {
+    name: "Funky Swing Dancers",
+    description:
+      "Funky Swing Dancers est une association qui organise des événements et propose des cours de swing à Toulouse.",
+    website: "https://www.funkyswingdancers.com",
+  },
 ];
 
 const seedSources: SeedSource[] = [
@@ -50,39 +74,33 @@ const seedSources: SeedSource[] = [
     organizerSlug: "trac",
     defaultLocationRaw:
       "TRAC L'Ecole, 43 Rue Alfred Dumeril, 31400 Toulouse, France",
-    defaultCategories: ["Lindy Hop", "Rock", "Blues", "Swing", "Boogie"],
+    defaultCategories: ["Lindy Hop", "Rock", "Boogie", "Swing", "Blues"],
   },
   {
     name: "Toulouse Tripe Swing — Balboa",
     url: "https://ics.teamup.com/feed/ksxbw7fp28sigfndvd/4916134.ics",
     type: "ical",
-    organizerSlug: "toulouse-tripe-swing",
+    defaultCategories: ["Balboa"],
+    // organizerSlug: "toulouse-tripe-swing",
   },
   {
     name: "Toulouse Tripe Swing — Blues",
     url: "https://ics.teamup.com/feed/ksxbw7fp28sigfndvd/4916052.ics",
     type: "ical",
-    organizerSlug: "toulouse-tripe-swing",
+    defaultCategories: ["Blues"],
+    // organizerSlug: "toulouse-tripe-swing",
   },
   {
     name: "Toulouse Tripe Swing — Swing",
     url: "https://ics.teamup.com/feed/ksxbw7fp28sigfndvd/4916051.ics",
     type: "ical",
-    organizerSlug: "toulouse-tripe-swing",
+    defaultCategories: ["Swing", "Lindy Hop"],
+    // organizerSlug: "toulouse-tripe-swing",
   },
 ];
 
 async function upsertOrganizer(organizer: SeedOrganizer) {
   const slug = generateOrganizationSlug(organizer.name);
-
-  const existing = await db.query.organizations.findFirst({
-    where: eq(organizations.slug, slug),
-  });
-
-  if (existing) {
-    console.log(`Organisateur déjà présent : ${organizer.name}`);
-    return existing;
-  }
 
   const [created] = await db
     .insert(organizations)
@@ -92,6 +110,14 @@ async function upsertOrganizer(organizer: SeedOrganizer) {
       description: organizer.description,
       website: organizer.website,
     })
+    .onConflictDoUpdate({
+      target: [organizations.slug],
+      set: {
+        name: organizer.name,
+        description: organizer.description,
+        website: organizer.website,
+      },
+    })
     .returning();
 
   console.log(`Organisateur créé : ${organizer.name}`);
@@ -100,15 +126,6 @@ async function upsertOrganizer(organizer: SeedOrganizer) {
 
 async function upsertSource(source: SeedSource) {
   const slug = generateSourceSlug(source.name);
-
-  const existing = await db.query.sources.findFirst({
-    where: eq(sources.slug, slug),
-  });
-
-  if (existing) {
-    console.log(`Source déjà présente : ${source.name}`);
-    return;
-  }
 
   let organizationId: string | null = null;
 
@@ -126,15 +143,28 @@ async function upsertSource(source: SeedSource) {
     organizationId = organizer.id;
   }
 
-  await db.insert(sources).values({
-    slug,
-    name: source.name,
-    type: source.type ?? "ical",
-    url: source.url,
-    organizationId,
-    defaultLocationRaw: source.defaultLocationRaw ?? null,
-    defaultCategories: source.defaultCategories ?? null,
-  });
+  await db
+    .insert(sources)
+    .values({
+      slug,
+      name: source.name,
+      type: source.type ?? "ical",
+      url: source.url,
+      organizationId,
+      defaultLocationRaw: source.defaultLocationRaw ?? null,
+      defaultCategories: source.defaultCategories ?? null,
+    })
+    .onConflictDoUpdate({
+      target: [sources.slug],
+      set: {
+        name: source.name,
+        type: source.type ?? "ical",
+        url: source.url,
+        organizationId,
+        defaultLocationRaw: source.defaultLocationRaw ?? null,
+        defaultCategories: source.defaultCategories ?? null,
+      },
+    });
 
   console.log(`Source créée : ${source.name}`);
 }

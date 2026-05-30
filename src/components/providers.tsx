@@ -1,6 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { useState } from "react";
 
 import { AdminModeProvider } from "@/components/admin/admin-mode-provider";
@@ -25,11 +26,13 @@ export function Providers({
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AdminModeProvider isAdminMode={isAdminMode}>
-        {children}
-        <Toaster richColors closeButton position="top-center" />
-      </AdminModeProvider>
-    </QueryClientProvider>
+    <NuqsAdapter>
+      <QueryClientProvider client={queryClient}>
+        <AdminModeProvider isAdminMode={isAdminMode}>
+          {children}
+          <Toaster richColors closeButton position="top-center" />
+        </AdminModeProvider>
+      </QueryClientProvider>
+    </NuqsAdapter>
   );
 }

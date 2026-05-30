@@ -44,11 +44,18 @@ export default async function RootLayout({
     <html
       lang="fr"
       className={`${dmSans.variable} ${fraunces.variable} h-full`}
+      suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col antialiased">
+      <body
+        className="flex min-h-full flex-col antialiased"
+        suppressHydrationWarning
+      >
         <AdminModeBanner />
         <SiteHeader isAdminMode={isAdminMode} />
-        <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10">
+        <main
+          className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10"
+          suppressHydrationWarning
+        >
           <Providers isAdminMode={isAdminMode}>{children}</Providers>
         </main>
         <SiteFooter />

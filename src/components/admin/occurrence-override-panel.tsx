@@ -115,8 +115,9 @@ export function OccurrenceOverridePanel({
         </h2>
         <p className="text-muted-foreground text-sm">
           {overriddenCount} occurrence{overriddenCount > 1 ? "s" : ""}{" "}
-          {overriddenCount > 1 ? "modifiées" : "modifiée"} sur {occurrences.length}{" "}
-          à venir. Sélectionnez une date dans le calendrier ou via la recherche.
+          {overriddenCount > 1 ? "modifiées" : "modifiée"} sur{" "}
+          {occurrences.length} à venir. Sélectionnez une date dans le calendrier
+          ou via la recherche.
         </p>
       </div>
 
@@ -174,7 +175,9 @@ export function OccurrenceOverridePanel({
                   const dayKey = format(day, "yyyy-MM-dd");
                   const dayOccurrences = occurrencesByDay.get(dayKey) ?? [];
                   const hasOccurrence = dayOccurrences.length > 0;
-                  const hasOverride = dayOccurrences.some((item) => item.hasOverride);
+                  const hasOverride = dayOccurrences.some(
+                    (item) => item.hasOverride,
+                  );
                   const isSelected = dayOccurrences.some(
                     (item) => item.startAt === selectedStartAt,
                   );
@@ -191,10 +194,12 @@ export function OccurrenceOverridePanel({
                       }}
                       className={cn(
                         "relative flex min-h-11 flex-col items-center justify-center border-r border-b p-1 text-xs last:border-r-0",
-                        !isSameMonth(day, month) && "bg-muted/20 text-muted-foreground",
+                        !isSameMonth(day, month) &&
+                          "bg-muted/20 text-muted-foreground",
                         hasOccurrence && "hover:bg-primary/10",
                         !hasOccurrence && "cursor-default opacity-40",
-                        isSelected && "bg-primary/15 ring-2 ring-primary ring-inset",
+                        isSelected &&
+                          "bg-primary/15 ring-2 ring-primary ring-inset",
                         isToday(day) && "font-semibold",
                       )}
                     >
@@ -225,28 +230,29 @@ export function OccurrenceOverridePanel({
             </div>
 
             <div className="flex max-h-48 flex-col gap-1 overflow-y-auto border-t pt-3">
-              {(query ? filteredOccurrences : filteredOccurrences.slice(0, 20)).map(
-                (occurrence) => (
-                  <button
-                    key={occurrence.id}
-                    type="button"
-                    onClick={() => selectOccurrence(occurrence.startAt)}
-                    className={cn(
-                      "flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted/60",
-                      occurrence.startAt === selectedStartAt && "bg-muted",
-                    )}
-                  >
-                    <span className="truncate">
-                      {formatOccurrenceLabel(occurrence.startAt)}
-                    </span>
-                    {occurrence.hasOverride ? (
-                      <Badge variant="outline" className="shrink-0 text-[10px]">
-                        modifié
-                      </Badge>
-                    ) : null}
-                  </button>
-                ),
-              )}
+              {(query
+                ? filteredOccurrences
+                : filteredOccurrences.slice(0, 20)
+              ).map((occurrence) => (
+                <button
+                  key={occurrence.id}
+                  type="button"
+                  onClick={() => selectOccurrence(occurrence.startAt)}
+                  className={cn(
+                    "flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted/60",
+                    occurrence.startAt === selectedStartAt && "bg-muted",
+                  )}
+                >
+                  <span className="truncate">
+                    {formatOccurrenceLabel(occurrence.startAt)}
+                  </span>
+                  {occurrence.hasOverride ? (
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      modifié
+                    </Badge>
+                  ) : null}
+                </button>
+              ))}
               {!query && occurrences.length > 20 ? (
                 <p className="text-muted-foreground px-2 py-1 text-xs">
                   {occurrences.length - 20} autres — utilisez la recherche ou le
@@ -272,7 +278,6 @@ export function OccurrenceOverridePanel({
               synced={{
                 title: selected.title,
                 description: selected.description,
-                locationRaw: selected.locationRaw,
                 organizationId: selected.organizationId,
                 venueId: selected.venueId,
                 categories: selected.categories,
