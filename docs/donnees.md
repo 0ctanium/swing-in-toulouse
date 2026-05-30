@@ -100,11 +100,11 @@
 
   **Pourquoi le nom et pas l'adresse pour le slug ?** Deux événements au même endroit avec des variantes d'adresse dans iCal retombaient sur des lieux différents. Le slug sur le nom regroupe naturellement ; les doublons restants se fusionnent via `/admin/venues`.
 
-  La sync **ne réécrit pas** un lieu existant (nom, adresse). Les corrections se font sur `/admin/venues/confirm` (Google Places + GPS) ou en base — **pas besoin d'un système d'override** comme pour les événements.
+  La sync **ne réécrit pas** un lieu existant (nom, adresse). Les corrections se font depuis `/admin/venues` (action **Confirmer** / Google Places + GPS) ou via **Modifier** — **pas besoin d'un système d'override** comme pour les événements.
 
   ### Confirmer les adresses (Google)
 
-  Sur `/admin/venues/confirm`, recherchez chaque lieu via Google Places, validez l'adresse et les coordonnées GPS. Un lieu actif est « confirmé » quand `address_confirmed_at` et les coordonnées sont renseignés.
+  Sur `/admin/venues`, filtrez « À confirmer » puis utilisez l'action **Confirmer** (dialogue Google Places). Un lieu actif est « confirmé » quand `address_confirmed_at` et les coordonnées sont renseignés.
 
   Variable d'environnement : `GOOGLE_MAPS_API_KEY` (Places API + Geocoding API). La clé reste côté serveur — l'autocomplete admin passe par `/api/admin/places/*`.
 

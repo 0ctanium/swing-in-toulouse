@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { adminVenuesPendingFilterHref } from "@/lib/venues/admin-venues-params";
+
 type VenuesQualityAlertProps = {
   count: number;
   linkToConfirm?: boolean;
@@ -24,10 +26,10 @@ export function VenuesQualityAlert({
       </p>
       {linkToConfirm ? (
         <Link
-          href="/admin/venues/confirm"
+          href={adminVenuesPendingFilterHref()}
           className="mt-2 inline-block font-medium underline"
         >
-          Confirmer les adresses →
+          Afficher les lieux à confirmer →
         </Link>
       ) : null}
     </div>

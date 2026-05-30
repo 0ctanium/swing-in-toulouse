@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import { adminVenuesPendingFilterHref } from "@/lib/venues/admin-venues-params";
+
 type VenuesPendingAlertProps = {
   pendingCount: number;
 };
@@ -21,10 +23,10 @@ export function VenuesPendingAlert({ pendingCount }: VenuesPendingAlertProps) {
         (coordonnées GPS manquantes).
       </p>
       <Link
-        href="/admin/venues/confirm"
+        href={adminVenuesPendingFilterHref()}
         className="mt-2 inline-block font-medium underline"
       >
-        Confirmer les adresses →
+        Afficher les lieux à confirmer →
       </Link>
     </div>
   );

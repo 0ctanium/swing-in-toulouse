@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -43,13 +44,33 @@ export function VenueRedirectsPanel({ redirects }: VenueRedirectsPanelProps) {
               key={redirect.aliasId}
               className="flex flex-wrap items-center justify-between gap-2 rounded-md px-1 py-1.5"
             >
-              <span>
-                <span className="font-medium">{redirect.aliasName}</span>
-                <span className="text-muted-foreground">
-                  {" "}
-                  → {redirect.canonicalName}
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+                  <Link
+                    href={`/lieu/${redirect.aliasSlug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium hover:underline"
+                  >
+                    /lieu/{redirect.aliasSlug}
+                  </Link>
+                  <span className="text-muted-foreground">→</span>
+                  <Link
+                    href={`/lieu/${redirect.canonicalSlug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium hover:underline"
+                  >
+                    /lieu/{redirect.canonicalSlug}
+                  </Link>
+                </div>
+                <span className="text-muted-foreground text-xs">
+                  {redirect.aliasName} → {redirect.canonicalName}
+                  {redirect.eventCount > 0
+                    ? ` · ${redirect.eventCount} événement${redirect.eventCount > 1 ? "s" : ""}`
+                    : ""}
                 </span>
-              </span>
+              </div>
               <Button
                 type="button"
                 variant="ghost"

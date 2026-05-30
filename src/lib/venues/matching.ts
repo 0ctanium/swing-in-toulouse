@@ -17,6 +17,7 @@ import {
   loadMasterVenueOverrides,
 } from "@/lib/venues/effective-venue";
 import { findVenuesNeedingReview, getVenueIcalIssues } from "@/lib/venues/quality";
+import { enrichAdminVenueRow } from "@/lib/venues/admin-venue-row";
 import {
   buildVenueConfirmPageData,
   isVenueAddressConfirmed,
@@ -55,10 +56,9 @@ export type VenueWithStats = {
   overrideCount: number;
 };
 
-export type VenueAssignment = {
-  sourceVenueId: string;
-  permanent?: boolean;
-};
+import type { VenueAssignment } from "@/lib/venues/assignments";
+
+export type { VenueAssignment } from "@/lib/venues/assignments";
 
 export type LocationVenueConflict = {
   locationKey: string;
@@ -670,6 +670,35 @@ export async function getVenueMatchingOverview() {
     activeQualityIssueCount: venuesNeedingReview.filter(
       (venue) => venue.eventCount > 0,
     ).length,
+  };
+}
+
+export async function getAdminVenuesPageData() {
+  const overview = await getVenueMatchingOverview();
+
+  return {
+    venues: overview.venues
+      .filter((venue) => !venue.canonicalVenueId)
+      .map(enrichAdminVenueRow),
+    allVenues: overview.venues,
+    venueRedirects: overview.venueRedirects,
+    similarGroupCount: overview.similarGroups.length,
+    locationConflictCount: overview.locationConflicts.length,
+    hasMergeWork:
+      overview.similarGroups.length > 0 ||
+      overview.locationConflicts.length > 0,
+    pendingConfirmationCount: overview.pendingConfirmationCount,
+    activeQualityIssueCount: overview.activeQualityIssueCount,
+  };
+}
+
+export async function getVenueMergePageData() {
+  const overview = await getVenueMatchingOverview();
+
+  return {
+    venues: overview.venues,
+    similarGroups: overview.similarGroups,
+    locationConflicts: overview.locationConflicts,
   };
 }
 

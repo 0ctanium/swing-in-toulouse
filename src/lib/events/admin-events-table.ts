@@ -234,9 +234,12 @@ async function loadMasterEvents() {
   });
 }
 
-async function loadMergedMasterEvents() {
+async function loadMergedMasterEvents(): Promise<AdminEventRow[]> {
   const rows = (await loadMasterEvents()) as AdminEventRow[];
-  return mergeMastersWithMasterOverrides(rows);
+  const merged = await mergeMastersWithMasterOverrides(
+    rows as unknown as EventMaster[],
+  );
+  return merged as unknown as AdminEventRow[];
 }
 
 export async function getAdminEventsFilterOptions(): Promise<AdminEventsFilterOptions> {
@@ -311,7 +314,9 @@ export async function listAdminEventsTable(
   const page = Math.max(1, query.page);
 
   const rows = await loadMergedMasterEvents();
-  const recurringMasters = rows.filter((row) => row.recurrenceRule);
+  const recurringMasters = rows.filter((row) =>
+    row.recurrenceRule,
+  ) as unknown as EventMaster[];
   const nextOccurrenceById = await buildNextOccurrenceMap(recurringMasters);
 
   const tableRows = sortEventsForAdmin(rows, nextOccurrenceById).map(

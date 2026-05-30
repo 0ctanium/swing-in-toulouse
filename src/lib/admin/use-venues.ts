@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { fetchJson, fetchJsonVoid } from "@/lib/api/fetch-json";
 import { adminQueryKeys } from "@/lib/admin/query-keys";
 import type { VenueCategory } from "@/db/schema";
-import type { VenueAssignment } from "@/lib/venues/matching";
+import type { VenueAssignment } from "@/lib/venues/assignments";
+import type { VenueWriteInput } from "@/lib/venues/schemas";
 
 export type BulkAssignPayload = {
   targetVenueId: string;
@@ -114,21 +115,63 @@ export function useConfirmVenue() {
   });
 }
 
-type UpdateVenueInput = {
-  venueId: string;
-  category: VenueCategory | null;
+async function createVenue(input: VenueWriteInput) {
+  return fetchJson(
+    "/api/admin/venues",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+    "Création impossible.",
+  );
+}
+
+export function useCreateVenue() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationKey: [...adminQueryKeys.venues(), "create"],
+    mutationFn: createVenue,
+    onSuccess: () => {
+      router.refresh();
+    },
+  });
+}
+
+type UpdateVenueBody = {
+  name?: string;
+  address?: string | null;
+  city?: string;
+  category?: VenueCategory | null;
 };
 
-async function updateVenue({ venueId, category }: UpdateVenueInput) {
+type UpdateVenueInput = {
+  venueId: string;
+} & UpdateVenueBody;
+
+async function updateVenue({ venueId, ...body }: UpdateVenueInput) {
   return fetchJson(
     `/api/admin/venues/${venueId}`,
     {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category }),
+      body: JSON.stringify(body),
     },
     "Mise à jour impossible.",
   );
+}
+
+export function useUpdateVenue(venueId: string) {
+  const router = useRouter();
+
+  return useMutation({
+    mutationKey: [...adminQueryKeys.venues(), venueId, "update"],
+    mutationFn: (input: UpdateVenueBody) => updateVenue({ venueId, ...input }),
+    onSuccess: () => {
+      router.refresh();
+    },
+  });
 }
 
 export function useUpdateVenueCategory() {
@@ -136,7 +179,13 @@ export function useUpdateVenueCategory() {
 
   return useMutation({
     mutationKey: [...adminQueryKeys.venues(), "update-category"],
-    mutationFn: updateVenue,
+    mutationFn: ({
+      venueId,
+      category,
+    }: {
+      venueId: string;
+      category: VenueCategory | null;
+    }) => updateVenue({ venueId, category }),
     onSuccess: () => {
       router.refresh();
     },

@@ -83,7 +83,7 @@ export async function mergeMastersWithMasterOverrides<T extends EventMaster>(
       return merged as T;
     }
 
-    return { ...merged, overrides: master.overrides } as T;
+    return { ...merged, overrides: master.overrides } as unknown as T;
   });
 }
 
