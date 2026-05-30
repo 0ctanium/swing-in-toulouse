@@ -97,7 +97,10 @@ export default async function AdminEventPage({ params }: AdminEventPageProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <Link href="/admin" className="text-muted-foreground text-sm hover:underline">
+        <Link
+          href="/admin"
+          className="text-muted-foreground text-sm hover:underline"
+        >
           ← Retour aux événements
         </Link>
         <h1 className="font-heading text-3xl font-semibold">{synced.title}</h1>
@@ -109,10 +112,14 @@ export default async function AdminEventPage({ params }: AdminEventPageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Valeurs synchronisées (iCal)</CardTitle>
+          <CardTitle className="text-lg">
+            Valeurs synchronisées (iCal)
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
-          <p>{formatEventDate(synced.startAt, synced.endAt, synced.isAllDay)}</p>
+          <p>
+            {formatEventDate(synced.startAt, synced.endAt, synced.isAllDay)}
+          </p>
           <p>
             {synced.organization?.name ?? "—"} ·{" "}
             {synced.venue?.name ?? synced.locationRaw ?? "—"}
@@ -143,7 +150,6 @@ export default async function AdminEventPage({ params }: AdminEventPageProps) {
         synced={{
           title: synced.title,
           description: synced.description,
-          locationRaw: synced.locationRaw,
           organizationId: synced.organizationId,
           venueId: synced.venueId,
           categories: synced.categories,

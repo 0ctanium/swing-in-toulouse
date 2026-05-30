@@ -1,4 +1,4 @@
-import { addMonths, startOfDay } from "date-fns";
+import { addMonths, startOfDay, subMonths } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 
 import { formatInTimeZone } from "date-fns-tz";
@@ -38,9 +38,11 @@ export type ExpansionWindow = {
   to: Date;
 };
 
-export function getDefaultExpansionWindow(from = getDefaultFromDate()): ExpansionWindow {
+export function getDefaultExpansionWindow(
+  from = getDefaultFromDate(),
+): ExpansionWindow {
   return {
-    from,
+    from: subMonths(from, 1),
     to: addMonths(from, EXPANSION_MONTHS),
   };
 }
@@ -236,12 +238,7 @@ export async function expandMasterEventsToOccurrences(
     }
 
     occurrences.push(
-      buildOccurrence(
-        master,
-        master.startAt,
-        master.endAt,
-        master.title,
-      ),
+      buildOccurrence(master, master.startAt, master.endAt, master.title),
     );
   }
 

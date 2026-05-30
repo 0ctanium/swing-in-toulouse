@@ -40,7 +40,6 @@ type EventBadgesProps = {
 
 export function EventBadges({ event, className }: EventBadgesProps) {
   const tentativeLabel = formatIcalStatus(event.icalData?.icalStatus);
-  const organizerLabel = event.organization?.name ?? event.source.name;
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
@@ -50,12 +49,10 @@ export function EventBadges({ event, className }: EventBadgesProps) {
             href={`/organisateur/${event.organization.slug}`}
             className="hover:underline"
           >
-            {organizerLabel}
+            {event.organization.name}
           </Link>
         </Badge>
-      ) : (
-        <Badge variant="outline">{organizerLabel}</Badge>
-      )}
+      ) : null}
       {event.status === "cancelled" ? (
         <Badge variant="destructive">Annulé</Badge>
       ) : null}

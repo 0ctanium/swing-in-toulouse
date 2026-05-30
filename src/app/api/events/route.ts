@@ -2,7 +2,10 @@ import { endOfDay, startOfDay } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { buildAdminMetaForOccurrences, type AdminEventMeta } from "@/lib/events/admin-meta";
+import {
+  buildAdminMetaForOccurrences,
+  type AdminEventMeta,
+} from "@/lib/events/admin-meta";
 import { getUpcomingEvents } from "@/lib/events/queries";
 import { loadOverridesForEvents } from "@/lib/events/overrides";
 import { serializeOccurrence } from "@/lib/events/serialize";
@@ -11,12 +14,14 @@ import { isAdminAuthenticated } from "@/lib/admin/auth";
 const querySchema = z.object({
   from: z.coerce.date(),
   to: z.coerce.date(),
+  limit: z.coerce.number().optional(),
 });
 
 export async function GET(request: NextRequest) {
   const parsed = querySchema.safeParse({
     from: request.nextUrl.searchParams.get("from"),
     to: request.nextUrl.searchParams.get("to"),
+    limit: request.nextUrl.searchParams.get("limit"),
   });
 
   if (!parsed.success) {
@@ -26,7 +31,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { from, to } = parsed.data;
+  const { from, to, limit } = parsed.data;
 
   if (from > to) {
     return NextResponse.json(
@@ -38,6 +43,7 @@ export async function GET(request: NextRequest) {
   const events = await getUpcomingEvents({
     from: startOfDay(from),
     to: endOfDay(to),
+    limit,
   });
 
   const isAdmin = await isAdminAuthenticated();

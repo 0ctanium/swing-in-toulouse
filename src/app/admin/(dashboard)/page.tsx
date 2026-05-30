@@ -2,10 +2,20 @@ import Link from "next/link";
 
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { AgendaView } from "@/components/events/agenda-view";
+import { cookies } from "next/headers";
+import {
+  AGENDA_PREFERENCES_COOKIE,
+  parseAgendaPreferences,
+} from "@/lib/events/agenda-preferences";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminHomePage() {
+export default async function AdminHomePage() {
+  const cookieStore = await cookies();
+  const initialPreferences = parseAgendaPreferences(
+    cookieStore.get(AGENDA_PREFERENCES_COOKIE)?.value,
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -34,7 +44,7 @@ export default function AdminHomePage() {
         </div>
         <AdminLogoutButton />
       </div>
-      <AgendaView />
+      <AgendaView initialPreferences={initialPreferences} />
     </div>
   );
 }

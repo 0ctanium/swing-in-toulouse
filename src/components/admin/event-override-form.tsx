@@ -21,7 +21,6 @@ type EventOverrideFormProps = {
   synced: {
     title: string;
     description: string | null;
-    locationRaw: string | null;
     organizationId: string | null;
     venueId: string | null;
     categories: string[] | null;
@@ -70,9 +69,6 @@ export function EventOverrideForm({
   const [description, setDescription] = useState(
     currentPatch.description ?? synced.description ?? "",
   );
-  const [locationRaw, setLocationRaw] = useState(
-    currentPatch.locationRaw ?? synced.locationRaw ?? "",
-  );
   const [organizationId, setOrganizationId] = useState(
     currentPatch.organizationId ?? synced.organizationId ?? "",
   );
@@ -82,9 +78,7 @@ export function EventOverrideForm({
   const [categories, setCategories] = useState(
     (currentPatch.categories ?? synced.categories ?? []).join(", "),
   );
-  const [status, setStatus] = useState(
-    currentPatch.status ?? synced.status,
-  );
+  const [status, setStatus] = useState(currentPatch.status ?? synced.status);
   const [sourceUrl, setSourceUrl] = useState(
     currentPatch.sourceUrl ?? synced.sourceUrl ?? "",
   );
@@ -112,9 +106,6 @@ export function EventOverrideForm({
     if (description !== (synced.description ?? "")) {
       patch.description = description.trim() || null;
     }
-    if (locationRaw !== (synced.locationRaw ?? "")) {
-      patch.locationRaw = locationRaw.trim() || null;
-    }
     if (organizationId !== (synced.organizationId ?? "")) {
       patch.organizationId = organizationId || null;
     }
@@ -128,9 +119,7 @@ export function EventOverrideForm({
       .filter(Boolean);
 
     const syncedCategories = synced.categories ?? [];
-    if (
-      JSON.stringify(parsedCategories) !== JSON.stringify(syncedCategories)
-    ) {
+    if (JSON.stringify(parsedCategories) !== JSON.stringify(syncedCategories)) {
       patch.categories = parsedCategories;
     }
 
@@ -193,14 +182,6 @@ export function EventOverrideForm({
             className="min-h-24 rounded-lg border bg-background px-3 py-2"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-          />
-        </Field>
-
-        <Field label="Lieu (texte brut)" syncedValue={synced.locationRaw}>
-          <input
-            className="rounded-lg border bg-background px-3 py-2"
-            value={locationRaw}
-            onChange={(event) => setLocationRaw(event.target.value)}
           />
         </Field>
 
@@ -292,7 +273,7 @@ export function EventOverrideForm({
             {pending ? "Enregistrement…" : "Enregistrer l'override"}
           </Button>
           <Button variant="outline" onClick={resetOverride} disabled={pending}>
-            Supprimer l'override
+            Supprimer l&apos;override
           </Button>
           {scope === "master" ? (
             <Button variant="ghost" render={<Link href="/admin" />}>
