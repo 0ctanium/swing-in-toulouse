@@ -22,6 +22,7 @@ function toVenuePickerOption(venue: typeof venues.$inferSelect): VenueWithStats 
     addressConfirmedAt: venue.addressConfirmedAt,
     canonicalVenueId: venue.canonicalVenueId,
     canonicalVenueName: null,
+    category: venue.category,
     aliasCount: 0,
     eventCount: 0,
     overrideCount: 0,

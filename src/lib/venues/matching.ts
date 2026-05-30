@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { eventOverrides, events, venues } from "@/db/schema";
+import { eventOverrides, events, venues, type VenueCategory } from "@/db/schema";
 import { upsertEventOverride } from "@/lib/events/overrides";
 import {
   applyPermanentVenueAliases,
@@ -49,6 +49,7 @@ export type VenueWithStats = {
   addressConfirmedAt: Date | null;
   canonicalVenueId: string | null;
   canonicalVenueName: string | null;
+  category: VenueCategory | null;
   aliasCount: number;
   eventCount: number;
   overrideCount: number;
@@ -173,6 +174,7 @@ export async function listVenuesWithStats(): Promise<VenueWithStats[]> {
     canonicalVenueName: venue.canonicalVenueId
       ? (venueNameById.get(venue.canonicalVenueId) ?? null)
       : null,
+    category: venue.category,
     aliasCount: aliasCountByCanonical.get(venue.id) ?? 0,
     eventCount: effectiveCounts.get(venue.id) ?? 0,
     overrideCount: overrideCountByVenue.get(venue.id) ?? 0,

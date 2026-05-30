@@ -5,11 +5,14 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { GooglePlacesAutocomplete } from "@/components/admin/google-places-autocomplete";
+import { VenueCategorySelect } from "@/components/admin/venue-category-select";
 import { VenueIcalQualityBadge } from "@/components/admin/venue-ical-quality-badge";
 import { VenuesQualityAlert } from "@/components/admin/venues-quality-alert";
+import { VenueCategoryBadge } from "@/components/venues/venue-category-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirmVenue } from "@/lib/admin/use-venues";
+import type { VenueCategory } from "@/db/schema";
 import type { PlaceDetails } from "@/lib/google/places";
 import type { VenueConfirmationEntry } from "@/lib/venues/confirmation";
 
@@ -181,7 +184,10 @@ function ConfirmedVenuesList({ venues }: { venues: VenueConfirmationEntry[] }) {
               <div className="rounded-md border px-3 py-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="font-medium">{venue.name}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{venue.name}</p>
+                      <VenueCategoryBadge category={venue.category} />
+                    </div>
                     <VenueIcalQualityBadge issues={venue.iCalIssues} />
                     <p className="text-muted-foreground text-xs">
                       Slug :{" "}
@@ -214,6 +220,14 @@ function ConfirmedVenuesList({ venues }: { venues: VenueConfirmationEntry[] }) {
                         {venue.longitude.toFixed(5)}
                       </p>
                     ) : null}
+                    <label className="mt-1 flex max-w-xs flex-col gap-1 text-xs">
+                      <span className="font-medium">Catégorie</span>
+                      <VenueCategorySelect
+                        venueId={venue.id}
+                        value={venue.category}
+                        saveOnChange
+                      />
+                    </label>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Link
@@ -301,6 +315,9 @@ function VenueConfirmRow({
     [mode, venue],
   );
   const [venueName, setVenueName] = useState(venue.name);
+  const [category, setCategory] = useState<VenueCategory | null>(
+    venue.category,
+  );
   const [originalPlace] = useState<PlaceDetails | null>(initialPlace);
   const [selectedPlace, setSelectedPlace] = useState<PlaceDetails | null>(
     initialPlace,
@@ -334,6 +351,7 @@ function VenueConfirmRow({
         venueId: venue.id,
         placeId: selectedPlace.placeId,
         name: trimmedName,
+        category,
       });
 
       toast.success(
@@ -412,6 +430,21 @@ function VenueConfirmRow({
             confirmation.
           </p>
         ) : null}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor={`venue-category-${venue.id}`}
+          className="text-sm font-medium"
+        >
+          Catégorie
+        </label>
+        <VenueCategorySelect
+          venueId={venue.id}
+          value={category}
+          disabled={pending}
+          onChange={setCategory}
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">

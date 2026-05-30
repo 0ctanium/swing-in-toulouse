@@ -30,6 +30,15 @@ export const syncStatusEnum = pgEnum("sync_status", [
 
 export const sourceTypeEnum = pgEnum("source_type", ["ical"]);
 
+export const venueCategoryEnum = pgEnum("venue_category", [
+  "school",
+  "bar",
+  "hall",
+  "exterior",
+  "association",
+  "other",
+]);
+
 export const venues = pgTable(
   "venues",
   {
@@ -49,6 +58,7 @@ export const venues = pgTable(
       (): AnyPgColumn => venues.id,
       { onDelete: "restrict" },
     ),
+    category: venueCategoryEnum("category"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -292,6 +302,7 @@ export type Source = typeof sources.$inferSelect;
 export type NewSource = typeof sources.$inferInsert;
 export type Venue = typeof venues.$inferSelect;
 export type NewVenue = typeof venues.$inferInsert;
+export type VenueCategory = (typeof venueCategoryEnum.enumValues)[number];
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
 export type EventOverride = typeof eventOverrides.$inferSelect;

@@ -1,5 +1,6 @@
 import { MapPin } from "lucide-react";
 
+import { VenueCategoryBadge } from "@/components/venues/venue-category-badge";
 import type { Venue } from "@/db/schema";
 import { getVenueDisplayAddress, getVenueMapsUrl } from "@/lib/venues/display";
 
@@ -9,6 +10,7 @@ type VenueHeaderProps = {
     | "name"
     | "address"
     | "city"
+    | "category"
     | "formattedAddress"
     | "googlePlaceId"
     | "latitude"
@@ -23,9 +25,12 @@ export function VenueHeader({ venue }: VenueHeaderProps) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h1 className="font-heading text-3xl font-semibold tracking-tight">
-        {venue.name}
-      </h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">
+          {venue.name}
+        </h1>
+        <VenueCategoryBadge category={venue.category} />
+      </div>
 
       {displayAddress ? (
         <div className="flex flex-col gap-2">

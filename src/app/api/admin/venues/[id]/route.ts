@@ -5,15 +5,19 @@ import { z } from "zod";
 import { db } from "@/db";
 import { venues } from "@/db/schema";
 import { assertAdminApi } from "@/lib/admin/auth";
+import { venueCategoryValues } from "@/lib/venues/categories";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+const venueCategorySchema = z.enum(venueCategoryValues).nullable();
+
 const bodySchema = z.object({
   name: z.string().min(1).optional(),
   address: z.string().nullable().optional(),
   city: z.string().min(1).optional(),
+  category: venueCategorySchema.optional(),
 });
 
 export async function PUT(request: NextRequest, context: RouteContext) {
@@ -55,6 +59,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         ? { address: parsed.data.address?.trim() || null }
         : {}),
       ...(parsed.data.city !== undefined ? { city: parsed.data.city.trim() } : {}),
+      ...(parsed.data.category !== undefined
+        ? { category: parsed.data.category }
+        : {}),
       ...(clearsConfirmation
         ? {
             latitude: null,

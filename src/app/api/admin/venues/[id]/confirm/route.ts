@@ -11,6 +11,7 @@ import {
   getPlaceDetails,
   GooglePlacesError,
 } from "@/lib/google/places";
+import { venueCategoryValues } from "@/lib/venues/categories";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -20,6 +21,7 @@ const bodySchema = z.object({
   placeId: z.string().min(1).optional(),
   query: z.string().min(3).optional(),
   name: z.string().trim().min(1),
+  category: z.enum(venueCategoryValues).nullable().optional(),
 });
 
 export async function POST(request: NextRequest, context: RouteContext) {
@@ -69,6 +71,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
         googlePlaceId: place.placeId,
         formattedAddress: place.formattedAddress,
         addressConfirmedAt: new Date(),
+        ...(parsed.data.category !== undefined
+          ? { category: parsed.data.category }
+          : {}),
       })
       .where(eq(venues.id, id))
       .returning();

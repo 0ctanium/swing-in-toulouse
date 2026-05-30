@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 
 import { fetchJson, fetchJsonVoid } from "@/lib/api/fetch-json";
 import { adminQueryKeys } from "@/lib/admin/query-keys";
+import type { VenueCategory } from "@/db/schema";
 import type { VenueAssignment } from "@/lib/venues/matching";
 
 export type BulkAssignPayload = {
@@ -77,15 +78,25 @@ type ConfirmVenueInput = {
   venueId: string;
   placeId: string;
   name: string;
+  category?: VenueCategory | null;
 };
 
-async function confirmVenue({ venueId, placeId, name }: ConfirmVenueInput) {
+async function confirmVenue({
+  venueId,
+  placeId,
+  name,
+  category,
+}: ConfirmVenueInput) {
   return fetchJson(
     `/api/admin/venues/${venueId}/confirm`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ placeId, name }),
+      body: JSON.stringify({
+        placeId,
+        name,
+        ...(category !== undefined ? { category } : {}),
+      }),
     },
     "Confirmation impossible.",
   );
@@ -97,6 +108,35 @@ export function useConfirmVenue() {
   return useMutation({
     mutationKey: [...adminQueryKeys.venues(), "confirm"],
     mutationFn: confirmVenue,
+    onSuccess: () => {
+      router.refresh();
+    },
+  });
+}
+
+type UpdateVenueInput = {
+  venueId: string;
+  category: VenueCategory | null;
+};
+
+async function updateVenue({ venueId, category }: UpdateVenueInput) {
+  return fetchJson(
+    `/api/admin/venues/${venueId}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category }),
+    },
+    "Mise à jour impossible.",
+  );
+}
+
+export function useUpdateVenueCategory() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationKey: [...adminQueryKeys.venues(), "update-category"],
+    mutationFn: updateVenue,
     onSuccess: () => {
       router.refresh();
     },
