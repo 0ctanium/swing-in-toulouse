@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { icalFeedRedirect } from "@/lib/ical/redirect";
 import { emptyIcalPayload } from "@/lib/ical/payload";
 import { resolveEventBySlug } from "@/lib/events/queries";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,13 @@ export async function GET(request: Request, context: RouteContext) {
 
   const eventSlug =
     resolution.kind === "redirect" ? resolution.targetSlug : resolution.event.slug;
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: "anonymous",
+    event: "event_ical_downloaded",
+    properties: { event_slug: eventSlug },
+  });
 
   return icalFeedRedirect(request, {
     ...emptyIcalPayload(),

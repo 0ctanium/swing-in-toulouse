@@ -1,5 +1,8 @@
+"use client";
+
 import { CalendarDays, ExternalLink, Link2, MapPin, User } from "lucide-react";
 import Link from "next/link";
+import posthog from "posthog-js";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -250,7 +253,19 @@ export function EventActionLinks({
           className={
             layout === "stack" ? "h-8 w-full justify-start px-2" : undefined
           }
-          render={<a href={event.sourceUrl} target="_blank" rel="noreferrer" />}
+          render={
+            <a
+              href={event.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() =>
+                posthog.capture("event_external_link_clicked", {
+                  event_slug: event.slug,
+                  source_url: event.sourceUrl,
+                })
+              }
+            />
+          }
         >
           <Link2 data-icon="inline-start" />
           Lien externe
