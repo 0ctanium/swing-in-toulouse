@@ -17,7 +17,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     db
       .select({ slug: organizations.slug, updatedAt: organizations.updatedAt })
       .from(organizations),
-    db.select({ slug: venues.slug, updatedAt: venues.updatedAt }).from(venues),
+    db
+      .select({ slug: venues.slug, updatedAt: venues.updatedAt })
+      .from(venues)
+      .where(isNull(venues.canonicalVenueId)),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [

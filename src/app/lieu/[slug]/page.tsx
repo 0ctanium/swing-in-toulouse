@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { EventList } from "@/components/events/event-list";
-import { getVenueBySlug } from "@/lib/events/queries";
+import { getVenueBySlug, resolveVenueBySlug } from "@/lib/events/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +14,25 @@ export async function generateMetadata({
   params,
 }: VenuePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const venue = await getVenueBySlug(slug);
+  const resolution = await resolveVenueBySlug(slug);
 
-  if (!venue) {
+  if (!resolution) {
     return { title: "Lieu introuvable" };
   }
+
+  if (resolution.kind === "redirect") {
+    const canonical = await getVenueBySlug(resolution.targetSlug);
+    if (!canonical) {
+      return { title: "Lieu introuvable" };
+    }
+
+    return {
+      title: canonical.name,
+      description: `Événements swing à ${canonical.name}, ${canonical.city}.`,
+    };
+  }
+
+  const venue = resolution.venue;
 
   return {
     title: venue.name,
@@ -28,7 +42,17 @@ export async function generateMetadata({
 
 export default async function VenuePage({ params }: VenuePageProps) {
   const { slug } = await params;
-  const venue = await getVenueBySlug(slug);
+  const resolution = await resolveVenueBySlug(slug);
+
+  if (!resolution) {
+    notFound();
+  }
+
+  if (resolution.kind === "redirect") {
+    redirect(`/lieu/${resolution.targetSlug}`);
+  }
+
+  const venue = await getVenueBySlug(resolution.venue.slug);
 
   if (!venue) {
     notFound();

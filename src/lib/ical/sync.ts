@@ -10,6 +10,7 @@ import {
 } from "@/db/schema";
 import { generateEventSlug } from "@/lib/slug";
 import { parseIcalLocation, venueSlugFromLocation } from "@/lib/venues/parse-location";
+import { resolveVenueForSync } from "@/lib/venues/canonical";
 import { eventUrl } from "@/lib/site";
 
 import { fetchAndParseIcalFeed } from "./parser";
@@ -89,7 +90,7 @@ async function upsertEvent(
     normalized.startAt,
   );
   const venue = normalized.location
-    ? await findOrCreateVenue(normalized.location)
+    ? await resolveVenueForSync(await findOrCreateVenue(normalized.location))
     : null;
 
   let existing = await db.query.events.findFirst({

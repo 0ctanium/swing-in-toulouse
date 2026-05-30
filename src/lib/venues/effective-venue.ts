@@ -1,9 +1,13 @@
 import { and, eq, inArray, isNull, or } from "drizzle-orm";
 
 import { db } from "@/db";
-import { eventOverrides, events } from "@/db/schema";
+import { eventOverrides, events, venues } from "@/db/schema";
 import type { EventMaster } from "@/db/schema";
 import type { EventOccurrence } from "@/lib/ical/recurrence";
+import {
+  loadVenueCanonicalMap,
+  resolveCanonicalVenueId,
+} from "@/lib/venues/canonical";
 
 export async function loadMasterVenueOverrides(eventIds: string[]) {
   if (eventIds.length === 0) {
@@ -31,12 +35,25 @@ export async function loadMasterVenueOverrides(eventIds: string[]) {
 export function effectiveVenueIdForEvent(
   event: { id: string; venueId: string | null },
   overrides: Map<string, string | null>,
+  canonicalMap?: ReturnType<typeof import("@/lib/venues/canonical").buildVenueCanonicalMap>,
 ) {
+  let venueId: string | null;
+
   if (overrides.has(event.id)) {
-    return overrides.get(event.id) ?? null;
+    venueId = overrides.get(event.id) ?? null;
+  } else {
+    venueId = event.venueId;
   }
 
-  return event.venueId;
+  if (!venueId) {
+    return null;
+  }
+
+  if (canonicalMap) {
+    return resolveCanonicalVenueId(venueId, canonicalMap);
+  }
+
+  return venueId;
 }
 
 export async function getEventIdsOverriddenToVenue(venueId: string) {
@@ -54,6 +71,12 @@ export async function fetchMastersForVenue(
   venueId: string,
   options?: { includeCancelled?: boolean },
 ) {
+  const aliasRows = await db.query.venues.findMany({
+    where: eq(venues.canonicalVenueId, venueId),
+    columns: { id: true },
+  });
+  const syncedVenueIds = [venueId, ...aliasRows.map((row) => row.id)];
+
   const [overriddenEventIds] = await Promise.all([
     getEventIdsOverriddenToVenue(venueId),
   ]);
@@ -66,10 +89,13 @@ export async function fetchMastersForVenue(
 
   if (overriddenEventIds.length > 0) {
     filters.push(
-      or(eq(events.venueId, venueId), inArray(events.id, overriddenEventIds))!,
+      or(
+        inArray(events.venueId, syncedVenueIds),
+        inArray(events.id, overriddenEventIds),
+      )!,
     );
   } else {
-    filters.push(eq(events.venueId, venueId));
+    filters.push(inArray(events.venueId, syncedVenueIds));
   }
 
   return db.query.events.findMany({
@@ -91,7 +117,7 @@ export function filterOccurrencesForVenue(
 }
 
 export async function computeEffectiveVenueEventCounts() {
-  const [eventRows, overrideRows] = await Promise.all([
+  const [eventRows, overrideRows, canonicalMap] = await Promise.all([
     db.query.events.findMany({
       where: isNull(events.canonicalEventId),
       columns: { id: true, venueId: true },
@@ -100,6 +126,7 @@ export async function computeEffectiveVenueEventCounts() {
       where: isNull(eventOverrides.occurrenceStartAt),
       columns: { eventId: true, patch: true },
     }),
+    loadVenueCanonicalMap(),
   ]);
 
   const overrides = new Map<string, string | null>();
@@ -111,7 +138,11 @@ export async function computeEffectiveVenueEventCounts() {
 
   const counts = new Map<string, number>();
   for (const event of eventRows) {
-    const effectiveVenueId = effectiveVenueIdForEvent(event, overrides);
+    const effectiveVenueId = effectiveVenueIdForEvent(
+      event,
+      overrides,
+      canonicalMap,
+    );
     if (!effectiveVenueId) {
       continue;
     }

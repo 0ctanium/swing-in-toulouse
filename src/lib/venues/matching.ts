@@ -4,7 +4,16 @@ import { db } from "@/db";
 import { eventOverrides, events, venues } from "@/db/schema";
 import { upsertEventOverride } from "@/lib/events/overrides";
 import {
+  applyPermanentVenueAliases,
+  clearVenueAlias,
+  listVenueRedirects,
+  loadVenueCanonicalMap,
+  VenueCanonicalError,
+  type VenueRedirectEntry,
+} from "@/lib/venues/canonical";
+import {
   computeEffectiveVenueEventCounts,
+  effectiveVenueIdForEvent,
   loadMasterVenueOverrides,
 } from "@/lib/venues/effective-venue";
 import { findVenuesNeedingReview, getVenueIcalIssues } from "@/lib/venues/quality";
@@ -38,8 +47,16 @@ export type VenueWithStats = {
   googlePlaceId: string | null;
   formattedAddress: string | null;
   addressConfirmedAt: Date | null;
+  canonicalVenueId: string | null;
+  canonicalVenueName: string | null;
+  aliasCount: number;
   eventCount: number;
   overrideCount: number;
+};
+
+export type VenueAssignment = {
+  sourceVenueId: string;
+  permanent?: boolean;
 };
 
 export type LocationVenueConflict = {
@@ -60,6 +77,7 @@ export type SimilarVenueGroup = {
 
 export type BulkVenueAssignFilter = {
   targetVenueId: string;
+  assignments?: VenueAssignment[];
   sourceVenueIds?: string[];
   locationKey?: string;
   locationKeys?: string[];
@@ -71,6 +89,7 @@ export type BulkVenueAssignResult = {
   updated: number;
   skipped: number;
   eventIds: string[];
+  aliasesCreated: number;
   debug?: VenueAssignmentDebug;
 };
 
@@ -127,6 +146,18 @@ export async function listVenuesWithStats(): Promise<VenueWithStats[]> {
     );
   }
 
+  const aliasCountByCanonical = new Map<string, number>();
+  for (const venue of venueRows) {
+    if (venue.canonicalVenueId) {
+      aliasCountByCanonical.set(
+        venue.canonicalVenueId,
+        (aliasCountByCanonical.get(venue.canonicalVenueId) ?? 0) + 1,
+      );
+    }
+  }
+
+  const venueNameById = new Map(venueRows.map((venue) => [venue.id, venue.name]));
+
   return venueRows.map((venue) => ({
     id: venue.id,
     slug: venue.slug,
@@ -138,6 +169,11 @@ export async function listVenuesWithStats(): Promise<VenueWithStats[]> {
     googlePlaceId: venue.googlePlaceId,
     formattedAddress: venue.formattedAddress,
     addressConfirmedAt: venue.addressConfirmedAt,
+    canonicalVenueId: venue.canonicalVenueId,
+    canonicalVenueName: venue.canonicalVenueId
+      ? (venueNameById.get(venue.canonicalVenueId) ?? null)
+      : null,
+    aliasCount: aliasCountByCanonical.get(venue.id) ?? 0,
     eventCount: effectiveCounts.get(venue.id) ?? 0,
     overrideCount: overrideCountByVenue.get(venue.id) ?? 0,
   }));
@@ -148,13 +184,14 @@ export function groupSimilarVenues(venueList: VenueWithStats[]): SimilarVenueGro
   const groups: SimilarVenueGroup[] = [];
 
   for (const venue of venueList) {
-    if (assigned.has(venue.id)) {
+    if (assigned.has(venue.id) || venue.canonicalVenueId) {
       continue;
     }
 
     const similar = venueList.filter(
       (candidate) =>
         candidate.id !== venue.id &&
+        !candidate.canonicalVenueId &&
         !assigned.has(candidate.id) &&
         namesSimilar(candidate.name, venue.name),
     );
@@ -263,7 +300,31 @@ async function resolveTargetVenue(targetVenueId: string) {
     throw new VenueMatchingError("Lieu cible introuvable.");
   }
 
+  if (venue.canonicalVenueId) {
+    throw new VenueMatchingError(
+      "Le lieu cible est un alias. Choisissez le lieu principal.",
+    );
+  }
+
   return venue;
+}
+
+function resolveSourceVenueIds(filter: BulkVenueAssignFilter) {
+  if (filter.assignments?.length) {
+    return filter.assignments.map((assignment) => assignment.sourceVenueId);
+  }
+
+  return filter.sourceVenueIds ?? [];
+}
+
+function permanentSourceVenueIds(filter: BulkVenueAssignFilter) {
+  if (filter.assignments?.length) {
+    return filter.assignments
+      .filter((assignment) => assignment.permanent)
+      .map((assignment) => assignment.sourceVenueId);
+  }
+
+  return [];
 }
 
 export async function findEventsForVenueAssignment(
@@ -275,6 +336,10 @@ export async function findEventsForVenueAssignment(
   events: Array<{ id: string; venueId: string | null }>;
   debug?: VenueAssignmentDebug;
 }> {
+  const sourceVenueIds =
+    filter.assignments?.map((assignment) => assignment.sourceVenueId) ??
+    filter.sourceVenueIds;
+
   let candidates = await db.query.events.findMany({
     where: isNull(events.canonicalEventId),
     columns: {
@@ -296,13 +361,10 @@ export async function findEventsForVenueAssignment(
   const overrides = await loadMasterVenueOverrides(
     candidates.map((row) => row.id),
   );
+  const canonicalMap = await loadVenueCanonicalMap();
 
   function effectiveVenueId(row: (typeof candidates)[number]) {
-    if (overrides.has(row.id)) {
-      return overrides.get(row.id) ?? null;
-    }
-
-    return row.venueId;
+    return effectiveVenueIdForEvent(row, overrides, canonicalMap);
   }
 
   const locationKeys = [
@@ -311,7 +373,7 @@ export async function findEventsForVenueAssignment(
   ];
 
   const hasSourceFilter =
-    Boolean(filter.sourceVenueIds?.length) || locationKeys.length > 0;
+    Boolean(sourceVenueIds?.length) || locationKeys.length > 0;
 
   const sampleTraces: VenueAssignmentEventTrace[] = [];
   let excludedNoSourceMatch = 0;
@@ -326,9 +388,9 @@ export async function findEventsForVenueAssignment(
         : null;
 
       const matchesSourceVenue = Boolean(
-        filter.sourceVenueIds?.length &&
+        sourceVenueIds?.length &&
           effective &&
-          filter.sourceVenueIds.includes(effective),
+          sourceVenueIds.includes(effective),
       );
 
       const matchesLocation =
@@ -422,7 +484,7 @@ export async function findEventsForVenueAssignment(
     debug = {
       filter: {
         targetVenueId: filter.targetVenueId,
-        sourceVenueIds: filter.sourceVenueIds,
+        sourceVenueIds: sourceVenueIds,
         locationKey: filter.locationKey,
         locationKeys: filter.locationKeys,
         eventIds: filter.eventIds,
@@ -457,10 +519,15 @@ export async function bulkAssignVenue(
   filter: BulkVenueAssignFilter & { debug?: boolean },
 ): Promise<BulkVenueAssignResult> {
   const targetVenue = await resolveTargetVenue(filter.targetVenueId);
+  const sourceVenueIds = resolveSourceVenueIds(filter);
+  const permanentSourceIds = permanentSourceVenueIds(filter).filter(
+    (id) => id !== filter.targetVenueId,
+  );
 
   venueMatchingLog("bulkAssignVenue start", {
     target: { id: targetVenue.id, name: targetVenue.name, slug: targetVenue.slug },
-    sourceVenueIds: filter.sourceVenueIds,
+    sourceVenueIds,
+    permanentSourceIds,
     locationKey: filter.locationKey,
     locationKeys: filter.locationKeys,
     eventIds: filter.eventIds?.length ?? 0,
@@ -469,7 +536,7 @@ export async function bulkAssignVenue(
 
   if (
     !filter.eventIds?.length &&
-    !filter.sourceVenueIds?.length &&
+    !sourceVenueIds.length &&
     !filter.locationKey &&
     !filter.locationKeys?.length
   ) {
@@ -479,7 +546,7 @@ export async function bulkAssignVenue(
   }
 
   if (
-    filter.sourceVenueIds?.includes(filter.targetVenueId) &&
+    sourceVenueIds.includes(filter.targetVenueId) &&
     !filter.locationKey &&
     !filter.locationKeys?.length &&
     !filter.eventIds?.length
@@ -489,9 +556,10 @@ export async function bulkAssignVenue(
     );
   }
 
-  const { events: matchingEvents, debug } = await findEventsForVenueAssignment(
-    filter,
-  );
+  const { events: matchingEvents, debug } = await findEventsForVenueAssignment({
+    ...filter,
+    sourceVenueIds,
+  });
   const eventIds = matchingEvents.map((row) => row.id);
 
   venueMatchingLog("bulkAssignVenue matched", {
@@ -509,11 +577,26 @@ export async function bulkAssignVenue(
     venueMatchingLog("override upserted", { eventId, targetVenueId: filter.targetVenueId });
   }
 
+  let aliasesCreated = 0;
+  if (permanentSourceIds.length > 0) {
+    try {
+      await applyPermanentVenueAliases(filter.targetVenueId, permanentSourceIds);
+      aliasesCreated = permanentSourceIds.length;
+    } catch (error) {
+      if (error instanceof VenueCanonicalError) {
+        throw new VenueMatchingError(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   const result: BulkVenueAssignResult = {
     matched: eventIds.length,
     updated,
     skipped: 0,
     eventIds,
+    aliasesCreated,
     debug,
   };
 
@@ -525,14 +608,25 @@ export async function bulkAssignVenue(
   return result;
 }
 
+export async function removeVenueRedirect(aliasVenueId: string) {
+  await clearVenueAlias(aliasVenueId);
+}
+
 export async function getVenueMatchingOverview() {
-  const [venueList, locationConflicts] = await Promise.all([
+  const [venueList, locationConflicts, redirectRows] = await Promise.all([
     listVenuesWithStats(),
     findLocationVenueConflicts(),
+    listVenueRedirects(),
   ]);
 
+  const effectiveCounts = await computeEffectiveVenueEventCounts();
+  const venueRedirects: VenueRedirectEntry[] = redirectRows.map((row) => ({
+    ...row,
+    eventCount: effectiveCounts.get(row.aliasId) ?? 0,
+  }));
+
   const similarGroups = groupSimilarVenues(
-    venueList.filter((venue) => venue.eventCount > 0),
+    venueList.filter((venue) => venue.eventCount > 0 && !venue.canonicalVenueId),
   );
   const venuesNeedingReview = findVenuesNeedingReview(venueList);
   const confirmationEntries: VenueConfirmationEntry[] = venueList.map(
@@ -569,6 +663,7 @@ export async function getVenueMatchingOverview() {
     venues: venueList,
     similarGroups,
     locationConflicts,
+    venueRedirects,
     pendingConfirmationCount,
     activeQualityIssueCount: venuesNeedingReview.filter(
       (venue) => venue.eventCount > 0,

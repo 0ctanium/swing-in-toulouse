@@ -45,6 +45,10 @@ export const venues = pgTable(
     addressConfirmedAt: timestamp("address_confirmed_at", {
       withTimezone: true,
     }),
+    canonicalVenueId: uuid("canonical_venue_id").references(
+      (): AnyPgColumn => venues.id,
+      { onDelete: "restrict" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -53,7 +57,10 @@ export const venues = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (table) => [index("venues_slug_idx").on(table.slug)],
+  (table) => [
+    index("venues_slug_idx").on(table.slug),
+    index("venues_canonical_venue_id_idx").on(table.canonicalVenueId),
+  ],
 );
 
 export const organizations = pgTable(
@@ -217,8 +224,14 @@ export const syncLogs = pgTable(
   (table) => [index("sync_logs_created_at_idx").on(table.createdAt)],
 );
 
-export const venuesRelations = relations(venues, ({ many }) => ({
+export const venuesRelations = relations(venues, ({ many, one }) => ({
   events: many(events),
+  canonicalVenue: one(venues, {
+    fields: [venues.canonicalVenueId],
+    references: [venues.id],
+    relationName: "venueAliases",
+  }),
+  aliasVenues: many(venues, { relationName: "venueAliases" }),
 }));
 
 export const organizationsRelations = relations(organizations, ({ many }) => ({

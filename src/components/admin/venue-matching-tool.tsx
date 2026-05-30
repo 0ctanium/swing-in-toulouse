@@ -1,15 +1,21 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  VenueMergeCard,
+  VenueMergeCardGrid,
+} from "@/components/admin/venue-merge-card";
+import { VenueRedirectsPanel } from "@/components/admin/venue-redirects-panel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { VenueRedirectEntry } from "@/lib/venues/canonical";
 import type {
   LocationVenueConflict,
   SimilarVenueGroup,
+  VenueAssignment,
   VenueWithStats,
 } from "@/lib/venues/matching";
 import type { VenueAssignmentDebug } from "@/lib/venues/matching-debug";
@@ -18,46 +24,35 @@ type VenueMatchingToolProps = {
   venues: VenueWithStats[];
   similarGroups: SimilarVenueGroup[];
   locationConflicts: LocationVenueConflict[];
+  venueRedirects: VenueRedirectEntry[];
 };
 
 type BulkAssignPayload = {
   targetVenueId: string;
+  assignments?: VenueAssignment[];
   sourceVenueIds?: string[];
   locationKey?: string;
   locationKeys?: string[];
 };
 
-function VenueSelect({
-  venues,
-  value,
-  onChange,
-  placeholder,
-}: {
-  venues: VenueWithStats[];
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-}) {
-  return (
-    <select
-      className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-    >
-      <option value="">{placeholder}</option>
-      {venues.map((venue) => (
-        <option key={venue.id} value={venue.id}>
-          {venue.name} ({venue.eventCount} évén.)
-        </option>
-      ))}
-    </select>
-  );
+function buildAssignments(
+  sourceIds: string[],
+  targetId: string,
+  permanentById: Record<string, boolean>,
+): VenueAssignment[] {
+  return sourceIds
+    .filter((id) => id !== targetId)
+    .map((sourceVenueId) => ({
+      sourceVenueId,
+      permanent: permanentById[sourceVenueId] ?? false,
+    }));
 }
 
 export function VenueMatchingTool({
   venues,
   similarGroups,
   locationConflicts,
+  venueRedirects,
 }: VenueMatchingToolProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -65,16 +60,21 @@ export function VenueMatchingTool({
   const [selectedSourceVenueIds, setSelectedSourceVenueIds] = useState<string[]>(
     [],
   );
+  const [permanentBySourceId, setPermanentBySourceId] = useState<
+    Record<string, boolean>
+  >({});
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [previewCount, setPreviewCount] = useState<number | null>(null);
 
   const filteredVenues = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const eligible = venues.filter((venue) => !venue.canonicalVenueId);
+
     if (!query) {
-      return venues;
+      return eligible;
     }
 
-    return venues.filter(
+    return eligible.filter(
       (venue) =>
         venue.name.toLowerCase().includes(query) ||
         venue.slug.includes(query) ||
@@ -82,13 +82,32 @@ export function VenueMatchingTool({
     );
   }, [search, venues]);
 
+  function setPrimary(venueId: string) {
+    setTargetVenueId(venueId);
+    setSelectedSourceVenueIds((current) =>
+      current.filter((id) => id !== venueId),
+    );
+    setPreviewCount(null);
+  }
+
   function toggleSourceVenue(venueId: string) {
+    if (venueId === targetVenueId) {
+      return;
+    }
+
     setSelectedSourceVenueIds((current) =>
       current.includes(venueId)
         ? current.filter((id) => id !== venueId)
         : [...current, venueId],
     );
     setPreviewCount(null);
+  }
+
+  function togglePermanent(sourceVenueId: string) {
+    setPermanentBySourceId((current) => ({
+      ...current,
+      [sourceVenueId]: !current[sourceVenueId],
+    }));
   }
 
   async function runBulkAssign(
@@ -100,7 +119,6 @@ export function VenueMatchingTool({
 
     try {
       const body = { ...payload, dryRun, debug: true };
-      console.log("[venue-matching] client request", body);
 
       const response = await fetch("/api/admin/venues/bulk-assign", {
         method: "POST",
@@ -112,19 +130,8 @@ export function VenueMatchingTool({
         error?: string;
         matched?: number;
         updated?: number;
-        debug?: Pick<VenueAssignmentDebug, "stages"> & {
-          matchedEventIds?: string[];
-          sampleTraces?: VenueAssignmentDebug["sampleTraces"];
-          locationKeysUsed?: string[];
-          target?: string;
-        };
+        aliasesCreated?: number;
       };
-
-      console.log("[venue-matching] client response", {
-        ok: response.ok,
-        status: response.status,
-        data,
-      });
 
       if (!response.ok) {
         throw new Error(data.error ?? "Correction impossible.");
@@ -134,30 +141,33 @@ export function VenueMatchingTool({
         setPreviewCount(data.matched ?? 0);
         toast.info(
           `${data.matched ?? 0} événement${data.matched === 1 ? "" : "s"} concerné${data.matched === 1 ? "" : "s"}.`,
-          {
-            description: data.debug
-              ? `Voir la console (F12) pour le détail — exclu cible: ${data.debug.stages.excludedAlreadyAtTarget}, sans match: ${data.debug.stages.excludedNoSourceMatch}`
-              : undefined,
-          },
         );
         return;
       }
 
       const updated = data.updated ?? 0;
-      if (updated === 0) {
-        toast.warning("Aucun événement à corriger (déjà à jour).", {
-          description: data.debug
-            ? `Traces dans la console — déjà cible: ${data.debug.stages.excludedAlreadyAtTarget}, sans match: ${data.debug.stages.excludedNoSourceMatch}`
-            : "Ouvrez la console (F12) pour le détail.",
-        });
+      const aliasesCreated = data.aliasesCreated ?? 0;
+
+      if (updated === 0 && aliasesCreated === 0) {
+        toast.warning("Aucun changement appliqué.");
       } else {
         toast.success(
-          `${updated} événement${updated === 1 ? "" : "s"} corrigé${updated === 1 ? "" : "s"}.`,
+          [
+            updated > 0
+              ? `${updated} événement${updated === 1 ? "" : "s"} corrigé${updated === 1 ? "" : "s"}`
+              : null,
+            aliasesCreated > 0
+              ? `${aliasesCreated} alias permanent${aliasesCreated === 1 ? "" : "s"}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
         );
       }
 
       setSelectedSourceVenueIds([]);
       setTargetVenueId("");
+      setPermanentBySourceId({});
       setPreviewCount(null);
       router.refresh();
     } catch (assignError) {
@@ -171,49 +181,31 @@ export function VenueMatchingTool({
     }
   }
 
-  function applySimilarGroup(group: SimilarVenueGroup, targetId: string) {
-    const sourceIds = group.venues
-      .map((venue) => venue.id)
-      .filter((id) => id !== targetId);
-
-    return runBulkAssign(
-      {
-        targetVenueId: targetId,
-        sourceVenueIds: sourceIds,
-        locationKeys: group.locationKeys,
-      },
-      `group:${group.key}`,
-    );
-  }
-
-  function applyLocationConflict(
-    conflict: LocationVenueConflict,
-    targetId: string,
-  ) {
-    return runBulkAssign(
-      {
-        targetVenueId: targetId,
-        locationKey: conflict.locationKey,
-      },
-      `location:${conflict.locationKey}`,
-    );
-  }
+  const manualSourceIds = selectedSourceVenueIds.filter(
+    (id) => id !== targetVenueId,
+  );
+  const manualAssignments = buildAssignments(
+    manualSourceIds,
+    targetVenueId,
+    permanentBySourceId,
+  );
 
   return (
     <div className="flex flex-col gap-6">
+      <VenueRedirectsPanel redirects={venueRedirects} />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Réassignation manuelle</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="text-muted-foreground text-sm">
-            Sélectionnez un ou plusieurs lieux sources, puis le lieu cible.
-            Les corrections sont enregistrées comme overrides (non écrasés par
-            la sync iCal).
+            Choisissez un lieu principal sur une carte, incluez les autres lieux
+            à fusionner, puis appliquez.
           </p>
 
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Rechercher un lieu</span>
+            <span className="font-medium">Rechercher</span>
             <input
               className="rounded-lg border bg-background px-3 py-2"
               value={search}
@@ -222,47 +214,27 @@ export function VenueMatchingTool({
             />
           </label>
 
-          <div className="max-h-64 overflow-y-auto rounded-lg border">
-            <ul className="divide-y">
-              {filteredVenues.map((venue) => (
-                <li key={venue.id} className="flex items-center gap-3 px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedSourceVenueIds.includes(venue.id)}
-                    onChange={() => toggleSourceVenue(venue.id)}
-                    disabled={venue.id === targetVenueId}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{venue.name}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {venue.eventCount} événement
-                      {venue.eventCount > 1 ? "s" : ""}
-                      {venue.address ? ` · ${venue.address}` : ""}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/lieu/${venue.slug}`}
-                    className="text-muted-foreground text-xs hover:underline"
-                  >
-                    Voir
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <VenueMergeCardGrid>
+            {filteredVenues.map((venue) => {
+              const isPrimary = venue.id === targetVenueId;
+              const isSource = manualSourceIds.includes(venue.id);
 
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Lieu cible</span>
-            <VenueSelect
-              venues={venues}
-              value={targetVenueId}
-              onChange={(value) => {
-                setTargetVenueId(value);
-                setPreviewCount(null);
-              }}
-              placeholder="Choisir le lieu principal…"
-            />
-          </label>
+              return (
+                <VenueMergeCard
+                  key={venue.id}
+                  venue={venue}
+                  isPrimary={isPrimary}
+                  isSource={isSource}
+                  permanent={permanentBySourceId[venue.id] ?? false}
+                  showSourceToggle
+                  disabled={pendingKey !== null}
+                  onSetPrimary={() => setPrimary(venue.id)}
+                  onToggleSource={() => toggleSourceVenue(venue.id)}
+                  onTogglePermanent={() => togglePermanent(venue.id)}
+                />
+              );
+            })}
+          </VenueMergeCardGrid>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -270,17 +242,12 @@ export function VenueMatchingTool({
               variant="outline"
               disabled={
                 !targetVenueId ||
-                selectedSourceVenueIds.length === 0 ||
+                manualAssignments.length === 0 ||
                 pendingKey !== null
               }
               onClick={() =>
                 runBulkAssign(
-                  {
-                    targetVenueId,
-                    sourceVenueIds: selectedSourceVenueIds.filter(
-                      (id) => id !== targetVenueId,
-                    ),
-                  },
+                  { targetVenueId, assignments: manualAssignments },
                   "manual:preview",
                   true,
                 )
@@ -292,24 +259,19 @@ export function VenueMatchingTool({
               type="button"
               disabled={
                 !targetVenueId ||
-                selectedSourceVenueIds.length === 0 ||
+                manualAssignments.length === 0 ||
                 pendingKey !== null
               }
               onClick={() =>
                 runBulkAssign(
-                  {
-                    targetVenueId,
-                    sourceVenueIds: selectedSourceVenueIds.filter(
-                      (id) => id !== targetVenueId,
-                    ),
-                  },
+                  { targetVenueId, assignments: manualAssignments },
                   "manual:apply",
                 )
               }
             >
               {pendingKey === "manual:apply"
                 ? "Application…"
-                : "Appliquer la correction"}
+                : "Appliquer la fusion"}
             </Button>
             {previewCount !== null ? (
               <span className="text-muted-foreground text-sm">
@@ -328,15 +290,17 @@ export function VenueMatchingTool({
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <p className="text-muted-foreground text-sm">
-              Regroupements détectés par similarité de nom (variantes
-              d&apos;orthographe, adresses différentes).
+              Ces lieux semblent identiques. Définissez le principal sur une
+              carte — les autres seront fusionnés vers lui.
             </p>
             {similarGroups.map((group) => (
               <SimilarGroupRow
                 key={group.key}
                 group={group}
                 pendingKey={pendingKey}
-                onApply={(targetId) => applySimilarGroup(group, targetId)}
+                onApply={(payload) =>
+                  runBulkAssign(payload, `group:${group.key}`)
+                }
               />
             ))}
           </CardContent>
@@ -349,18 +313,14 @@ export function VenueMatchingTool({
             <CardTitle className="text-lg">LOCATION iCal incohérentes</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <p className="text-muted-foreground text-sm">
-              Même nom de lieu dans iCal (<code>LOCATION</code>) rattaché à
-              plusieurs venues différentes.
-            </p>
             {locationConflicts.map((conflict) => (
               <LocationConflictRow
                 key={conflict.locationKey}
                 conflict={conflict}
                 venues={venues}
                 pendingKey={pendingKey}
-                onApply={(targetId) =>
-                  applyLocationConflict(conflict, targetId)
+                onApply={(payload) =>
+                  runBulkAssign(payload, `location:${conflict.locationKey}`)
                 }
               />
             ))}
@@ -378,50 +338,61 @@ function SimilarGroupRow({
 }: {
   group: SimilarVenueGroup;
   pendingKey: string | null;
-  onApply: (targetId: string) => void;
+  onApply: (payload: BulkAssignPayload) => void;
 }) {
-  const [targetVenueId, setTargetVenueId] = useState(group.venues[0]?.id ?? "");
+  const [targetVenueId, setTargetVenueId] = useState("");
+  const [permanentById, setPermanentById] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  const sourceIds = group.venues
+    .map((venue) => venue.id)
+    .filter((id) => id !== targetVenueId);
+
+  const assignments = buildAssignments(sourceIds, targetVenueId, permanentById);
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
-      <ul className="flex flex-col gap-2 text-sm">
-        {group.venues.map((venue) => (
-          <li
-            key={venue.id}
-            className="flex items-center justify-between gap-2"
-          >
-            <span>
-              {venue.name} · {venue.eventCount} évén.
-            </span>
-            <Link
-              href={`/lieu/${venue.slug}`}
-              className="text-muted-foreground text-xs hover:underline"
-            >
-              /lieu/{venue.slug}
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
-          <span className="font-medium">Conserver comme principal</span>
-          <VenueSelect
-            venues={group.venues}
-            value={targetVenueId}
-            onChange={setTargetVenueId}
-            placeholder="Choisir…"
-          />
-        </label>
-        <Button
-          type="button"
-          disabled={!targetVenueId || pendingKey !== null}
-          onClick={() => onApply(targetVenueId)}
-        >
-          {pendingKey === `group:${group.key}`
-            ? "Fusion…"
-            : "Fusionner vers le principal"}
-        </Button>
-      </div>
+    <div className="flex flex-col gap-4 rounded-lg border p-4">
+      <VenueMergeCardGrid>
+        {group.venues.map((venue) => {
+          const isPrimary = venue.id === targetVenueId;
+          const isSource = Boolean(targetVenueId) && !isPrimary;
+
+          return (
+            <VenueMergeCard
+              key={venue.id}
+              venue={venue}
+              isPrimary={isPrimary}
+              isSource={isSource}
+              permanent={permanentById[venue.id] ?? false}
+              disabled={pendingKey !== null}
+              onSetPrimary={() => setTargetVenueId(venue.id)}
+              onTogglePermanent={() =>
+                setPermanentById((current) => ({
+                  ...current,
+                  [venue.id]: !current[venue.id],
+                }))
+              }
+            />
+          );
+        })}
+      </VenueMergeCardGrid>
+      <Button
+        type="button"
+        className="w-fit"
+        disabled={!targetVenueId || assignments.length === 0 || pendingKey !== null}
+        onClick={() =>
+          onApply({
+            targetVenueId,
+            assignments,
+            locationKeys: group.locationKeys,
+          })
+        }
+      >
+        {pendingKey === `group:${group.key}`
+          ? "Fusion…"
+          : "Fusionner le groupe"}
+      </Button>
     </div>
   );
 }
@@ -435,11 +406,26 @@ function LocationConflictRow({
   conflict: LocationVenueConflict;
   venues: VenueWithStats[];
   pendingKey: string | null;
-  onApply: (targetId: string) => void;
+  onApply: (payload: BulkAssignPayload) => void;
 }) {
-  const [targetVenueId, setTargetVenueId] = useState(
-    conflict.variants.find((variant) => variant.venueId)?.venueId ?? "",
+  const [targetVenueId, setTargetVenueId] = useState("");
+  const [permanentById, setPermanentById] = useState<Record<string, boolean>>(
+    {},
   );
+
+  const conflictVenues = conflict.variants
+    .map((variant) =>
+      variant.venueId
+        ? venues.find((venue) => venue.id === variant.venueId)
+        : null,
+    )
+    .filter(Boolean) as VenueWithStats[];
+
+  const sourceIds = conflictVenues
+    .map((venue) => venue.id)
+    .filter((id) => id !== targetVenueId);
+
+  const assignments = buildAssignments(sourceIds, targetVenueId, permanentById);
 
   const totalEvents = conflict.variants.reduce(
     (sum, variant) => sum + variant.eventCount,
@@ -447,41 +433,55 @@ function LocationConflictRow({
   );
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border p-4">
+    <div className="flex flex-col gap-4 rounded-lg border p-4">
       <div>
         <p className="font-medium">{conflict.sampleLocationRaw}</p>
         <p className="text-muted-foreground text-xs">
-          {totalEvents} événement{totalEvents > 1 ? "s" : ""} · clé{" "}
-          <code>{conflict.locationKey}</code>
+          {totalEvents} événement{totalEvents > 1 ? "s" : ""}
         </p>
       </div>
-      <ul className="text-sm">
-        {conflict.variants.map((variant) => (
-          <li key={`${variant.venueId ?? "none"}-${variant.eventCount}`}>
-            {variant.venueName ?? "Sans lieu"} — {variant.eventCount} évén.
-          </li>
-        ))}
-      </ul>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
-          <span className="font-medium">Lieu cible</span>
-          <VenueSelect
-            venues={venues}
-            value={targetVenueId}
-            onChange={setTargetVenueId}
-            placeholder="Choisir le lieu…"
-          />
-        </label>
-        <Button
-          type="button"
-          disabled={!targetVenueId || pendingKey !== null}
-          onClick={() => onApply(targetVenueId)}
-        >
-          {pendingKey === `location:${conflict.locationKey}`
-            ? "Correction…"
-            : "Corriger en masse"}
-        </Button>
-      </div>
+      {conflictVenues.length > 0 ? (
+        <VenueMergeCardGrid>
+          {conflictVenues.map((venue) => {
+            const isPrimary = venue.id === targetVenueId;
+            const isSource = Boolean(targetVenueId) && !isPrimary;
+
+            return (
+              <VenueMergeCard
+                key={venue.id}
+                venue={venue}
+                isPrimary={isPrimary}
+                isSource={isSource}
+                permanent={permanentById[venue.id] ?? false}
+                disabled={pendingKey !== null}
+                onSetPrimary={() => setTargetVenueId(venue.id)}
+                onTogglePermanent={() =>
+                  setPermanentById((current) => ({
+                    ...current,
+                    [venue.id]: !current[venue.id],
+                  }))
+                }
+              />
+            );
+          })}
+        </VenueMergeCardGrid>
+      ) : null}
+      <Button
+        type="button"
+        className="w-fit"
+        disabled={!targetVenueId || pendingKey !== null}
+        onClick={() =>
+          onApply({
+            targetVenueId,
+            assignments,
+            locationKey: conflict.locationKey,
+          })
+        }
+      >
+        {pendingKey === `location:${conflict.locationKey}`
+          ? "Correction…"
+          : "Corriger"}
+      </Button>
     </div>
   );
 }

@@ -11,6 +11,7 @@ export default async function AdminVenuesPage() {
     venues,
     similarGroups,
     locationConflicts,
+    venueRedirects,
     pendingConfirmationCount,
     activeQualityIssueCount,
   } = await getVenueMatchingOverview();
@@ -42,6 +43,7 @@ export default async function AdminVenuesPage() {
         venues={venues}
         similarGroups={similarGroups}
         locationConflicts={locationConflicts}
+        venueRedirects={venueRedirects}
       />
     </div>
   );

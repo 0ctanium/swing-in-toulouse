@@ -11,6 +11,7 @@ import {
   fetchMastersForVenue,
   filterOccurrencesForVenue,
 } from "@/lib/venues/effective-venue";
+import { resolveVenueBySlug } from "@/lib/venues/canonical";
 import {
   getDefaultExpansionWindow,
   getDefaultFromDate,
@@ -179,15 +180,13 @@ export async function getUpcomingEvents(options?: {
 
   let venueId: string | undefined;
   if (options?.venueSlug) {
-    const venue = await db.query.venues.findFirst({
-      where: eq(venues.slug, options.venueSlug),
-    });
+    const resolution = await resolveVenueBySlug(options.venueSlug);
 
-    if (!venue) {
+    if (!resolution || resolution.kind === "redirect") {
       return [];
     }
 
-    venueId = venue.id;
+    venueId = resolution.venue.id;
   }
 
   const masters = await fetchMasterEvents({
@@ -256,14 +255,21 @@ export async function getOrganizerBySlug(slug: string) {
 /** @deprecated Use getOrganizerBySlug */
 export const getOrganizationBySlug = getOrganizerBySlug;
 
-export async function getVenueBySlug(slug: string) {
-  const venue = await db.query.venues.findFirst({
-    where: eq(venues.slug, slug),
-  });
+export { resolveVenueBySlug };
+export type { VenueSlugResolution } from "@/lib/venues/canonical";
 
-  if (!venue) {
+export async function getVenueBySlug(slug: string) {
+  const resolution = await resolveVenueBySlug(slug);
+
+  if (!resolution) {
     return null;
   }
+
+  if (resolution.kind === "redirect") {
+    return null;
+  }
+
+  const venue = resolution.venue;
 
   const masters = await fetchMastersForVenue(venue.id, {
     includeCancelled: false,

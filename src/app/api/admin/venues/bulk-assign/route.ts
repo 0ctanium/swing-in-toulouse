@@ -9,8 +9,14 @@ import {
   VenueMatchingError,
 } from "@/lib/venues/matching";
 
+const assignmentSchema = z.object({
+  sourceVenueId: z.string().uuid(),
+  permanent: z.boolean().optional(),
+});
+
 const bodySchema = z.object({
   targetVenueId: z.string().uuid(),
+  assignments: z.array(assignmentSchema).optional(),
   sourceVenueIds: z.array(z.string().uuid()).optional(),
   locationKey: z.string().min(1).optional(),
   locationKeys: z.array(z.string().min(1)).optional(),
