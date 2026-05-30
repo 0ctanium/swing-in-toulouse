@@ -17,6 +17,7 @@ type VenueSelectProps = {
   emptyLabel?: string;
   disabled?: boolean;
   excludeIds?: string[];
+  allowEmpty?: boolean;
 };
 
 function VenueOptionDetails({ venue }: { venue: VenueSelectOption }) {
@@ -39,6 +40,7 @@ export function VenueSelect({
   emptyLabel = "— Aucun —",
   disabled = false,
   excludeIds = [],
+  allowEmpty = true,
 }: VenueSelectProps) {
   const excluded = new Set(excludeIds);
   const options = venues.filter(
@@ -50,7 +52,7 @@ export function VenueSelect({
     <EntitySelect
       value={value}
       onChange={onChange}
-      allowEmpty
+      allowEmpty={allowEmpty}
       emptyLabel={emptyLabel}
       placeholder={placeholder}
       disabled={disabled}

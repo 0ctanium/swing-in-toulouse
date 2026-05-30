@@ -3,7 +3,6 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { venues } from "@/db/schema";
 import { resolveVenueForSync } from "@/lib/venues/canonical";
-import { findOrCreateVenue } from "@/lib/venues/find-or-create";
 
 export async function loadOrganizationDisplayVenue(venueId: string | null) {
   if (!venueId) {
@@ -19,15 +18,4 @@ export async function loadOrganizationDisplayVenue(venueId: string | null) {
   }
 
   return resolveVenueForSync(venue);
-}
-
-export async function resolveOrganizationVenueId(locationRaw: string | null) {
-  const trimmed = locationRaw?.trim();
-
-  if (!trimmed) {
-    return null;
-  }
-
-  const venue = await resolveVenueForSync(await findOrCreateVenue(trimmed));
-  return venue.id;
 }

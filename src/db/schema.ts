@@ -86,7 +86,6 @@ export const organizations = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     website: text("website"),
-    locationRaw: text("location_raw"),
     venueId: uuid("venue_id").references(() => venues.id, {
       onDelete: "set null",
     }),
