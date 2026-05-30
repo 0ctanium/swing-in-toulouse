@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { VenueAliasBadge } from "@/components/admin/venue-picker";
+import { VenueAliasBadge } from "@/components/admin/venue-alias-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";

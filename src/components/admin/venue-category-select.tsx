@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 
+import { EntitySelect } from "@/components/ui/entity-select";
 import { useUpdateVenueCategory } from "@/lib/admin/use-venues";
 import type { VenueCategory } from "@/db/schema";
 import { venueCategoryOptions } from "@/lib/venues/categories";
@@ -43,18 +44,17 @@ export function VenueCategorySelect({
   }
 
   return (
-    <select
-      className="rounded-lg border bg-background px-3 py-2 text-sm"
+    <EntitySelect
       value={value ?? ""}
+      onChange={handleChange}
+      allowEmpty
+      emptyLabel="— Non catégorisé —"
+      placeholder="Choisir une catégorie…"
       disabled={disabled || pending}
-      onChange={(event) => handleChange(event.target.value)}
-    >
-      <option value="">— Non catégorisé —</option>
-      {venueCategoryOptions().map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
+      options={venueCategoryOptions().map((option) => ({
+        value: option.value,
+        label: option.label,
+      }))}
+    />
   );
 }

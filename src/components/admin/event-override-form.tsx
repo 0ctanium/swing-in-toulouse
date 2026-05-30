@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { OrganizationSelect } from "@/components/admin/organization-select";
+import { VenueSelect, type VenueSelectOption } from "@/components/admin/venue-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EntitySelect } from "@/components/ui/entity-select";
 import {
   useDeleteEventOverride,
   useSaveEventOverride,
@@ -12,7 +15,6 @@ import {
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
 
 type OrganizationOption = { id: string; name: string };
-type VenueOption = { id: string; name: string };
 
 type EventOverrideFormProps = {
   eventId: string;
@@ -29,7 +31,7 @@ type EventOverrideFormProps = {
   };
   currentPatch: EventOverridePatch;
   organizations: OrganizationOption[];
-  venues: VenueOption[];
+  venues: VenueSelectOption[];
 };
 
 function Field({
@@ -186,33 +188,15 @@ export function EventOverrideForm({
         </Field>
 
         <Field label="Organisateur">
-          <select
-            className="rounded-lg border bg-background px-3 py-2"
+          <OrganizationSelect
+            organizations={organizations}
             value={organizationId}
-            onChange={(event) => setOrganizationId(event.target.value)}
-          >
-            <option value="">— Aucun —</option>
-            {organizations.map((organization) => (
-              <option key={organization.id} value={organization.id}>
-                {organization.name}
-              </option>
-            ))}
-          </select>
+            onChange={setOrganizationId}
+          />
         </Field>
 
         <Field label="Lieu (venue)">
-          <select
-            className="rounded-lg border bg-background px-3 py-2"
-            value={venueId}
-            onChange={(event) => setVenueId(event.target.value)}
-          >
-            <option value="">— Aucun —</option>
-            {venues.map((venue) => (
-              <option key={venue.id} value={venue.id}>
-                {venue.name}
-              </option>
-            ))}
-          </select>
+          <VenueSelect venues={venues} value={venueId} onChange={setVenueId} />
         </Field>
 
         <Field
@@ -227,16 +211,17 @@ export function EventOverrideForm({
         </Field>
 
         <Field label="Statut">
-          <select
-            className="rounded-lg border bg-background px-3 py-2"
+          <EntitySelect
             value={status}
-            onChange={(event) =>
-              setStatus(event.target.value as "published" | "cancelled")
+            onChange={(nextStatus) =>
+              setStatus(nextStatus as "published" | "cancelled")
             }
-          >
-            <option value="published">Publié</option>
-            <option value="cancelled">Annulé</option>
-          </select>
+            placeholder="Choisir un statut…"
+            options={[
+              { value: "published", label: "Publié" },
+              { value: "cancelled", label: "Annulé" },
+            ]}
+          />
         </Field>
 
         <Field label="URL externe" syncedValue={synced.sourceUrl}>

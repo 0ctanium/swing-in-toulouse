@@ -5,14 +5,14 @@ import { useMemo, useState } from "react";
 import { EventConfirmForm } from "@/components/admin/event-confirm-form";
 import { Card, CardContent } from "@/components/ui/card";
 import type { EventConfirmQueueItem } from "@/lib/events/confirm-queue";
+import type { VenueSelectOption } from "@/lib/venues/select-options";
 
 type OrganizationOption = { id: string; name: string };
-type VenueOption = { id: string; name: string };
 
 type EventConfirmQueueProps = {
   initialItems: EventConfirmQueueItem[];
   organizations: OrganizationOption[];
-  venues: VenueOption[];
+  venues: VenueSelectOption[];
   confirmedCount: number;
 };
 

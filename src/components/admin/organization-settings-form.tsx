@@ -2,14 +2,15 @@
 
 import { useMemo, useState } from "react";
 
-import { VenuePicker } from "@/components/admin/venue-picker";
+import { VenueSelect } from "@/components/admin/venue-select";
+import { EntitySelect } from "@/components/ui/entity-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUpdateOrganization } from "@/lib/admin/use-organizations";
 import type { OrganizationCategory } from "@/db/schema";
 import { organizationCategoryOptions } from "@/lib/organizations/categories";
 import { formatVenueAsDefaultLocation } from "@/lib/sources/defaults";
-import type { VenueWithStats } from "@/lib/venues/matching";
+import type { VenueSelectOption } from "@/lib/venues/select-options";
 
 export type OrganizationSettingsEntry = {
   id: string;
@@ -24,7 +25,7 @@ export type OrganizationSettingsEntry = {
 
 type OrganizationSettingsFormProps = {
   organization: OrganizationSettingsEntry;
-  venues: VenueWithStats[];
+  venues: VenueSelectOption[];
 };
 
 export function OrganizationSettingsForm({
@@ -109,24 +110,23 @@ export function OrganizationSettingsForm({
       <CardContent className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Catégorie</span>
-          <select
-            className="rounded-lg border bg-background px-3 py-2"
+          <EntitySelect
             value={category}
+            onChange={setCategory}
+            allowEmpty
+            emptyLabel="— Non catégorisé —"
+            placeholder="Choisir une catégorie…"
             disabled={pending}
-            onChange={(event) => setCategory(event.target.value)}
-          >
-            <option value="">— Non catégorisé —</option>
-            {organizationCategoryOptions().map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            options={organizationCategoryOptions().map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+          />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Lieu (location_raw)</span>
-          <VenuePicker
+          <VenueSelect
             venues={venues}
             value={selectedVenueId}
             onChange={applyVenueDefault}

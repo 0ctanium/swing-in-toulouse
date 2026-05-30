@@ -6,6 +6,7 @@ import {
   getEventConfirmQueueStats,
 } from "@/lib/events/confirm-queue";
 import { listOrganizers, listVenues } from "@/lib/events/queries";
+import { toVenueSelectOption } from "@/lib/venues/select-options";
 import { adminMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = adminMetadata({
@@ -43,10 +44,7 @@ export default async function AdminEventsConfirmPage() {
           id: organization.id,
           name: organization.name,
         }))}
-        venues={venues.map((venue) => ({
-          id: venue.id,
-          name: venue.name,
-        }))}
+        venues={venues.map(toVenueSelectOption)}
         confirmedCount={stats.confirmedCount}
       />
     </div>

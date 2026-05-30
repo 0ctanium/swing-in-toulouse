@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { EventOverrideForm } from "@/components/admin/event-override-form";
+import type { VenueSelectOption } from "@/lib/venues/select-options";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,8 +22,6 @@ import type { EventOverridePatch } from "@/lib/events/overrides.types";
 import { cn } from "@/lib/utils";
 
 type OrganizationOption = { id: string; name: string };
-type VenueOption = { id: string; name: string };
-
 export type AdminOccurrenceItem = {
   id: string;
   startAt: string;
@@ -43,7 +42,7 @@ type OccurrenceOverridePanelProps = {
   eventId: string;
   occurrences: AdminOccurrenceItem[];
   organizations: OrganizationOption[];
-  venues: VenueOption[];
+  venues: VenueSelectOption[];
 };
 
 function formatOccurrenceLabel(startAt: string, isAllDay?: boolean) {

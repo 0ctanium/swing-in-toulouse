@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { OrganizationSelect } from "@/components/admin/organization-select";
+import { VenueSelect, type VenueSelectOption } from "@/components/admin/venue-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EntitySelect } from "@/components/ui/entity-select";
 import { useConfirmEvent } from "@/lib/admin/use-events-admin";
 import type { EventConfirmQueueItem } from "@/lib/events/confirm-queue";
 import { formatEventDate } from "@/lib/events/format";
@@ -17,12 +20,11 @@ import {
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
 
 type OrganizationOption = { id: string; name: string };
-type VenueOption = { id: string; name: string };
 
 type EventConfirmFormProps = {
   item: EventConfirmQueueItem;
   organizations: OrganizationOption[];
-  venues: VenueOption[];
+  venues: VenueSelectOption[];
   onConfirmed: () => void;
   onSkip: () => void;
 };
@@ -175,33 +177,15 @@ export function EventConfirmForm({
         </Field>
 
         <Field label="Organisateur">
-          <select
-            className="rounded-lg border bg-background px-3 py-2"
+          <OrganizationSelect
+            organizations={organizations}
             value={organizationId}
-            onChange={(event) => setOrganizationId(event.target.value)}
-          >
-            <option value="">— Aucun —</option>
-            {organizations.map((organization) => (
-              <option key={organization.id} value={organization.id}>
-                {organization.name}
-              </option>
-            ))}
-          </select>
+            onChange={setOrganizationId}
+          />
         </Field>
 
         <Field label="Lieu">
-          <select
-            className="rounded-lg border bg-background px-3 py-2"
-            value={venueId}
-            onChange={(event) => setVenueId(event.target.value)}
-          >
-            <option value="">— Aucun —</option>
-            {venues.map((venue) => (
-              <option key={venue.id} value={venue.id}>
-                {venue.name}
-              </option>
-            ))}
-          </select>
+          <VenueSelect venues={venues} value={venueId} onChange={setVenueId} />
         </Field>
 
         <Field
@@ -216,16 +200,17 @@ export function EventConfirmForm({
         </Field>
 
         <Field label="Statut">
-          <select
-            className="rounded-lg border bg-background px-3 py-2"
+          <EntitySelect
             value={status}
-            onChange={(event) =>
-              setStatus(event.target.value as "published" | "cancelled")
+            onChange={(nextStatus) =>
+              setStatus(nextStatus as "published" | "cancelled")
             }
-          >
-            <option value="published">Publié</option>
-            <option value="cancelled">Annulé</option>
-          </select>
+            placeholder="Choisir un statut…"
+            options={[
+              { value: "published", label: "Publié" },
+              { value: "cancelled", label: "Annulé" },
+            ]}
+          />
         </Field>
 
         <Field label="URL externe" syncedValue={synced.sourceUrl}>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { VenueAliasBadge } from "@/components/admin/venue-picker";
+import { VenueAliasBadge } from "@/components/admin/venue-alias-badge";
 import {
   VenueMergeCard,
   VenueMergeCardGrid,

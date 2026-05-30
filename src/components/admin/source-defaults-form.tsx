@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react";
 
-import { VenuePicker } from "@/components/admin/venue-picker";
+import { VenueSelect } from "@/components/admin/venue-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUpdateSourceDefaults } from "@/lib/admin/use-sources";
 import { formatVenueAsDefaultLocation } from "@/lib/sources/defaults";
-import type { VenueWithStats } from "@/lib/venues/matching";
+import type { VenueSelectOption } from "@/lib/venues/select-options";
 
 export type SourceDefaultsEntry = {
   id: string;
@@ -22,7 +22,7 @@ export type SourceDefaultsEntry = {
 
 type SourceDefaultsFormProps = {
   source: SourceDefaultsEntry;
-  venues: VenueWithStats[];
+  venues: VenueSelectOption[];
 };
 
 function parseCategoriesInput(value: string) {
@@ -123,7 +123,7 @@ export function SourceDefaultsForm({ source, venues }: SourceDefaultsFormProps) 
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Lieu par défaut (location_raw)</span>
-          <VenuePicker
+          <VenueSelect
             venues={venues}
             value={selectedVenueId}
             onChange={applyVenueDefault}

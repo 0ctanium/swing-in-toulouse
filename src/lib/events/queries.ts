@@ -351,6 +351,7 @@ export const listOrganizations = listOrganizers;
 
 export async function listVenues() {
   return db.query.venues.findMany({
+    where: isNull(venues.canonicalVenueId),
     orderBy: (table, { asc }) => [asc(table.name)],
   });
 }

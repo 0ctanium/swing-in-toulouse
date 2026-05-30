@@ -19,6 +19,7 @@ import {
   listOrganizers,
   listVenues,
 } from "@/lib/events/queries";
+import { toVenueSelectOption } from "@/lib/venues/select-options";
 import { formatEventDate } from "@/lib/events/format";
 import type { EventMaster } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
@@ -176,7 +177,7 @@ export default async function AdminEventPage({ params }: AdminEventPageProps) {
         }}
         currentPatch={masterOverride?.patch ?? {}}
         organizations={organizations}
-        venues={venues}
+        venues={venues.map(toVenueSelectOption)}
       />
 
       {synced.recurrenceRule && occurrenceItems.length > 0 ? (
@@ -184,7 +185,7 @@ export default async function AdminEventPage({ params }: AdminEventPageProps) {
           eventId={synced.id}
           occurrences={occurrenceItems}
           organizations={organizations}
-          venues={venues}
+          venues={venues.map(toVenueSelectOption)}
         />
       ) : null}
     </div>

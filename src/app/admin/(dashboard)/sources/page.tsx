@@ -5,7 +5,7 @@ import { SourceDefaultsForm } from "@/components/admin/source-defaults-form";
 import { db } from "@/db";
 import { sources, venues } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
-import type { VenueWithStats } from "@/lib/venues/matching";
+import { toVenueSelectOption } from "@/lib/venues/select-options";
 
 export const metadata: Metadata = adminMetadata({
   title: "Sources",
@@ -14,27 +14,6 @@ export const metadata: Metadata = adminMetadata({
 });
 
 export const dynamic = "force-dynamic";
-
-function toVenuePickerOption(venue: typeof venues.$inferSelect): VenueWithStats {
-  return {
-    id: venue.id,
-    slug: venue.slug,
-    name: venue.name,
-    address: venue.address,
-    city: venue.city,
-    latitude: venue.latitude,
-    longitude: venue.longitude,
-    googlePlaceId: venue.googlePlaceId,
-    formattedAddress: venue.formattedAddress,
-    addressConfirmedAt: venue.addressConfirmedAt,
-    canonicalVenueId: venue.canonicalVenueId,
-    canonicalVenueName: null,
-    category: venue.category,
-    aliasCount: 0,
-    eventCount: 0,
-    overrideCount: 0,
-  };
-}
 
 export default async function AdminSourcesPage() {
   const [sourceRows, venueRows] = await Promise.all([
@@ -50,7 +29,7 @@ export default async function AdminSourcesPage() {
     }),
   ]);
 
-  const venueOptions = venueRows.map(toVenuePickerOption);
+  const venueOptions = venueRows.map(toVenueSelectOption);
 
   return (
     <div className="flex flex-col gap-6">
