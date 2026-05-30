@@ -1,0 +1,231 @@
+import { relations } from "drizzle-orm";
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
+
+import type { IcalStoredData } from "@/lib/ical/types";
+
+export const eventStatusEnum = pgEnum("event_status", [
+  "published",
+  "cancelled",
+]);
+
+export const syncStatusEnum = pgEnum("sync_status", [
+  "success",
+  "partial",
+  "failed",
+]);
+
+export const sourceTypeEnum = pgEnum("source_type", ["ical"]);
+
+export const venues = pgTable(
+  "venues",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    address: text("address"),
+    city: text("city").notNull().default("Toulouse"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("venues_slug_idx").on(table.slug)],
+);
+
+export const organizations = pgTable(
+  "organizations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    description: text("description"),
+    website: text("website"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("organizations_slug_idx").on(table.slug),
+    index("organizations_active_idx").on(table.isActive),
+  ],
+);
+
+export const sources = pgTable(
+  "sources",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    type: sourceTypeEnum("type").notNull().default("ical"),
+    url: text("url").notNull(),
+    organizationId: uuid("organization_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("sources_slug_idx").on(table.slug),
+    index("sources_active_idx").on(table.isActive),
+    index("sources_organization_id_idx").on(table.organizationId),
+  ],
+);
+
+export const events = pgTable(
+  "events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sourceId: uuid("source_id")
+      .notNull()
+      .references(() => sources.id, { onDelete: "cascade" }),
+    organizationId: uuid("organization_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    venueId: uuid("venue_id").references(() => venues.id, {
+      onDelete: "set null",
+    }),
+    uid: text("uid").notNull(),
+    sourceUid: text("source_uid"),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    description: text("description"),
+    startAt: timestamp("start_at", { withTimezone: true }).notNull(),
+    endAt: timestamp("end_at", { withTimezone: true }),
+    isAllDay: boolean("is_all_day").notNull().default(false),
+    locationRaw: text("location_raw"),
+    url: text("url"),
+    sourceUrl: text("source_url"),
+    icalData: jsonb("ical_data").$type<IcalStoredData>(),
+    status: eventStatusEnum("status").notNull().default("published"),
+    recurrenceRule: text("recurrence_rule"),
+    categories: text("categories").array(),
+    sequence: integer("sequence").notNull().default(0),
+    lastModified: timestamp("last_modified", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    syncedAt: timestamp("synced_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("events_uid_idx").on(table.uid),
+    uniqueIndex("events_source_source_uid_idx").on(
+      table.sourceId,
+      table.sourceUid,
+    ),
+    index("events_start_at_idx").on(table.startAt),
+    index("events_status_idx").on(table.status),
+    index("events_source_id_idx").on(table.sourceId),
+    index("events_organization_id_idx").on(table.organizationId),
+    index("events_venue_id_idx").on(table.venueId),
+  ],
+);
+
+export const syncLogs = pgTable(
+  "sync_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sourceId: uuid("source_id").references(() => sources.id, {
+      onDelete: "set null",
+    }),
+    status: syncStatusEnum("status").notNull(),
+    message: text("message"),
+    eventsCreated: integer("events_created").notNull().default(0),
+    eventsUpdated: integer("events_updated").notNull().default(0),
+    eventsCancelled: integer("events_cancelled").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("sync_logs_created_at_idx").on(table.createdAt)],
+);
+
+export const venuesRelations = relations(venues, ({ many }) => ({
+  events: many(events),
+}));
+
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  sources: many(sources),
+  events: many(events),
+}));
+
+export const sourcesRelations = relations(sources, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [sources.organizationId],
+    references: [organizations.id],
+  }),
+  events: many(events),
+  syncLogs: many(syncLogs),
+}));
+
+export const eventsRelations = relations(events, ({ one }) => ({
+  source: one(sources, {
+    fields: [events.sourceId],
+    references: [sources.id],
+  }),
+  organization: one(organizations, {
+    fields: [events.organizationId],
+    references: [organizations.id],
+  }),
+  venue: one(venues, {
+    fields: [events.venueId],
+    references: [venues.id],
+  }),
+}));
+
+export const syncLogsRelations = relations(syncLogs, ({ one }) => ({
+  source: one(sources, {
+    fields: [syncLogs.sourceId],
+    references: [sources.id],
+  }),
+}));
+
+export type Organization = typeof organizations.$inferSelect;
+export type NewOrganization = typeof organizations.$inferInsert;
+export type Source = typeof sources.$inferSelect;
+export type NewSource = typeof sources.$inferInsert;
+export type Venue = typeof venues.$inferSelect;
+export type NewVenue = typeof venues.$inferInsert;
+export type Event = typeof events.$inferSelect;
+export type NewEvent = typeof events.$inferInsert;
+export type SyncLog = typeof syncLogs.$inferSelect;
+
+export type SourceWithOrganization = Source & {
+  organization: Organization | null;
+};
+
+export type EventMaster = Event & {
+  source: Source;
+  organization: Organization | null;
+  venue: Venue | null;
+};
