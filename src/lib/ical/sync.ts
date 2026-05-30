@@ -8,7 +8,8 @@ import {
   venues,
   type SourceWithOrganization,
 } from "@/db/schema";
-import { generateEventSlug, generateVenueSlug } from "@/lib/slug";
+import { generateEventSlug } from "@/lib/slug";
+import { parseIcalLocation, venueSlugFromLocation } from "@/lib/venues/parse-location";
 import { eventUrl } from "@/lib/site";
 
 import { fetchAndParseIcalFeed } from "./parser";
@@ -22,13 +23,22 @@ type UpsertStats = {
 };
 
 async function findOrCreateVenue(location: string) {
-  const slug = generateVenueSlug(location);
+  const parsed = parseIcalLocation(location);
+  const slug = venueSlugFromLocation(location);
 
   const existing = await db.query.venues.findFirst({
     where: eq(venues.slug, slug),
   });
 
   if (existing) {
+    if (!existing.address && parsed.address) {
+      await db
+        .update(venues)
+        .set({ address: parsed.address })
+        .where(eq(venues.id, existing.id));
+      return { ...existing, address: parsed.address };
+    }
+
     return existing;
   }
 
@@ -36,8 +46,8 @@ async function findOrCreateVenue(location: string) {
     .insert(venues)
     .values({
       slug,
-      name: location.split(",")[0]?.trim() || location,
-      address: location,
+      name: parsed.name,
+      address: parsed.address,
     })
     .returning();
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
 
 import {
@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
 import { getEventWithOverrides } from "@/lib/events/overrides";
-import { getEventBySlug } from "@/lib/events/queries";
+import { getEventBySlug, resolveEventBySlug } from "@/lib/events/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -57,11 +57,17 @@ export async function generateMetadata({
 
 export default async function EventPage({ params }: EventPageProps) {
   const { slug } = await params;
-  const event = await getEventBySlug(slug);
+  const resolution = await resolveEventBySlug(slug);
 
-  if (!event) {
+  if (!resolution) {
     notFound();
   }
+
+  if (resolution.kind === "redirect") {
+    redirect(`/evenement/${resolution.targetSlug}`);
+  }
+
+  const event = resolution.event;
 
   const isAdmin = await isAdminAuthenticated();
   const overrideInfo = isAdmin ? await getEventWithOverrides(event.id) : null;

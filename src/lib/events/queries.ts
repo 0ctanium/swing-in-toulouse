@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { events, organizations, venues } from "@/db/schema";
@@ -7,6 +7,10 @@ import {
   applyMasterOverride,
   loadOverridesForEvents,
 } from "@/lib/events/overrides";
+import {
+  fetchMastersForVenue,
+  filterOccurrencesForVenue,
+} from "@/lib/venues/effective-venue";
 import {
   getDefaultExpansionWindow,
   getDefaultFromDate,
@@ -26,6 +30,8 @@ async function fetchMasterEvents(options?: {
   if (!options?.includeCancelled) {
     filters.push(eq(events.status, "published"));
   }
+
+  filters.push(isNull(events.canonicalEventId));
 
   if (options?.organizationSlug) {
     const organization = await db.query.organizations.findFirst({
@@ -48,7 +54,9 @@ async function fetchMasterEvents(options?: {
       return [];
     }
 
-    filters.push(eq(events.venueId, venue.id));
+    return fetchMastersForVenue(venue.id, {
+      includeCancelled: options?.includeCancelled,
+    });
   }
 
   return db.query.events.findMany({
@@ -82,45 +90,7 @@ function filterOccurrences(
   return limit ? filtered.slice(0, limit) : filtered;
 }
 
-export async function getUpcomingEvents(options?: {
-  organizationSlug?: string;
-  venueSlug?: string;
-  includeCancelled?: boolean;
-  from?: Date;
-  to?: Date;
-  limit?: number;
-}): Promise<EventOccurrence[]> {
-  const from = options?.from ?? getDefaultFromDate();
-  const window: ExpansionWindow = {
-    from,
-    to: options?.to ?? getDefaultExpansionWindow(from).to,
-  };
-
-  const masters = await fetchMasterEvents({
-    organizationSlug: options?.organizationSlug,
-    venueSlug: options?.venueSlug,
-    includeCancelled: options?.includeCancelled,
-  });
-
-  const occurrences = await expandEventsWithOverrides(masters, window);
-
-  return filterOccurrences(occurrences, window, options?.limit);
-}
-
-export async function getEventBySlug(slug: string) {
-  const event = await db.query.events.findFirst({
-    where: eq(events.slug, slug),
-    with: {
-      source: true,
-      organization: true,
-      venue: true,
-    },
-  });
-
-  if (!event) {
-    return null;
-  }
-
+async function loadEventWithMasterOverride(event: EventMaster) {
   const overrides = await loadOverridesForEvents([event.id]);
   const masterOverride = overrides.master.get(event.id);
 
@@ -154,6 +124,103 @@ export async function getEventBySlug(slug: string) {
   });
 }
 
+export type EventSlugResolution =
+  | { kind: "event"; event: EventMaster }
+  | { kind: "redirect"; targetSlug: string };
+
+export async function resolveEventBySlug(
+  slug: string,
+): Promise<EventSlugResolution | null> {
+  const row = await db.query.events.findFirst({
+    where: eq(events.slug, slug),
+    with: {
+      source: true,
+      organization: true,
+      venue: true,
+    },
+  });
+
+  if (!row) {
+    return null;
+  }
+
+  if (row.canonicalEventId) {
+    const canonical = await db.query.events.findFirst({
+      where: eq(events.id, row.canonicalEventId),
+      with: {
+        source: true,
+        organization: true,
+        venue: true,
+      },
+    });
+
+    if (canonical) {
+      return { kind: "redirect", targetSlug: canonical.slug };
+    }
+  }
+
+  const event = await loadEventWithMasterOverride(row as EventMaster);
+  return { kind: "event", event };
+}
+
+export async function getUpcomingEvents(options?: {
+  organizationSlug?: string;
+  venueSlug?: string;
+  includeCancelled?: boolean;
+  from?: Date;
+  to?: Date;
+  limit?: number;
+}): Promise<EventOccurrence[]> {
+  const from = options?.from ?? getDefaultFromDate();
+  const window: ExpansionWindow = {
+    from,
+    to: options?.to ?? getDefaultExpansionWindow(from).to,
+  };
+
+  let venueId: string | undefined;
+  if (options?.venueSlug) {
+    const venue = await db.query.venues.findFirst({
+      where: eq(venues.slug, options.venueSlug),
+    });
+
+    if (!venue) {
+      return [];
+    }
+
+    venueId = venue.id;
+  }
+
+  const masters = await fetchMasterEvents({
+    organizationSlug: options?.organizationSlug,
+    venueSlug: options?.venueSlug,
+    includeCancelled: options?.includeCancelled,
+  });
+
+  let occurrences = await expandEventsWithOverrides(masters, window);
+
+  if (venueId) {
+    occurrences = filterOccurrencesForVenue(occurrences, venueId);
+  }
+
+  return filterOccurrences(occurrences, window, options?.limit);
+}
+
+export async function getEventBySlug(slug: string) {
+  const resolution = await resolveEventBySlug(slug);
+
+  if (!resolution) {
+    return null;
+  }
+
+  if (resolution.kind === "redirect") {
+    return resolveEventBySlug(resolution.targetSlug).then((resolved) =>
+      resolved?.kind === "event" ? resolved.event : null,
+    );
+  }
+
+  return resolution.event;
+}
+
 export async function getOrganizerBySlug(slug: string) {
   const organization = await db.query.organizations.findFirst({
     where: eq(organizations.slug, slug),
@@ -167,6 +234,7 @@ export async function getOrganizerBySlug(slug: string) {
     where: and(
       eq(events.organizationId, organization.id),
       eq(events.status, "published"),
+      isNull(events.canonicalEventId),
     ),
     with: {
       source: true,
@@ -197,22 +265,19 @@ export async function getVenueBySlug(slug: string) {
     return null;
   }
 
-  const masters = await db.query.events.findMany({
-    where: and(eq(events.venueId, venue.id), eq(events.status, "published")),
-    with: {
-      source: true,
-      organization: true,
-      venue: true,
-    },
-    orderBy: (eventsTable, { asc }) => [asc(eventsTable.startAt)],
-  }) as EventMaster[];
+  const masters = await fetchMastersForVenue(venue.id, {
+    includeCancelled: false,
+  });
 
   const window = getDefaultExpansionWindow();
   const occurrences = await expandEventsWithOverrides(masters, window);
 
   return {
     ...venue,
-    events: filterOccurrences(occurrences, window),
+    events: filterOccurrences(
+      filterOccurrencesForVenue(occurrences, venue.id),
+      window,
+    ),
   };
 }
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { DuplicateMergePanel } from "@/components/admin/duplicate-merge-panel";
 import { EventOverrideForm } from "@/components/admin/event-override-form";
 import {
   OccurrenceOverridePanel,
@@ -9,11 +10,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getEventWithOverrides } from "@/lib/events/overrides";
 import {
+  findDuplicateCandidates,
+  getDuplicateLinkInfo,
+} from "@/lib/events/duplicates";
+import {
   getAdminEventOccurrences,
   listOrganizers,
   listVenues,
 } from "@/lib/events/queries";
 import { formatEventDate } from "@/lib/events/format";
+import type { EventMaster } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +29,16 @@ type AdminEventPageProps = {
 
 export default async function AdminEventPage({ params }: AdminEventPageProps) {
   const { id } = await params;
-  const [eventData, occurrencesData, organizations, venues] = await Promise.all([
-    getEventWithOverrides(id),
-    getAdminEventOccurrences(id),
-    listOrganizers(),
-    listVenues(),
-  ]);
+  const [eventData, occurrencesData, organizations, venues, duplicateInfo] =
+    await Promise.all([
+      getEventWithOverrides(id),
+      getAdminEventOccurrences(id),
+      listOrganizers(),
+      listVenues(),
+      getDuplicateLinkInfo(id),
+    ]);
 
-  if (!eventData || !occurrencesData) {
+  if (!eventData || !occurrencesData || !duplicateInfo) {
     notFound();
   }
 
@@ -64,6 +72,28 @@ export default async function AdminEventPage({ params }: AdminEventPageProps) {
       };
     });
 
+  const duplicateCandidates =
+    duplicateInfo.event.canonicalEventId ||
+    duplicateInfo.linkedDuplicates.length > 0
+      ? []
+      : await findDuplicateCandidates(id);
+
+  function serializeDuplicateEvent(event: EventMaster) {
+    return {
+      id: event.id,
+      slug: event.slug,
+      title: event.title,
+      startAt: event.startAt.toISOString(),
+      endAt: event.endAt?.toISOString() ?? null,
+      isAllDay: event.isAllDay,
+      source: { name: event.source.name },
+      organization: event.organization
+        ? { name: event.organization.name }
+        : null,
+      venue: event.venue ? { name: event.venue.name } : null,
+    };
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -93,6 +123,19 @@ export default async function AdminEventPage({ params }: AdminEventPageProps) {
           ) : null}
         </CardContent>
       </Card>
+
+      <DuplicateMergePanel
+        eventId={synced.id}
+        canonicalEvent={
+          duplicateInfo.canonicalEvent
+            ? serializeDuplicateEvent(duplicateInfo.canonicalEvent)
+            : null
+        }
+        linkedDuplicates={duplicateInfo.linkedDuplicates.map(
+          serializeDuplicateEvent,
+        )}
+        candidates={duplicateCandidates.map(serializeDuplicateEvent)}
+      />
 
       <EventOverrideForm
         eventId={synced.id}

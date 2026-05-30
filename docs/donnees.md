@@ -83,12 +83,15 @@
   Lors de l'import iCal, si un événement contient un champ `LOCATION` :
 
   1. le texte brut est stocké sur l'événement (`location_raw`) ;
-  2. un lieu est **trouvé ou créé** à partir de ce texte (slug dérivé du nom) ;
-  3. l'événement est lié au lieu → page `/lieu/[slug]`.
+  2. le **nom** est extrait avant la première virgule, l'**adresse** après ;
+  3. un lieu est trouvé ou créé par **slug du nom** (ex. `studio-hop`) — pas par l'adresse complète ;
+  4. l'événement est lié au lieu → page `/lieu/[slug]`.
 
-  Exemple : `LOCATION:Cave Poésie, 22 rue…, Toulouse` crée ou réutilise le lieu **Cave Poésie**.
+  Exemple : `LOCATION:Studio Hop, 4 avenue de Rangueil, 31400 Toulouse` → lieu **Studio Hop**, slug `studio-hop`, adresse `4 avenue de Rangueil, 31400 Toulouse`.
 
-  Aucune saisie manuelle n'est nécessaire. Pour corriger un lieu mal nommé, modifiez-le en base (Drizzle Studio : `pnpm run db:studio`) — la prochaine sync ne renommera pas un lieu existant tant que le slug correspond.
+  **Pourquoi le nom et pas l'adresse pour le slug ?** Deux événements au même endroit avec des variantes d'adresse dans iCal retombaient sur des lieux différents. Le slug sur le nom regroupe naturellement ; les doublons restants se fusionnent via `/admin/venues`.
+
+  La sync **ne réécrit pas** un lieu existant (nom, adresse). Les corrections se font sur `/admin/venues` (section *Lieux à vérifier*) ou en base — **pas besoin d'un système d'override** comme pour les événements.
 
   ## Événements récurrents (RRULE)
 
@@ -117,6 +120,30 @@
   **`/admin`** affiche le même calendrier que l'agenda public — la liste d'événements a été retirée au profit de cette vue contextuelle.
 
   Champs overrideables : titre, description, dates, lieu, venue, organisateur, catégories, statut, URL externe, masquage d'occurrence.
+
+  ## Doublons (fusion d'événements)
+
+  Le même événement peut apparaître dans plusieurs calendriers iCal (sources différentes). Swing Toulouse les importe séparément.
+
+  Depuis `/admin/events/[id]`, section **Doublons** :
+
+  - **Utiliser comme principal** — l'événement courant devient doublon du candidat (disparaît de l'agenda, slug redirigé)
+  - **Marquer comme doublon** — le candidat est lié à l'événement courant
+  - **Délier** — annule la fusion
+
+  Les doublons restent synchronisés en base (`canonical_event_id` sur l'événement secondaire) mais n'apparaissent plus dans l'agenda, le sitemap ni les exports. Leur URL `/evenement/[slug]` redirige vers l'événement principal.
+
+  Candidats détectés automatiquement : même créneau ±1 h, titre proche, source différente.
+
+  ## Lieux : correction en masse
+
+  Sur `/admin/venues` :
+
+  - **Réassignation manuelle** — sélectionnez des lieux sources et un lieu cible ; les événements concernés reçoivent un override `venueId`
+  - **Lieux similaires** — regroupements par nom proche (ex. variantes d'orthographe)
+  - **LOCATION iCal incohérentes** — même texte `LOCATION` rattaché à plusieurs venues
+
+  La sync iCal continue de mettre à jour `events.venue_id` depuis le flux ; les overrides de lieu restent prioritaires à l'affichage.
 
   ## Commandes utiles
 

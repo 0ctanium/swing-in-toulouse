@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+import { isNull } from "drizzle-orm";
+
 import { db } from "@/db";
 import { events, organizations, venues } from "@/db/schema";
 import { siteConfig } from "@/lib/site";
@@ -8,7 +10,10 @@ export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [allEvents, allOrganizations, allVenues] = await Promise.all([
-    db.select({ slug: events.slug, updatedAt: events.updatedAt }).from(events),
+    db
+      .select({ slug: events.slug, updatedAt: events.updatedAt })
+      .from(events)
+      .where(isNull(events.canonicalEventId)),
     db
       .select({ slug: organizations.slug, updatedAt: organizations.updatedAt })
       .from(organizations),

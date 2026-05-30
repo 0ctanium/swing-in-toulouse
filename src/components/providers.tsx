@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { AdminModeProvider } from "@/components/admin/admin-mode-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export function Providers({
   children,
@@ -25,7 +26,10 @@ export function Providers({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AdminModeProvider isAdminMode={isAdminMode}>{children}</AdminModeProvider>
+      <AdminModeProvider isAdminMode={isAdminMode}>
+        {children}
+        <Toaster richColors closeButton position="top-center" />
+      </AdminModeProvider>
     </QueryClientProvider>
   );
 }

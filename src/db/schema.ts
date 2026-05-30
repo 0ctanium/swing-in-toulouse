@@ -10,6 +10,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 import type { IcalStoredData } from "@/lib/ical/types";
@@ -130,6 +131,10 @@ export const events = pgTable(
       .notNull()
       .defaultNow(),
     syncedAt: timestamp("synced_at", { withTimezone: true }),
+    canonicalEventId: uuid("canonical_event_id").references(
+      (): AnyPgColumn => events.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -149,6 +154,7 @@ export const events = pgTable(
     index("events_source_id_idx").on(table.sourceId),
     index("events_organization_id_idx").on(table.organizationId),
     index("events_venue_id_idx").on(table.venueId),
+    index("events_canonical_event_id_idx").on(table.canonicalEventId),
   ],
 );
 
@@ -234,6 +240,12 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
     fields: [events.venueId],
     references: [venues.id],
   }),
+  canonicalEvent: one(events, {
+    fields: [events.canonicalEventId],
+    references: [events.id],
+    relationName: "eventDuplicates",
+  }),
+  duplicateEvents: many(events, { relationName: "eventDuplicates" }),
   overrides: many(eventOverrides),
 }));
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { redirect } from "next/navigation";
 
-import { getEventBySlug } from "@/lib/events/queries";
+import { resolveEventBySlug } from "@/lib/events/queries";
 import { serializeCalendar, toNormalizedEvent } from "@/lib/ical/serializer";
 import { siteConfig } from "@/lib/site";
 
@@ -12,11 +13,17 @@ type RouteContext = {
 
 export async function GET(_request: Request, context: RouteContext) {
   const { slug } = await context.params;
-  const event = await getEventBySlug(slug);
+  const resolution = await resolveEventBySlug(slug);
 
-  if (!event) {
+  if (!resolution) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
+
+  if (resolution.kind === "redirect") {
+    redirect(`/evenement/${resolution.targetSlug}.ics`);
+  }
+
+  const event = resolution.event;
 
   const calendar = serializeCalendar([toNormalizedEvent(event)], {
     name: event.title,
