@@ -23,6 +23,8 @@ import {
   isToday,
   WEEKDAY_LABELS,
 } from "@/lib/events/calendar";
+import type { AgendaFilters } from "@/lib/events/agenda-filters";
+import { filterAgendaOccurrences } from "@/lib/events/agenda-filters";
 import { useEvents } from "@/lib/events/use-events";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +32,8 @@ type AgendaMode = "month" | "4-weeks";
 
 type AgendaCalendarProps = {
   mode: AgendaMode;
+  filters: AgendaFilters;
+  venueSlugById: Record<string, string>;
 };
 
 function CalendarSkeleton() {
@@ -61,7 +65,11 @@ function CalendarSkeleton() {
   );
 }
 
-export function AgendaCalendar({ mode }: AgendaCalendarProps) {
+export function AgendaCalendar({
+  mode,
+  filters,
+  venueSlugById,
+}: AgendaCalendarProps) {
   const [month, setMonth] = useState(() => new Date());
   const [fourWeekAnchor, setFourWeekAnchor] = useState(() => new Date());
 
@@ -73,12 +81,22 @@ export function AgendaCalendar({ mode }: AgendaCalendarProps) {
     [mode, month, fourWeekAnchor],
   );
 
-  const { data: events = [], isPending, isError, refetch } = useEvents(
-    range.from,
-    range.to,
+  const {
+    data: events = [],
+    isPending,
+    isError,
+    refetch,
+  } = useEvents(range.from, range.to);
+
+  const filteredEvents = useMemo(
+    () => filterAgendaOccurrences(events, filters, venueSlugById),
+    [events, filters, venueSlugById],
   );
 
-  const eventsByDay = useMemo(() => groupEventsByDay(events), [events]);
+  const eventsByDay = useMemo(
+    () => groupEventsByDay(filteredEvents),
+    [filteredEvents],
+  );
 
   const days =
     mode === "month" ? getMonthGrid(month) : getFourWeekGrid(fourWeekAnchor);
@@ -115,15 +133,27 @@ export function AgendaCalendar({ mode }: AgendaCalendarProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-heading text-xl font-semibold capitalize">{label}</h2>
+        <h2 className="font-heading text-xl font-semibold capitalize">
+          {label}
+        </h2>
         <div className="flex items-center gap-1">
           <Button variant="outline" size="sm" onClick={goToday}>
             Aujourd&apos;hui
           </Button>
-          <Button variant="outline" size="icon-sm" onClick={goBack} aria-label="Période précédente">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={goBack}
+            aria-label="Période précédente"
+          >
             <ChevronLeft />
           </Button>
-          <Button variant="outline" size="icon-sm" onClick={goForward} aria-label="Période suivante">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={goForward}
+            aria-label="Période suivante"
+          >
             <ChevronRight />
           </Button>
         </div>

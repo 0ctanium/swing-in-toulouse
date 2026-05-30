@@ -1,16 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AgendaCalendar } from "@/components/events/agenda-calendar";
+import {
+  AgendaFiltersBar,
+  useAgendaFilterContext,
+} from "@/components/events/agenda-filters";
 import { EventList } from "@/components/events/event-list";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { filterAgendaOccurrences } from "@/lib/events/agenda-filters";
+import {
+  defaultAgendaPreferences,
+  type AgendaMode,
+  type AgendaPreferences,
+  type ViewMode,
+  writeAgendaPreferencesCookie,
+} from "@/lib/events/agenda-preferences";
 import { usePlanningEvents } from "@/lib/events/use-events";
 import { cn } from "@/lib/utils";
-
-type ViewMode = "agenda" | "planning";
-type AgendaMode = "month" | "4-weeks";
 
 function ViewToggle({
   value,
@@ -55,8 +64,17 @@ function PlanningListSkeleton() {
   );
 }
 
-function PlanningList() {
+type PlanningListProps = {
+  filters: ReturnType<typeof useAgendaFilterContext>["filters"];
+  venueSlugById: Record<string, string>;
+};
+
+function PlanningList({ filters, venueSlugById }: PlanningListProps) {
   const { data: events = [], isPending, isError, refetch } = usePlanningEvents();
+  const filteredEvents = useMemo(
+    () => filterAgendaOccurrences(events, filters, venueSlugById),
+    [events, filters, venueSlugById],
+  );
 
   if (isError) {
     return (
@@ -75,15 +93,40 @@ function PlanningList() {
     return <PlanningListSkeleton />;
   }
 
-  return <EventList events={events} />;
+  return (
+    <EventList
+      events={filteredEvents}
+      emptyMessage="Aucun événement ne correspond à ces filtres."
+    />
+  );
 }
 
-export function AgendaView() {
-  const [viewMode, setViewMode] = useState<ViewMode>("agenda");
-  const [agendaMode, setAgendaMode] = useState<AgendaMode>("month");
+type AgendaViewProps = {
+  initialPreferences?: AgendaPreferences;
+};
+
+export function AgendaView({
+  initialPreferences = defaultAgendaPreferences,
+}: AgendaViewProps) {
+  const { filters, setFilters, venueSlugById } = useAgendaFilterContext();
+  const [viewMode, setViewMode] = useState<ViewMode>(initialPreferences.viewMode);
+  const [agendaMode, setAgendaMode] = useState<AgendaMode>(
+    initialPreferences.agendaMode,
+  );
+
+  useEffect(() => {
+    writeAgendaPreferencesCookie({ viewMode, agendaMode });
+  }, [viewMode, agendaMode]);
 
   return (
     <div className="flex flex-col gap-6">
+      <AgendaFiltersBar
+        filters={filters}
+        onFiltersChange={(nextFilters) => {
+          void setFilters(nextFilters);
+        }}
+      />
+
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <ViewToggle
           value={viewMode}
@@ -107,9 +150,13 @@ export function AgendaView() {
       </div>
 
       {viewMode === "planning" ? (
-        <PlanningList />
+        <PlanningList filters={filters} venueSlugById={venueSlugById} />
       ) : (
-        <AgendaCalendar mode={agendaMode} />
+        <AgendaCalendar
+          mode={agendaMode}
+          filters={filters}
+          venueSlugById={venueSlugById}
+        />
       )}
     </div>
   );
