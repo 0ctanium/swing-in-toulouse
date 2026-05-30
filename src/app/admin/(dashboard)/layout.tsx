@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
+import { AdminSubNav } from "@/components/admin/admin-sub-nav";
 import { EventsPendingAlert } from "@/components/admin/events-pending-alert";
 import { isAdminConfigured } from "@/env";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
@@ -32,6 +35,16 @@ export default async function AdminDashboardLayout({
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/admin"
+          className="font-heading text-xl font-semibold tracking-tight hover:underline"
+        >
+          Administration
+        </Link>
+        <AdminLogoutButton />
+      </div>
+      <AdminSubNav />
       <EventsPendingAlert pendingCount={pendingCount} />
       {children}
     </div>

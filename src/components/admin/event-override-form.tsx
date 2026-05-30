@@ -276,7 +276,7 @@ export function EventOverrideForm({
             Supprimer l&apos;override
           </Button>
           {scope === "master" ? (
-            <Button variant="ghost" render={<Link href="/admin" />}>
+            <Button variant="ghost" render={<Link href="/admin/events" />}>
               Retour
             </Button>
           ) : null}

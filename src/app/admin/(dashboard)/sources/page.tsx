@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { asc, isNull } from "drizzle-orm";
 
 import { SourceDefaultsForm } from "@/components/admin/source-defaults-form";
@@ -56,9 +55,6 @@ export default async function AdminSourcesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <Link href="/admin" className="text-muted-foreground text-sm hover:underline">
-          ← Retour aux corrections
-        </Link>
         <h1 className="font-heading text-3xl font-semibold">Sources</h1>
         <p className="text-muted-foreground max-w-2xl">
           Définissez un lieu et des catégories par défaut pour chaque flux iCal.

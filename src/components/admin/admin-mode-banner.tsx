@@ -28,7 +28,7 @@ export function AdminModeBanner({ className }: { className?: string }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href="/admin"
+            href="/admin/events"
             className="rounded-md px-2 py-1 font-medium hover:bg-amber-500/15"
           >
             Calendrier admin

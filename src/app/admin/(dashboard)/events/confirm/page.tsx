@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { EventConfirmQueue } from "@/components/admin/event-confirm-queue";
 import {
@@ -28,12 +27,6 @@ export default async function AdminEventsConfirmPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <Link
-          href="/admin"
-          className="text-muted-foreground text-sm hover:underline"
-        >
-          ← Retour aux corrections
-        </Link>
         <h1 className="font-heading text-3xl font-semibold">
           Confirmer les événements
         </h1>

@@ -116,7 +116,7 @@ export default async function AdminEventPage({ params }: AdminEventPageProps) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <Link
-          href="/admin"
+          href="/admin/events"
           className="text-muted-foreground text-sm hover:underline"
         >
           ← Retour aux événements

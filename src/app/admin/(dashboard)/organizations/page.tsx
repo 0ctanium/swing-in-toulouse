@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { asc, isNull } from "drizzle-orm";
 
 import { OrganizationSettingsForm } from "@/components/admin/organization-settings-form";
@@ -56,9 +55,6 @@ export default async function AdminOrganizationsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <Link href="/admin" className="text-muted-foreground text-sm hover:underline">
-          ← Retour aux corrections
-        </Link>
         <h1 className="font-heading text-3xl font-semibold">Organisateurs</h1>
         <p className="text-muted-foreground max-w-2xl">
           Catégorisez les écoles et associations, et liez un lieu via{" "}
