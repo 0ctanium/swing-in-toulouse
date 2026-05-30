@@ -29,6 +29,10 @@ export default async function AdminHomePage() {
             pour corriger en contexte, ou utilisez ce calendrier admin.
           </p>
           <p className="mt-2 text-sm">
+            <Link href="/admin/events/confirm" className="font-medium underline">
+              Confirmer les événements
+            </Link>
+            {" · "}
             <Link href="/admin/venues" className="font-medium underline">
               Corriger les lieux en masse
             </Link>

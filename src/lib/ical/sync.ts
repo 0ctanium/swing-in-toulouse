@@ -14,6 +14,10 @@ import {
 } from "@/lib/sources/defaults";
 import { findOrCreateVenue } from "@/lib/venues/find-or-create";
 import { resolveVenueForSync } from "@/lib/venues/canonical";
+import {
+  hasMaterialEventChanges,
+  shouldClearEventConfirmation,
+} from "@/lib/events/confirmation";
 import { eventUrl } from "@/lib/site";
 
 import { fetchAndParseIcalFeed } from "./parser";
@@ -106,21 +110,9 @@ async function upsertEvent(
   };
 
   if (existing) {
+    const materialChanges = hasMaterialEventChanges(existing, values);
     const hasChanges =
-      existing.title !== values.title ||
-      existing.description !== values.description ||
-      existing.startAt.getTime() !== values.startAt.getTime() ||
-      (existing.endAt?.getTime() ?? null) !==
-        (values.endAt?.getTime() ?? null) ||
-      existing.isAllDay !== values.isAllDay ||
-      existing.locationRaw !== values.locationRaw ||
-      existing.sourceUrl !== values.sourceUrl ||
-      existing.venueId !== values.venueId ||
-      existing.organizationId !== values.organizationId ||
-      existing.recurrenceRule !== values.recurrenceRule ||
-      existing.status !== values.status ||
-      JSON.stringify(existing.categories ?? []) !==
-        JSON.stringify(values.categories ?? []) ||
+      materialChanges ||
       JSON.stringify(existing.icalData ?? null) !==
         JSON.stringify(values.icalData ?? null);
 
@@ -137,6 +129,9 @@ async function upsertEvent(
         sequence: existing.sequence + 1,
         lastModified: now,
         syncedAt: now,
+        ...(shouldClearEventConfirmation(existing, values)
+          ? { confirmedAt: null }
+          : {}),
       })
       .where(eq(events.id, existing.id));
 
@@ -180,6 +175,7 @@ async function cancelMissingEvents(
         sequence: event.sequence + 1,
         lastModified: now,
         syncedAt: now,
+        ...(event.confirmedAt ? { confirmedAt: null } : {}),
       })
       .where(eq(events.id, event.id));
 

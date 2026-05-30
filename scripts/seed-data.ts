@@ -64,6 +64,12 @@ const seedOrganizers: SeedOrganizer[] = [
       "Funky Swing Dancers est une association qui organise des événements et propose des cours de swing à Toulouse.",
     website: "https://www.funkyswingdancers.com",
   },
+  {
+    name: "L'apéro Balboa",
+    description:
+      "Collectif spontané et enthousiaste dédié à la danse sociale Balboa. Soirées dansantes festives mensuelles ouvertes à toustes avec cours d'initiation inclus ! Et toujours gratuit!",
+    website: "https://www.facebook.com/profile.php?id=61558037978729",
+  },
 ];
 
 const seedSources: SeedSource[] = [

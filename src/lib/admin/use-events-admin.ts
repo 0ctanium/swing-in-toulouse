@@ -127,3 +127,32 @@ export function useUnlinkDuplicateEvent() {
     },
   });
 }
+
+type ConfirmEventInput = {
+  eventId: string;
+  patch?: EventOverridePatch;
+};
+
+async function confirmEventRequest({ eventId, patch = {} }: ConfirmEventInput) {
+  return fetchJson(
+    `/api/admin/events/${eventId}/confirm`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patch }),
+    },
+    "Confirmation impossible.",
+  );
+}
+
+export function useConfirmEvent() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationKey: [...adminQueryKeys.events(), "confirm"],
+    mutationFn: confirmEventRequest,
+    onSuccess: () => {
+      router.refresh();
+    },
+  });
+}
