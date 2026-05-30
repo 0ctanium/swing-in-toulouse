@@ -34,7 +34,7 @@ export default async function AdminDashboardLayout({
   const { pendingCount } = await getEventConfirmQueueStats();
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 py-4">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 -mt-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/admin"
