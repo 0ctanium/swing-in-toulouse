@@ -1,4 +1,9 @@
 import { env, getCronSyncUrl, isQStashConfigured } from "@/env";
+import {
+  buildIcalFeedPath,
+  emptyIcalPayload,
+  type IcalPayload,
+} from "@/lib/ical/payload";
 
 export const siteConfig = {
   name: "Swing In Toulouse",
@@ -30,6 +35,18 @@ export function organizationUrl(slug: string) {
 
 export function venueUrl(slug: string) {
   return absoluteUrl(`/lieu/${slug}`);
+}
+
+export function icalFeedUrl(filters: IcalPayload = emptyIcalPayload()) {
+  return absoluteUrl(buildIcalFeedPath(filters));
+}
+
+export function organizerIcalUrl(slug: string) {
+  return icalFeedUrl({ ...emptyIcalPayload(), org: [slug] });
+}
+
+export function eventIcalUrl(slug: string) {
+  return icalFeedUrl({ ...emptyIcalPayload(), event: [slug] });
 }
 
 export { getCronSyncUrl, isQStashConfigured };

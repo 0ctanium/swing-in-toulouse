@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import posthog from "posthog-js";
 
 import { AgendaCalendar } from "@/components/events/agenda-calendar";
 import {
@@ -134,7 +135,10 @@ export function AgendaView({
             { value: "agenda", label: "Agenda" },
             { value: "planning", label: "Planning" },
           ]}
-          onChange={(value) => setViewMode(value as ViewMode)}
+          onChange={(value) => {
+            setViewMode(value as ViewMode);
+            posthog.capture("agenda_view_changed", { view: value });
+          }}
         />
 
         {viewMode === "agenda" ? (

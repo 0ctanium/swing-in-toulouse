@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, ChevronDown, X } from "lucide-react";
+import posthog from "posthog-js";
 import { useQueryStates } from "nuqs";
 
 import { Button } from "@/components/ui/button";
@@ -190,21 +191,30 @@ export function AgendaFiltersBar({
           values={filters.category}
           placeholder="Toutes les catégories"
           options={data.categories}
-          onChange={(category) => onFiltersChange({ category })}
+          onChange={(category) => {
+            onFiltersChange({ category });
+            posthog.capture("agenda_filter_applied", { filter_type: "category", values: category });
+          }}
         />
         <FilterMultiSelect
           label="Lieu"
           values={filters.venue}
           placeholder="Tous les lieux"
           options={data.venues}
-          onChange={(venue) => onFiltersChange({ venue })}
+          onChange={(venue) => {
+            onFiltersChange({ venue });
+            posthog.capture("agenda_filter_applied", { filter_type: "venue", values: venue });
+          }}
         />
         <FilterMultiSelect
           label="Organisateur"
           values={filters.org}
           placeholder="Tous les organisateurs"
           options={data.organizations}
-          onChange={(org) => onFiltersChange({ org })}
+          onChange={(org) => {
+            onFiltersChange({ org });
+            posthog.capture("agenda_filter_applied", { filter_type: "organizer", values: org });
+          }}
         />
       </div>
       {activeFilters ? (
@@ -214,9 +224,10 @@ export function AgendaFiltersBar({
             variant="ghost"
             size="sm"
             className="h-8 px-2 text-muted-foreground"
-            onClick={() =>
-              onFiltersChange({ category: [], venue: [], org: [] })
-            }
+            onClick={() => {
+              onFiltersChange({ category: [], venue: [], org: [] });
+              posthog.capture("agenda_filter_cleared");
+            }}
           >
             <X data-icon="inline-start" />
             Effacer les filtres

@@ -11,7 +11,7 @@ export function SiteFooter() {
         <p>
           Abonnez-vous au calendrier :{" "}
           <a href="/agenda.ics" className="text-foreground underline">
-            agenda.ics
+            Calendrier iCal (Tous les événements)
           </a>
         </p>
         <div className="flex items-center justify-between gap-3">

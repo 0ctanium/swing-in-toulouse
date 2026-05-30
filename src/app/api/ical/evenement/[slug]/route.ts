@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { redirect } from "next/navigation";
 
+import { icalFeedRedirect } from "@/lib/ical/redirect";
+import { emptyIcalPayload } from "@/lib/ical/payload";
 import { resolveEventBySlug } from "@/lib/events/queries";
-import { serializeCalendar, toNormalizedEvent } from "@/lib/ical/serializer";
-import { siteConfig } from "@/lib/site";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ type RouteContext = {
   params: Promise<{ slug: string }>;
 };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { slug } = await context.params;
   const resolution = await resolveEventBySlug(slug);
 
@@ -19,23 +19,18 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  if (resolution.kind === "redirect") {
-    redirect(`/evenement/${resolution.targetSlug}.ics`);
-  }
+  const eventSlug =
+    resolution.kind === "redirect" ? resolution.targetSlug : resolution.event.slug;
 
-  const event = resolution.event;
-
-  const calendar = serializeCalendar([toNormalizedEvent(event)], {
-    name: event.title,
-    description: event.description ?? undefined,
-    prodId: siteConfig.icalProdId,
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: "anonymous",
+    event: "event_ical_downloaded",
+    properties: { event_slug: eventSlug },
   });
 
-  return new NextResponse(calendar, {
-    headers: {
-      "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${slug}.ics"`,
-      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-    },
+  return icalFeedRedirect(request, {
+    ...emptyIcalPayload(),
+    event: [eventSlug],
   });
 }

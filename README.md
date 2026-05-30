@@ -63,11 +63,9 @@ See **[docs/donnees.md](./docs/donnees.md)** for how to add organizers, sources,
 
 | URL | Description |
 |---|---|
-| `/agenda.ics` | All upcoming events (with RRULE) |
-| `/organisateur/[slug].ics` | Events for one organizer |
-| `/evenement/[slug].ics` | Single event download |
-
-Legacy `/association/*` URLs redirect to `/organisateur/*`.
+| `/ical/e30.ical` | All upcoming events (with RRULE) |
+| `/ical/{payload}.ical` | Filtered feed (`payload` = base64url JSON: `category`, `venue`, `org`, `event`) |
+| `/agenda.ics`, `/organisateur/[slug].ics`, `/evenement/[slug].ics` | Deprecated — 308 redirect to the canonical `/ical/…` URL |
 
 ## Scripts
 
