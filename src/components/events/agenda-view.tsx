@@ -8,7 +8,7 @@ import {
   AgendaFiltersBar,
   useAgendaFilterContext,
 } from "@/components/events/agenda-filters";
-import { EventList } from "@/components/events/event-list";
+import { CompactPlanningView } from "@/components/events/compact-planning-view";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { filterAgendaOccurrences } from "@/lib/events/agenda-filters";
@@ -95,7 +95,7 @@ function PlanningList({ filters, venueSlugById }: PlanningListProps) {
   }
 
   return (
-    <EventList
+    <CompactPlanningView
       events={filteredEvents}
       emptyMessage="Aucun événement ne correspond à ces filtres."
     />

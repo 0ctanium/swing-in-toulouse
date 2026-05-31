@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { addDays } from "date-fns";
 
-import { EventList } from "@/components/events/event-list";
+import { CompactPlanningView } from "@/components/events/compact-planning-view";
 import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
 import {
   Card,
@@ -68,7 +68,7 @@ export default async function HomePage() {
             Tout voir
           </Link>
         </div>
-        <EventList events={events} />
+        <CompactPlanningView events={events} />
       </section>
 
       {organizers.length > 0 ? (

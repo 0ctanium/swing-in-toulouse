@@ -114,3 +114,24 @@ export function formatEventChipTime(
 
   return format(toZonedTime(startAt, TIMEZONE), "HH:mm", { locale: fr });
 }
+
+export function formatEventScheduleTime(
+  startAt: Date,
+  endAt: Date | null,
+  isAllDay = false,
+) {
+  if (isAllDayEvent(startAt, endAt, isAllDay)) {
+    return ALL_DAY_LABEL;
+  }
+
+  const startTime = format(toZonedTime(startAt, TIMEZONE), "HH:mm", {
+    locale: fr,
+  });
+
+  if (!endAt) {
+    return startTime;
+  }
+
+  const endTime = format(toZonedTime(endAt, TIMEZONE), "HH:mm", { locale: fr });
+  return `De ${startTime} à ${endTime}`;
+}

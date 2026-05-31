@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { AdminEventActions } from "@/components/admin/admin-event-actions";
 import {
   EventActionLinks,
@@ -24,11 +26,15 @@ import { cn } from "@/lib/utils";
 type EventPreviewPopoverProps = {
   event: EventOccurrence & { admin?: AdminEventMeta };
   triggerClassName?: string;
+  children?: ReactNode;
+  contentSide?: "top" | "right" | "bottom" | "left";
 };
 
 export function EventPreviewPopover({
   event,
   triggerClassName,
+  children,
+  contentSide = "right",
 }: EventPreviewPopoverProps) {
   const chipTime = formatEventChipTime(
     event.startAt,
@@ -40,22 +46,27 @@ export function EventPreviewPopover({
     <Popover>
       <PopoverTrigger
         className={cn(
-          "block w-full truncate rounded px-1 py-0.5 text-left text-xs leading-tight transition-colors hover:bg-primary/10",
+          !children &&
+            "block w-full truncate rounded px-1 py-0.5 text-left text-xs leading-tight transition-colors hover:bg-primary/10",
           triggerClassName,
         )}
         title={event.title}
       >
-        {chipTime ? (
+        {children ?? (
           <>
-            <span className="text-muted-foreground tabular-nums">
-              {chipTime}
-            </span>{" "}
+            {chipTime ? (
+              <>
+                <span className="text-muted-foreground tabular-nums">
+                  {chipTime}
+                </span>{" "}
+              </>
+            ) : null}
+            {event.title}
           </>
-        ) : null}
-        {event.title}
+        )}
       </PopoverTrigger>
       <PopoverContent
-        side="right"
+        side={contentSide}
         align="start"
         sideOffset={8}
         className="w-80 gap-0 overflow-hidden p-0 shadow-lg"
