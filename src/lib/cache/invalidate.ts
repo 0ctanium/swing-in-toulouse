@@ -19,9 +19,15 @@ export function invalidatePublicVenueCache() {
   invalidatePublicEventCache();
 }
 
+export function invalidateCategoryTagMetadataCache() {
+  revalidateTag(CACHE_TAGS.categoryTags, REVALIDATE_PROFILE);
+  revalidateTag(CACHE_TAGS.agendaFilters, REVALIDATE_PROFILE);
+}
+
 export function invalidateAllPublicCache() {
   revalidateTag(CACHE_TAGS.events, REVALIDATE_PROFILE);
   revalidateTag(CACHE_TAGS.organizers, REVALIDATE_PROFILE);
   revalidateTag(CACHE_TAGS.venues, REVALIDATE_PROFILE);
   revalidateTag(CACHE_TAGS.agendaFilters, REVALIDATE_PROFILE);
+  revalidateTag(CACHE_TAGS.categoryTags, REVALIDATE_PROFILE);
 }

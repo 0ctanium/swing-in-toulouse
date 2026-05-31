@@ -4,6 +4,12 @@ import { cache } from "react";
 import { db } from "@/db";
 import { CACHE_TAGS } from "@/lib/cache/tags";
 import { PUBLIC_PAGE_REVALIDATE } from "@/lib/cache/revalidate";
+import {
+  buildGroupedCategoryFilterOptions,
+  flattenGroupedCategoryFilterOptions,
+  type GroupedCategoryFilterOptions,
+} from "@/lib/event-category-tags/grouped-options";
+import { loadEventCategoryTagMetadataMap } from "@/lib/event-category-tags/metadata";
 import { getUpcomingEvents } from "@/lib/events/queries";
 import { getDefaultExpansionWindow } from "@/lib/ical/recurrence";
 import { loadVenueCanonicalMap } from "@/lib/venues/canonical";
@@ -15,6 +21,7 @@ export type AgendaFilterOption = {
 
 export type AgendaFilterOptions = {
   categories: AgendaFilterOption[];
+  categoryGroups: GroupedCategoryFilterOptions;
   venues: AgendaFilterOption[];
   organizations: AgendaFilterOption[];
   venueSlugById: Record<string, string>;
@@ -33,11 +40,12 @@ export async function getAgendaFilterOptionsUncached(): Promise<AgendaFilterOpti
     to: window.to,
   });
 
-  const [canonicalMap, allVenues] = await Promise.all([
+  const [canonicalMap, allVenues, tagMetadata] = await Promise.all([
     loadVenueCanonicalMap(),
     db.query.venues.findMany({
       columns: { id: true, slug: true, name: true },
     }),
+    loadEventCategoryTagMetadataMap(),
   ]);
 
   const venueById = new Map(allVenues.map((venue) => [venue.id, venue]));
@@ -75,13 +83,14 @@ export async function getAgendaFilterOptionsUncached(): Promise<AgendaFilterOpti
     }
   }
 
+  const categoryGroups = buildGroupedCategoryFilterOptions(
+    categories,
+    tagMetadata,
+  );
+
   return {
-    categories: sortOptions(
-      [...categories].map((category) => ({
-        value: category,
-        label: category,
-      })),
-    ),
+    categories: sortOptions(flattenGroupedCategoryFilterOptions(categoryGroups)),
+    categoryGroups,
     venues: sortOptions([...venues.values()]),
     organizations: sortOptions([...organizations.values()]),
     venueSlugById,
@@ -94,7 +103,11 @@ async function getAgendaFilterOptionsCached() {
     stale: PUBLIC_PAGE_REVALIDATE,
     revalidate: PUBLIC_PAGE_REVALIDATE,
   });
-  cacheTag(CACHE_TAGS.agendaFilters, CACHE_TAGS.events);
+  cacheTag(
+    CACHE_TAGS.agendaFilters,
+    CACHE_TAGS.events,
+    CACHE_TAGS.categoryTags,
+  );
 
   return getAgendaFilterOptionsUncached();
 }

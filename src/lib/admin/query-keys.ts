@@ -8,6 +8,7 @@ export const adminQueryKeys = {
   venues: () => [...adminQueryKeys.all, "venues"] as const,
   events: () => [...adminQueryKeys.all, "events"] as const,
   event: (id: string) => [...adminQueryKeys.events(), id] as const,
+  categoryTags: () => [...adminQueryKeys.all, "category-tags"] as const,
 };
 
 export const eventsQueryKeys = {

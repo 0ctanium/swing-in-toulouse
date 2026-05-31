@@ -3,4 +3,5 @@ export const CACHE_TAGS = {
   organizers: "organizers",
   venues: "venues",
   agendaFilters: "agenda-filters",
+  categoryTags: "category-tags",
 } as const;

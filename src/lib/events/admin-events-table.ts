@@ -16,6 +16,12 @@ import {
   getEventDisplayDate,
   sortEventsForAdmin,
 } from "@/lib/events/event-scheduling";
+import {
+  buildGroupedCategoryFilterOptions,
+  flattenGroupedCategoryFilterOptions,
+  type GroupedCategoryFilterOptions,
+} from "@/lib/event-category-tags/grouped-options";
+import { loadEventCategoryTagMetadataMap } from "@/lib/event-category-tags/metadata";
 import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
 import type { EventMaster } from "@/db/schema";
 
@@ -52,6 +58,7 @@ export type AdminEventsFilterOptions = {
   venues: AdminEventFilterOption[];
   organizations: AdminEventFilterOption[];
   categories: AdminEventFilterOption[];
+  categoryGroups: GroupedCategoryFilterOptions;
   states: AdminEventFilterOption[];
 };
 
@@ -243,7 +250,10 @@ async function loadMergedMasterEvents(): Promise<AdminEventRow[]> {
 }
 
 export async function getAdminEventsFilterOptions(): Promise<AdminEventsFilterOptions> {
-  const rows = await loadMergedMasterEvents();
+  const [rows, tagMetadata] = await Promise.all([
+    loadMergedMasterEvents(),
+    loadEventCategoryTagMetadataMap(),
+  ]);
 
   const venues = new Map<string, AdminEventFilterOption>();
   const organizations = new Map<string, AdminEventFilterOption>();
@@ -293,15 +303,18 @@ export async function getAdminEventsFilterOptions(): Promise<AdminEventsFilterOp
     });
   }
 
+  const categoryGroups = buildGroupedCategoryFilterOptions(
+    categories,
+    tagMetadata,
+  );
+
   return {
     venues: venueOptions,
     organizations: organizationOptions,
     categories: sortOptions(
-      [...categories].map((category) => ({
-        value: category,
-        label: category,
-      })),
+      flattenGroupedCategoryFilterOptions(categoryGroups),
     ),
+    categoryGroups,
     states: ADMIN_EVENT_STATE_OPTIONS,
   };
 }

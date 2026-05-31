@@ -2,6 +2,7 @@
 
 import { Check, ChevronDown, X } from "lucide-react";
 
+import { GroupedFilterMultiSelect } from "@/components/filters/grouped-filter-multi-select";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -159,11 +160,11 @@ export function EventsTableFilters({
           options={options.organizations}
           onChange={(org) => onQueryChange({ org, page: 1 })}
         />
-        <FilterMultiSelect
+        <GroupedFilterMultiSelect
           label="Catégorie"
           values={query.category}
           placeholder="Toutes les catégories"
-          options={options.categories}
+          groups={options.categoryGroups}
           onChange={(category) => onQueryChange({ category, page: 1 })}
         />
         <FilterMultiSelect

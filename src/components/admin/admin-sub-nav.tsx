@@ -14,6 +14,7 @@ const navItems = [
     prefix: "/admin/organizations",
   },
   { href: "/admin/sources", label: "Sources", prefix: "/admin/sources" },
+  { href: "/admin/settings", label: "Réglages", prefix: "/admin/settings" },
 ] as const;
 
 export function AdminSubNav() {

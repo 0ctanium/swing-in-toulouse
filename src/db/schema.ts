@@ -46,6 +46,12 @@ export const venueCategoryEnum = pgEnum("venue_category", [
   "other",
 ]);
 
+export const eventCategoryTagTypeEnum = pgEnum("event_category_tag_type", [
+  "danse",
+  "evenement",
+  "autre",
+]);
+
 export const venues = pgTable(
   "venues",
   {
@@ -232,6 +238,19 @@ export const eventOverrides = pgTable(
   ],
 );
 
+export const eventCategoryTags = pgTable(
+  "event_category_tags",
+  {
+    name: text("name").primaryKey(),
+    tagType: eventCategoryTagTypeEnum("tag_type").notNull().default("autre"),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("event_category_tags_type_idx").on(table.tagType)],
+);
+
 export const syncLogs = pgTable(
   "sync_logs",
   {
@@ -324,6 +343,10 @@ export type NewSource = typeof sources.$inferInsert;
 export type Venue = typeof venues.$inferSelect;
 export type NewVenue = typeof venues.$inferInsert;
 export type VenueCategory = (typeof venueCategoryEnum.enumValues)[number];
+export type EventCategoryTag = typeof eventCategoryTags.$inferSelect;
+export type NewEventCategoryTag = typeof eventCategoryTags.$inferInsert;
+export type EventCategoryTagType =
+  (typeof eventCategoryTagTypeEnum.enumValues)[number];
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
 export type EventOverride = typeof eventOverrides.$inferSelect;
