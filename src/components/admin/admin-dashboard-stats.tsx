@@ -1,12 +1,7 @@
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type {
-  AdminDashboardLastSync,
-  AdminDashboardStats,
-} from "@/lib/admin/dashboard-stats";
+import type { AdminDashboardStats } from "@/lib/admin/dashboard-stats";
 import { adminVenuesPendingFilterHref } from "@/lib/venues/admin-venues-params";
 import { cn } from "@/lib/utils";
 
@@ -17,50 +12,6 @@ type StatCardProps = {
   href?: string;
   variant?: "default" | "warning" | "muted";
 };
-
-function formatLastSync(lastSync: AdminDashboardLastSync | null) {
-  if (!lastSync) {
-    return {
-      value: "—",
-      detail: "Aucune synchronisation enregistrée",
-      variant: "muted" as const,
-    };
-  }
-
-  const relativeTime = formatDistanceToNow(lastSync.createdAt, {
-    addSuffix: true,
-    locale: fr,
-  });
-
-  const statusLabel =
-    lastSync.status === "success"
-      ? "OK"
-      : lastSync.status === "partial"
-        ? "Partielle"
-        : "Échec";
-
-  const changes = [
-    lastSync.eventsCreated > 0 ? `${lastSync.eventsCreated} créé(s)` : null,
-    lastSync.eventsUpdated > 0 ? `${lastSync.eventsUpdated} modifié(s)` : null,
-    lastSync.eventsCancelled > 0
-      ? `${lastSync.eventsCancelled} retiré(s)`
-      : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
-  const sourceLabel = lastSync.sourceName ?? "Source inconnue";
-  const detail = changes
-    ? `${sourceLabel} · ${changes} · ${relativeTime}`
-    : `${sourceLabel} · ${relativeTime}`;
-
-  return {
-    value: statusLabel,
-    detail,
-    variant:
-      lastSync.status === "success" ? ("default" as const) : ("warning" as const),
-  };
-}
 
 function StatCard({ label, value, detail, href, variant = "default" }: StatCardProps) {
   const content = (
@@ -100,7 +51,7 @@ function StatCard({ label, value, detail, href, variant = "default" }: StatCardP
 }
 
 function buildStatCards(stats: AdminDashboardStats): StatCardProps[] {
-  const lastSync = formatLastSync(stats.lastSync);
+  const lastSync = stats.lastSyncDisplay;
 
   return [
     {

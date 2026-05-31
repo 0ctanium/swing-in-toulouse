@@ -1,5 +1,7 @@
-import { subHours } from "date-fns";
+import { formatDistanceToNow, subHours } from "date-fns";
+import { fr } from "date-fns/locale";
 import { and, count, desc, gte, ne } from "drizzle-orm";
+import { cookies } from "next/headers";
 
 import { db } from "@/db";
 import { sources, syncLogs } from "@/db/schema";
@@ -18,6 +20,12 @@ export type AdminDashboardLastSync = {
   message: string | null;
 };
 
+export type AdminDashboardLastSyncDisplay = {
+  value: string;
+  detail: string;
+  variant: "default" | "warning" | "muted";
+};
+
 export type AdminDashboardStats = {
   pendingEvents: number;
   pendingVenues: number;
@@ -25,9 +33,54 @@ export type AdminDashboardStats = {
   activeSources: number;
   inactiveSources: number;
   activeOrganizers: number;
-  lastSync: AdminDashboardLastSync | null;
+  lastSyncDisplay: AdminDashboardLastSyncDisplay;
   recentFailedSyncs: number;
 };
+
+function formatLastSyncDisplay(
+  lastSync: AdminDashboardLastSync | null,
+): AdminDashboardLastSyncDisplay {
+  if (!lastSync) {
+    return {
+      value: "—",
+      detail: "Aucune synchronisation enregistrée",
+      variant: "muted",
+    };
+  }
+
+  const relativeTime = formatDistanceToNow(lastSync.createdAt, {
+    addSuffix: true,
+    locale: fr,
+  });
+
+  const statusLabel =
+    lastSync.status === "success"
+      ? "OK"
+      : lastSync.status === "partial"
+        ? "Partielle"
+        : "Échec";
+
+  const changes = [
+    lastSync.eventsCreated > 0 ? `${lastSync.eventsCreated} créé(s)` : null,
+    lastSync.eventsUpdated > 0 ? `${lastSync.eventsUpdated} modifié(s)` : null,
+    lastSync.eventsCancelled > 0
+      ? `${lastSync.eventsCancelled} retiré(s)`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const sourceLabel = lastSync.sourceName ?? "Source inconnue";
+  const detail = changes
+    ? `${sourceLabel} · ${changes} · ${relativeTime}`
+    : `${sourceLabel} · ${relativeTime}`;
+
+  return {
+    value: statusLabel,
+    detail,
+    variant: lastSync.status === "success" ? "default" : "warning",
+  };
+}
 
 async function getVenuePendingConfirmationCount() {
   const venueList = await listVenuesWithStats();
@@ -115,6 +168,8 @@ function countActiveOrganizers(
 }
 
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
+  await cookies();
+
   const [
     { pendingCount: pendingEvents },
     pendingVenues,
@@ -138,7 +193,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     activeSources: sourceCounts.activeSources,
     inactiveSources: sourceCounts.inactiveSources,
     activeOrganizers: countActiveOrganizers(upcomingEvents),
-    lastSync,
+    lastSyncDisplay: formatLastSyncDisplay(lastSync),
     recentFailedSyncs,
   };
 }

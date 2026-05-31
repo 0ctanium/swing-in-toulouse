@@ -71,8 +71,9 @@ const nextConfig: NextConfig = {
 
 export default withPostHogConfig(withMDX(nextConfig), {
   personalApiKey: process.env.POSTHOG_API_KEY!,
-  envId: "190420",
+  projectId: "190420",
   host: "https://eu.i.posthog.com",
+  logLevel: "error",
   sourcemaps: {
     enabled: true,
     project: "swing-in-toulouse",

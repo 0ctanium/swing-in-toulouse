@@ -6,7 +6,7 @@ import {
   postHogDistinctIdCookieOptions,
 } from "@/lib/posthog/distinct-id-cookie";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const existing = request.cookies.get(POSTHOG_DISTINCT_ID_COOKIE)?.value;
 
   if (existing) {
