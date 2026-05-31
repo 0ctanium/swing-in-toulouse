@@ -11,10 +11,15 @@ import {
   listAdminSources,
   resolveUniqueSourceSlug,
 } from "@/lib/sources/admin";
+import { createIcalFileSource } from "@/lib/sources/file-source";
 import {
   normalizeSourceCategories,
+  parseSourceFormFields,
   sourceWriteSchema,
 } from "@/lib/sources/schemas";
+import { sourceSyncResponse } from "@/lib/sources/sync-api";
+
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   const authError = await assertAdminApi(request);
@@ -30,6 +35,12 @@ export async function POST(request: NextRequest) {
   const authError = await assertAdminApi(request);
   if (authError) {
     return authError;
+  }
+
+  const contentType = request.headers.get("content-type") ?? "";
+
+  if (contentType.includes("multipart/form-data")) {
+    return handleCreateFileSource(request);
   }
 
   const parsed = sourceWriteSchema.safeParse(await request.json());
@@ -78,4 +89,32 @@ export async function POST(request: NextRequest) {
   invalidateAllPublicCache();
 
   return NextResponse.json({ source: created }, { status: 201 });
+}
+
+async function handleCreateFileSource(request: NextRequest) {
+  const formData = await request.formData();
+  const file = formData.get("file");
+
+  if (!(file instanceof File)) {
+    return NextResponse.json(
+      { error: "Fichier iCal requis." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const result = await createIcalFileSource(parseSourceFormFields(formData), file);
+    invalidateAllPublicCache();
+
+    return sourceSyncResponse(
+      result.source,
+      result.sync,
+      201,
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Création impossible.";
+
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 }

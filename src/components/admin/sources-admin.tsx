@@ -7,6 +7,8 @@ import {
 } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { SourceDeleteDialog } from "@/components/admin/source-delete-dialog";
 import { SourceFormDialog } from "@/components/admin/source-form-dialog";
@@ -21,7 +23,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  formatSourceSyncMessage,
+} from "@/lib/admin/use-sources";
 import type { AdminSourceRow } from "@/lib/sources/admin";
+import type { SourceSyncResult } from "@/lib/sources/schemas";
 import type { VenueSelectOption } from "@/lib/venues/select-options";
 
 type SourcesAdminProps = {
@@ -42,6 +48,42 @@ export function SourcesAdmin({
   const [deletingSource, setDeletingSource] = useState<AdminSourceRow | null>(
     null,
   );
+  const [syncingSourceId, setSyncingSourceId] = useState<string | null>(null);
+  const router = useRouter();
+
+  async function handleSync(source: AdminSourceRow) {
+    setSyncingSourceId(source.id);
+
+    try {
+      const response = await fetch(`/api/admin/sources/${source.id}/sync`, {
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        sync?: SourceSyncResult;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Synchronisation impossible.");
+      }
+
+      const message = formatSourceSyncMessage(payload.sync);
+
+      if (message) {
+        if (payload.sync && "error" in payload.sync && payload.sync.error) {
+          toast.error(message);
+        } else {
+          toast.success(message);
+        }
+      } else {
+        toast.success("Synchronisation terminée.");
+      }
+
+      router.refresh();
+    } finally {
+      setSyncingSourceId(null);
+    }
+  }
 
   const columns = useMemo(
     () =>
@@ -51,8 +93,10 @@ export function SourcesAdmin({
           setFormOpen(true);
         },
         onDelete: setDeletingSource,
+        onSync: handleSync,
+        syncingSourceId,
       }),
-    [],
+    [syncingSourceId],
   );
 
   const table = useReactTable({

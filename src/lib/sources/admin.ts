@@ -1,13 +1,17 @@
-import { and, asc, count, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, isNull, ne } from "drizzle-orm";
 
 import { db } from "@/db";
-import { events, organizations, sources } from "@/db/schema";
+import { events, organizations, sources, type SourceType } from "@/db/schema";
 
 export type AdminSourceRow = {
   id: string;
   slug: string;
   name: string;
-  url: string;
+  type: SourceType;
+  url: string | null;
+  icalFileName: string | null;
+  icalFileSize: number | null;
+  icalUploadedAt: Date | null;
   isActive: boolean;
   organizationId: string | null;
   organizationName: string | null;
@@ -48,6 +52,12 @@ export async function getOrganizationById(organizationId: string) {
   });
 }
 
+export async function getSourceById(sourceId: string) {
+  return db.query.sources.findFirst({
+    where: eq(sources.id, sourceId),
+  });
+}
+
 export async function listAdminSources(): Promise<AdminSourceRow[]> {
   const [sourceRows, eventCountRows] = await Promise.all([
     db.query.sources.findMany({
@@ -80,7 +90,11 @@ export async function listAdminSources(): Promise<AdminSourceRow[]> {
     id: source.id,
     slug: source.slug,
     name: source.name,
+    type: source.type,
     url: source.url,
+    icalFileName: source.icalFileName,
+    icalFileSize: source.icalFileSize,
+    icalUploadedAt: source.icalUploadedAt,
     isActive: source.isActive,
     organizationId: source.organizationId,
     organizationName: source.organization?.name ?? null,

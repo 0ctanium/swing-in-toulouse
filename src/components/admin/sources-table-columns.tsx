@@ -1,21 +1,39 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatSourceSyncMessage } from "@/lib/admin/use-sources";
 import type { AdminSourceRow } from "@/lib/sources/admin";
 
 type CreateSourcesTableColumnsOptions = {
   onEdit: (source: AdminSourceRow) => void;
   onDelete: (source: AdminSourceRow) => void;
+  onSync: (source: AdminSourceRow) => Promise<void>;
+  syncingSourceId: string | null;
 };
+
+function formatFileSize(bytes: number | null) {
+  if (bytes === null) {
+    return null;
+  }
+
+  if (bytes < 1024) {
+    return `${bytes} o`;
+  }
+
+  return `${(bytes / 1024).toFixed(1)} Ko`;
+}
 
 export function createSourcesTableColumns({
   onEdit,
   onDelete,
+  onSync,
+  syncingSourceId,
 }: CreateSourcesTableColumnsOptions): ColumnDef<AdminSourceRow>[] {
   return [
     {
@@ -26,18 +44,32 @@ export function createSourcesTableColumns({
 
         return (
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="font-medium">{source.name}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">{source.name}</span>
+              <Badge variant="outline">
+                {source.type === "ical-file" ? "Fichier" : "URL"}
+              </Badge>
+            </div>
             <span className="text-muted-foreground text-xs">
               /{source.slug}
             </span>
-            <a
-              href={source.url}
-              target="_blank"
-              rel="noreferrer"
-              className="line-clamp-1 text-xs hover:underline"
-            >
-              {source.url}
-            </a>
+            {source.type === "ical" && source.url ? (
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+                className="line-clamp-1 text-xs hover:underline"
+              >
+                {source.url}
+              </a>
+            ) : source.icalFileName ? (
+              <span className="text-muted-foreground line-clamp-1 text-xs">
+                {source.icalFileName}
+                {formatFileSize(source.icalFileSize)
+                  ? ` (${formatFileSize(source.icalFileSize)})`
+                  : null}
+              </span>
+            ) : null}
           </div>
         );
       },
@@ -111,9 +143,31 @@ export function createSourcesTableColumns({
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => {
         const source = row.original;
+        const syncing = syncingSourceId === source.id;
 
         return (
           <div className="flex justify-end gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={syncing}
+              onClick={() => {
+                void onSync(source).catch((error) => {
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : "Synchronisation impossible.",
+                  );
+                });
+              }}
+            >
+              <RefreshCw
+                data-icon="inline-start"
+                className={syncing ? "animate-spin" : undefined}
+              />
+              {syncing ? "Sync…" : "Sync"}
+            </Button>
             {source.organizationSlug ? (
               <Button
                 variant="ghost"

@@ -16,6 +16,7 @@ export const env = createEnv({
     QSTASH_NEXT_SIGNING_KEY: z.string().optional(),
     ADMIN_SECRET: z.string().min(16).optional(),
     GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
+    BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
   },
   client: {
     NEXT_PUBLIC_SITE_URL: z.string().url(),
@@ -30,6 +31,7 @@ export const env = createEnv({
     QSTASH_NEXT_SIGNING_KEY: process.env.QSTASH_NEXT_SIGNING_KEY,
     ADMIN_SECRET: process.env.ADMIN_SECRET,
     GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
+    BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
@@ -54,4 +56,8 @@ export function isAdminConfigured() {
 
 export function isGoogleMapsConfigured() {
   return Boolean(env.GOOGLE_MAPS_API_KEY);
+}
+
+export function isBlobStorageConfigured() {
+  return Boolean(env.BLOB_READ_WRITE_TOKEN);
 }

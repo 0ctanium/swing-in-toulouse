@@ -30,7 +30,7 @@ export const syncStatusEnum = pgEnum("sync_status", [
   "failed",
 ]);
 
-export const sourceTypeEnum = pgEnum("source_type", ["ical"]);
+export const sourceTypeEnum = pgEnum("source_type", ["ical", "ical-file"]);
 
 export const organizationCategoryEnum = pgEnum("organization_category", [
   "school",
@@ -123,7 +123,12 @@ export const sources = pgTable(
     slug: text("slug").notNull().unique(),
     name: text("name").notNull(),
     type: sourceTypeEnum("type").notNull().default("ical"),
-    url: text("url").notNull(),
+    url: text("url"),
+    icalBlobUrl: text("ical_blob_url"),
+    icalFileName: text("ical_file_name"),
+    icalFileSize: integer("ical_file_size"),
+    icalContentHash: text("ical_content_hash"),
+    icalUploadedAt: timestamp("ical_uploaded_at", { withTimezone: true }),
     organizationId: uuid("organization_id").references(() => organizations.id, {
       onDelete: "set null",
     }),
@@ -340,6 +345,7 @@ export type OrganizationCategory =
   (typeof organizationCategoryEnum.enumValues)[number];
 export type Source = typeof sources.$inferSelect;
 export type NewSource = typeof sources.$inferInsert;
+export type SourceType = (typeof sourceTypeEnum.enumValues)[number];
 export type Venue = typeof venues.$inferSelect;
 export type NewVenue = typeof venues.$inferInsert;
 export type VenueCategory = (typeof venueCategoryEnum.enumValues)[number];

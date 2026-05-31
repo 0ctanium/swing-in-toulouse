@@ -16,14 +16,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
+  formatSourceSyncMessage,
+  useCreateFileSource,
   useCreateSource,
+  useReplaceSourceFile,
   useUpdateSource,
 } from "@/lib/admin/use-sources";
 import { formatVenueAsDefaultLocation } from "@/lib/sources/defaults";
 import { parseSourceCategoriesInput } from "@/lib/sources/schemas";
 import type { AdminSourceRow } from "@/lib/sources/admin";
+import type { SourceType } from "@/db/schema";
 import { generateSourceSlug } from "@/lib/slug";
 import type { OrganizationSelectOption } from "@/components/admin/organization-select";
 import type { VenueSelectOption } from "@/lib/venues/select-options";
@@ -38,6 +49,7 @@ type SourceFormDialogProps = {
 
 function emptyFormState() {
   return {
+    type: "ical" as SourceType,
     name: "",
     slug: "",
     url: "",
@@ -69,9 +81,10 @@ function formStateFromSource(
   venues: VenueSelectOption[],
 ) {
   return {
+    type: source.type,
     name: source.name,
     slug: source.slug,
-    url: source.url,
+    url: source.url ?? "",
     organizationId: source.organizationId ?? "",
     defaultVenueId: findVenueIdForDefaultLocation(
       venues,
@@ -80,6 +93,29 @@ function formStateFromSource(
     defaultCategories: (source.defaultCategories ?? []).join(", "),
     isActive: source.isActive,
   };
+}
+
+function formatFileSize(bytes: number | null) {
+  if (bytes === null) {
+    return null;
+  }
+
+  if (bytes < 1024) {
+    return `${bytes} o`;
+  }
+
+  return `${(bytes / 1024).toFixed(1)} Ko`;
+}
+
+function formatUploadedAt(value: Date | null) {
+  if (!value) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 export function SourceFormDialog({
@@ -91,9 +127,12 @@ export function SourceFormDialog({
 }: SourceFormDialogProps) {
   const isEdit = source !== null;
   const createSource = useCreateSource();
+  const createFileSource = useCreateFileSource();
   const updateSource = useUpdateSource(source?.id ?? "");
+  const replaceSourceFile = useReplaceSourceFile(source?.id ?? "");
   const slugManuallyEdited = useRef(false);
 
+  const [type, setType] = useState<SourceType>("ical");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [url, setUrl] = useState("");
@@ -101,9 +140,24 @@ export function SourceFormDialog({
   const [defaultVenueId, setDefaultVenueId] = useState("");
   const [defaultCategories, setDefaultCategories] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const pending = createSource.isPending || updateSource.isPending;
-  const canSubmit = Boolean(name.trim() && slug.trim() && url.trim());
+  const pending =
+    createSource.isPending ||
+    createFileSource.isPending ||
+    updateSource.isPending ||
+    replaceSourceFile.isPending;
+
+  const isFileSource = type === "ical-file";
+  const canSubmit =
+    Boolean(name.trim() && slug.trim()) &&
+    (isEdit
+      ? isFileSource
+        ? true
+        : Boolean(url.trim())
+      : isFileSource
+        ? Boolean(selectedFile)
+        : Boolean(url.trim()));
 
   const defaultLocationPreview = useMemo(() => {
     if (!defaultVenueId) {
@@ -120,9 +174,12 @@ export function SourceFormDialog({
     }
 
     slugManuallyEdited.current = false;
+    setSelectedFile(null);
+
     const nextState = source
       ? formStateFromSource(source, venues)
       : emptyFormState();
+    setType(nextState.type);
     setName(nextState.name);
     setSlug(nextState.slug);
     setUrl(nextState.url);
@@ -144,13 +201,17 @@ export function SourceFormDialog({
     setDefaultVenueId(venueId);
   }
 
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setSelectedFile(file);
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
-    const payload = {
+    const metadata = {
       name: name.trim(),
       slug: slug.trim(),
-      url: url.trim(),
       organizationId: organizationId || null,
       defaultLocationRaw: defaultLocationPreview,
       defaultCategories: parseSourceCategoriesInput(defaultCategories),
@@ -159,10 +220,71 @@ export function SourceFormDialog({
 
     try {
       if (isEdit) {
-        await updateSource.mutateAsync(payload);
-        toast.success("Source enregistrée.");
+        await updateSource.mutateAsync({
+          ...metadata,
+          ...(isFileSource ? {} : { url: url.trim() }),
+        });
+
+        if (isFileSource && selectedFile) {
+          const formData = new FormData();
+          formData.append("file", selectedFile);
+          const result = await replaceSourceFile.mutateAsync(formData);
+          const syncMessage = formatSourceSyncMessage(result.sync);
+
+          if (syncMessage) {
+            if (result.sync && "error" in result.sync) {
+              toast.error(syncMessage);
+            } else {
+              toast.success(syncMessage);
+            }
+          } else {
+            toast.success("Fichier iCal remplacé.");
+          }
+        } else {
+          toast.success("Source enregistrée.");
+        }
+      } else if (isFileSource) {
+        if (!selectedFile) {
+          toast.error("Sélectionnez un fichier iCal.");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("name", metadata.name);
+        formData.append("slug", metadata.slug);
+        if (metadata.organizationId) {
+          formData.append("organizationId", metadata.organizationId);
+        }
+        if (metadata.defaultLocationRaw) {
+          formData.append("defaultLocationRaw", metadata.defaultLocationRaw);
+        }
+        if (metadata.defaultCategories.length > 0) {
+          formData.append(
+            "defaultCategories",
+            metadata.defaultCategories.join(", "),
+          );
+        }
+        formData.append("isActive", String(metadata.isActive));
+
+        const result = await createFileSource.mutateAsync(formData);
+        const syncMessage = formatSourceSyncMessage(result.sync);
+
+        if (syncMessage) {
+          if (result.sync && "error" in result.sync) {
+            toast.error(syncMessage);
+          } else {
+            toast.success(syncMessage);
+          }
+        } else {
+          toast.success("Source créée.");
+        }
       } else {
-        await createSource.mutateAsync(payload);
+        await createSource.mutateAsync({
+          ...metadata,
+          type: "ical",
+          url: url.trim(),
+        });
         toast.success("Source créée.");
       }
 
@@ -179,16 +301,39 @@ export function SourceFormDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Modifier la source" : "Nouvelle source iCal"}
+            {isEdit ? "Modifier la source" : "Nouvelle source"}
           </DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "Mettez à jour le flux et ses valeurs par défaut pour la synchronisation."
-              : "Ajoutez un calendrier iCal à synchroniser."}
+              ? "Mettez à jour la source et ses valeurs par défaut pour la synchronisation."
+              : "Ajoutez un calendrier iCal par URL ou par fichier."}
           </DialogDescription>
         </DialogHeader>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-2">
+            <Label>Type de source</Label>
+            {isEdit ? (
+              <p className="text-sm">
+                {isFileSource ? "Fichier iCal" : "Flux URL (iCal)"}
+              </p>
+            ) : (
+              <Select
+                value={type}
+                onValueChange={(value) => setType(value as SourceType)}
+                disabled={pending}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choisir un type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ical">Flux URL (iCal)</SelectItem>
+                  <SelectItem value="ical-file">Fichier iCal</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="source-name">Nom</Label>
             <Input
@@ -214,18 +359,49 @@ export function SourceFormDialog({
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="source-url">URL iCal</Label>
-            <Input
-              id="source-url"
-              type="url"
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              required
-              disabled={pending}
-              placeholder="https://…"
-            />
-          </div>
+          {isFileSource ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="source-file">Fichier iCal</Label>
+              {isEdit && source.icalFileName ? (
+                <div className="rounded-lg border px-3 py-2 text-sm">
+                  <p className="font-medium">{source.icalFileName}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {formatFileSize(source.icalFileSize)}
+                    {source.icalUploadedAt
+                      ? ` · importé le ${formatUploadedAt(source.icalUploadedAt)}`
+                      : null}
+                  </p>
+                </div>
+              ) : null}
+              <Input
+                key={isEdit ? `file-edit-${source.id}` : "file-create"}
+                id="source-file"
+                type="file"
+                accept=".ics,text/calendar"
+                onChange={handleFileChange}
+                required={!isEdit}
+                disabled={pending}
+              />
+              <p className="text-muted-foreground text-xs">
+                {isEdit
+                  ? "Choisissez un nouveau fichier pour remplacer l’actuel et relancer une sync."
+                  : "Fichier .ics uniquement, 10 Mo maximum."}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="source-url">URL iCal</Label>
+              <Input
+                id="source-url"
+                type="url"
+                value={url}
+                onChange={(event) => setUrl(event.target.value)}
+                required
+                disabled={pending}
+                placeholder="https://…"
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <Label>Organisateur</Label>

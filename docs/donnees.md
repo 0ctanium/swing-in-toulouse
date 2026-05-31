@@ -7,7 +7,7 @@
   | Concept | Rôle |
   |---|---|
   | **Organisateur** | École, asso, collectif ou organisateur d'événements (page publique `/organisateur/[slug]`) |
-  | **Source** | Point de synchronisation — aujourd'hui un flux **iCal** |
+  | **Source** | Point de synchronisation — flux **iCal** (URL) ou fichier **iCal** importé |
   | **Lieu** | Endroit où se déroule un événement (salle, adresse…) |
   | **Événement** | Importé depuis une source, rattaché optionnellement à un organisateur |
 
@@ -17,10 +17,17 @@
   - une source peut exister **sans organisateur** (événements communautaires, calendrier public).
 
   ```text
-  Source (iCal URL) ──sync──► Événements ──optionnel──► Organisateur
-                                    │
-                                    └──► Lieu (auto depuis iCal LOCATION)
+  Source (iCal URL ou fichier) ──sync──► Événements ──optionnel──► Organisateur
+                                              │
+                                              └──► Lieu (auto depuis iCal LOCATION)
   ```
+
+  Deux types de source coexistent :
+
+  - **URL (`ical`)** — flux distant synchronisé automatiquement chaque heure (QStash) ;
+  - **Fichier (`ical-file`)** — fichier `.ics` stocké sur Vercel Blob, synchronisé à l’import et sur demande (pas de cron).
+
+  L’extension Chrome `tools/scrap` (export Facebook → `.ics`) alimente typiquement une source fichier via l’admin.
 
   ## Ajouter un organisateur
 
@@ -84,6 +91,17 @@
   - **Seed** — champs optionnels `defaultLocationRaw` et `defaultCategories` dans `seedSources`
 
   Les défauts s'appliquent à la synchronisation uniquement quand l'événement iCal n'a pas déjà ces champs. Relancez `pnpm run sync` après modification.
+
+  ## Ajouter une source fichier iCal
+
+  Pour un calendrier exporté manuellement (ex. extension Facebook `tools/scrap`) :
+
+  1. Configurez `BLOB_READ_WRITE_TOKEN` (Vercel Blob) dans `.env.local` ;
+  2. Admin → **Sources** → **Nouvelle source** → type **Fichier iCal** ;
+  3. Importez le `.ics` — la sync démarre immédiatement après l’enregistrement ;
+  4. Pour mettre à jour : **Modifier** → **Remplacer le fichier** (nouvelle sync automatique).
+
+  Les sources fichier ne sont **pas** incluses dans la sync horaire (`pnpm run sync` / cron QStash). Utilisez le bouton **Sync** dans l’admin pour forcer une resynchronisation.
 
   ## Lieux : comment ça marche ?
 
@@ -169,7 +187,7 @@
   | Commande | Action |
   |---|---|
   | `pnpm run db:seed` | Crée organisateurs et sources depuis `scripts/seed-data.ts` |
-  | `pnpm run sync` | Synchronise toutes les sources actives |
+  | `pnpm run sync` | Synchronise toutes les sources **URL** actives (ignore les sources fichier) |
   | `pnpm run db:studio` | Interface visuelle pour inspecter / corriger les données |
 
   ## Migration depuis l'ancien modèle

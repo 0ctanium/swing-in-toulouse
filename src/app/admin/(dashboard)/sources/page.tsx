@@ -52,8 +52,8 @@ async function AdminSourcesPageContent() {
       <div className="flex flex-col gap-2">
         <h1 className="font-heading text-3xl font-semibold">Sources</h1>
         <p className="text-muted-foreground max-w-2xl">
-          Gérez les flux iCal : URL, organisateur lié, lieu et catégories par
-          défaut pour la synchronisation.
+          Gérez les sources iCal : flux URL ou fichiers importés, organisateur
+          lié, lieu et catégories par défaut pour la synchronisation.
         </p>
       </div>
 

@@ -12,6 +12,7 @@ import {
   resolveSyncedCategoriesForUpsert,
   resolveSyncedLocationForUpsert,
 } from "@/lib/sources/defaults";
+import { readIcalBlob } from "@/lib/sources/blob";
 import { findOrCreateVenue } from "@/lib/venues/find-or-create";
 import { resolveVenueForSync } from "@/lib/venues/canonical";
 import {
@@ -24,16 +25,18 @@ import {
   hasIcalDataChanges,
   hasIcalRevisionChanges,
 } from "./changes";
-import { fetchAndParseIcalFeed } from "./parser";
+import { fetchAndParseIcalFeed, parseIcalContent } from "./parser";
 import type { NormalizedEvent } from "./types";
 import { resolveEventUid } from "./uid";
 
-type UpsertStats = {
+export type SourceSyncStats = {
   created: number;
   updated: number;
   unchanged: number;
   cancelled: number;
 };
+
+type UpsertStats = SourceSyncStats;
 
 function dbStatusFromNormalized(
   status: NormalizedEvent["status"],
@@ -203,15 +206,37 @@ async function cancelMissingEvents(
   }
 }
 
-export async function syncSource(source: SourceWithOrganization) {
-  if (source.type !== "ical") {
-    throw new Error(`Unsupported source type: ${source.type}`);
+async function loadSourceEvents(source: SourceWithOrganization) {
+  if (source.type === "ical") {
+    if (!source.url) {
+      throw new Error("URL iCal manquante pour cette source.");
+    }
+
+    return fetchAndParseIcalFeed(source.url);
   }
 
-  const stats: UpsertStats = { created: 0, updated: 0, unchanged: 0, cancelled: 0 };
+  if (source.type === "ical-file") {
+    if (!source.icalBlobUrl) {
+      throw new Error("Fichier iCal manquant pour cette source.");
+    }
+
+    const content = await readIcalBlob(source.icalBlobUrl);
+    return parseIcalContent(content);
+  }
+
+  throw new Error(`Unsupported source type: ${source.type}`);
+}
+
+export async function syncSource(source: SourceWithOrganization) {
+  const stats: UpsertStats = {
+    created: 0,
+    updated: 0,
+    unchanged: 0,
+    cancelled: 0,
+  };
 
   try {
-    const parsedEvents = await fetchAndParseIcalFeed(source.url);
+    const parsedEvents = await loadSourceEvents(source);
     const activeSourceUids: string[] = [];
 
     for (const parsedEvent of parsedEvents) {
@@ -248,6 +273,21 @@ export async function syncSource(source: SourceWithOrganization) {
   }
 }
 
+export async function syncSourceById(sourceId: string) {
+  const source = await db.query.sources.findFirst({
+    where: eq(sources.id, sourceId),
+    with: {
+      organization: true,
+    },
+  });
+
+  if (!source) {
+    throw new Error("Source introuvable.");
+  }
+
+  return syncSource(source);
+}
+
 type SyncResult =
   | {
       source: SourceWithOrganization;
@@ -262,7 +302,7 @@ type SyncResult =
 
 export async function* syncAllSources(): AsyncGenerator<SyncResult> {
   const activeSources = await db.query.sources.findMany({
-    where: eq(sources.isActive, true),
+    where: and(eq(sources.isActive, true), eq(sources.type, "ical")),
     with: {
       organization: true,
     },

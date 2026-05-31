@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { sources } from "@/db/schema";
 import { assertAdminApi } from "@/lib/admin/auth";
 import { invalidateAllPublicCache } from "@/lib/cache/invalidate";
+import { deleteIcalBlob } from "@/lib/sources/blob";
 import {
   getOrganizationById,
   resolveUniqueSourceSlug,
@@ -42,6 +43,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Source introuvable." }, { status: 404 });
   }
 
+  if (parsed.data.url !== undefined && existing.type === "ical-file") {
+    return NextResponse.json(
+      { error: "Les sources fichier n'acceptent pas d'URL." },
+      { status: 400 },
+    );
+  }
+
   if (parsed.data.organizationId) {
     const organization = await getOrganizationById(parsed.data.organizationId);
 
@@ -70,7 +78,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         ? { name: parsed.data.name.trim() }
         : {}),
       ...(parsed.data.slug !== undefined ? { slug } : {}),
-      ...(parsed.data.url !== undefined ? { url: parsed.data.url.trim() } : {}),
+      ...(parsed.data.url !== undefined && existing.type === "ical"
+        ? { url: parsed.data.url.trim() }
+        : {}),
       ...(parsed.data.organizationId !== undefined
         ? { organizationId: parsed.data.organizationId }
         : {}),
@@ -103,11 +113,20 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   const existing = await db.query.sources.findFirst({
     where: eq(sources.id, id),
-    columns: { id: true, name: true },
+    columns: {
+      id: true,
+      name: true,
+      type: true,
+      icalBlobUrl: true,
+    },
   });
 
   if (!existing) {
     return NextResponse.json({ error: "Source introuvable." }, { status: 404 });
+  }
+
+  if (existing.type === "ical-file" && existing.icalBlobUrl) {
+    await deleteIcalBlob(existing.icalBlobUrl).catch(() => undefined);
   }
 
   await db.delete(sources).where(eq(sources.id, id));
