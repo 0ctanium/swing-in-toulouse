@@ -3,6 +3,7 @@ import { withPostHogConfig } from "@posthog/nextjs-config";
 import createMDX from "@next/mdx";
 
 import "./src/env";
+import { adminRobotsHeader } from "./src/lib/seo/admin-robots";
 
 const withMDX = createMDX({
   extension: /\.mdx?$/,
@@ -21,6 +22,19 @@ const nextConfig: NextConfig = {
         source: "/agenda.ics",
         destination: "/api/ical/e30=.ics",
         statusCode: 307,
+      },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        source: "/admin/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: adminRobotsHeader,
+          },
+        ],
       },
     ];
   },
