@@ -4,6 +4,7 @@ import { addDays } from "date-fns";
 
 import { CompactPlanningView } from "@/components/events/compact-planning-view";
 import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
+import { CommunityLinksSection } from "@/components/community/community-links-section";
 import { OrganizationsByDance } from "@/components/organizations/organizations-by-dance";
 import { getUpcomingEvents, listOrganizers } from "@/lib/events/queries";
 import { emptyIcalPayload } from "@/lib/ical/payload";
@@ -64,6 +65,8 @@ export default async function HomePage() {
         </div>
         <CompactPlanningView events={events} />
       </section>
+
+      <CommunityLinksSection />
 
       <OrganizationsByDance organizers={organizers} />
     </div>
