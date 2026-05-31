@@ -15,9 +15,13 @@ function getEventLocation(event: EventOccurrence) {
 
 type ScheduleEventRowProps = {
   event: EventOccurrence;
+  contentSide?: "top" | "right" | "bottom" | "left";
 };
 
-export function ScheduleEventRow({ event }: ScheduleEventRowProps) {
+export function ScheduleEventRow({
+  event,
+  contentSide = "right",
+}: ScheduleEventRowProps) {
   const timeLabel = formatEventScheduleTime(
     event.startAt,
     event.endAt,
@@ -30,7 +34,7 @@ export function ScheduleEventRow({ event }: ScheduleEventRowProps) {
   return (
     <EventPreviewPopover
       event={event}
-      contentSide="right"
+      contentSide={contentSide}
       triggerClassName={cn(
         "flex w-full flex-col gap-1.5 px-4 py-3 text-left transition-colors hover:bg-background/70 sm:flex-row sm:items-start sm:gap-3",
         cancelled && "opacity-60",

@@ -5,6 +5,7 @@ import { fr } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { CalendarDayDrawer } from "@/components/events/calendar-day-drawer";
 import { CalendarEventChip } from "@/components/events/calendar-event-chip";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -97,6 +98,7 @@ export function AgendaCalendar({
   const isMobileLayout = useMobileCalendarLayout();
   const [month, setMonth] = useState(() => new Date());
   const [fourWeekAnchor, setFourWeekAnchor] = useState(() => new Date());
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const visibleEventCount = isMobileLayout
     ? MOBILE_VISIBLE_EVENTS
@@ -134,6 +136,15 @@ export function AgendaCalendar({
     mode === "month"
       ? formatMonthLabel(month)
       : formatFourWeekLabel(fourWeekAnchor);
+
+  const selectedDayEvents = useMemo(
+    () => (selectedDay ? getEventsForDay(eventsByDay, selectedDay) : []),
+    [eventsByDay, selectedDay],
+  );
+
+  function openDaySheet(day: Date) {
+    setSelectedDay(day);
+  }
 
   function goBack() {
     if (mode === "month") {
@@ -228,36 +239,54 @@ export function AgendaCalendar({
                 dayEvents.length - visibleEventCount,
               );
 
+              const dayLabel = format(day, "EEEE d MMMM", { locale: fr });
+
               return (
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    "flex min-h-16 flex-col gap-0.5 border-r border-b p-0.5 last:border-r-0 sm:min-h-28 sm:gap-1 sm:p-2",
+                    "relative flex min-h-16 flex-col gap-0.5 border-r border-b p-0.5 last:border-r-0 sm:min-h-28 sm:gap-1 sm:p-2",
                     !inCurrentMonth && "bg-muted/20 text-muted-foreground",
                     isToday(day) &&
                       "bg-primary/5 ring-1 ring-primary/20 ring-inset",
                   )}
                 >
-                  <div
-                    className={cn(
-                      "mx-auto flex size-5 items-center justify-center text-[11px] font-medium tabular-nums sm:size-7 sm:text-sm",
-                      isToday(day) && "rounded-full bg-primary text-primary-foreground",
-                    )}
-                  >
-                    {format(day, "d", { locale: fr })}
-                  </div>
-                  <div className="flex min-h-0 flex-1 flex-col gap-px sm:gap-0.5">
-                    {dayEvents.slice(0, visibleEventCount).map((event) => (
-                      <CalendarEventChip key={event.id} event={event} />
-                    ))}
-                    {hiddenCount > 0 ? (
-                      <span className="px-0.5 text-center text-[10px] text-muted-foreground sm:px-1 sm:text-left sm:text-xs">
-                        <span className="sm:hidden">+{hiddenCount}</span>
-                        <span className="hidden sm:inline">
-                          +{hiddenCount} autre{hiddenCount > 1 ? "s" : ""}
-                        </span>
-                      </span>
-                    ) : null}
+                  <button
+                    type="button"
+                    className="absolute inset-0 z-0 rounded-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                    aria-label={`Voir les événements du ${dayLabel}`}
+                    onClick={() => openDaySheet(day)}
+                  />
+                  <div className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col gap-0.5">
+                    <div
+                      className={cn(
+                        "mx-auto flex size-5 items-center justify-center text-[11px] font-medium tabular-nums sm:size-7 sm:text-sm",
+                        isToday(day) &&
+                          "rounded-full bg-primary text-primary-foreground",
+                      )}
+                    >
+                      {format(day, "d", { locale: fr })}
+                    </div>
+                    <div className="pointer-events-auto flex min-h-0 flex-1 flex-col gap-px sm:gap-0.5">
+                      {dayEvents.slice(0, visibleEventCount).map((event) => (
+                        <CalendarEventChip key={event.id} event={event} />
+                      ))}
+                      {hiddenCount > 0 ? (
+                        <button
+                          type="button"
+                          className="w-full px-0.5 text-center text-[10px] text-muted-foreground underline-offset-2 hover:underline sm:px-1 sm:text-left sm:text-xs"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openDaySheet(day);
+                          }}
+                        >
+                          <span className="sm:hidden">+{hiddenCount}</span>
+                          <span className="hidden sm:inline">
+                            +{hiddenCount} autre{hiddenCount > 1 ? "s" : ""}
+                          </span>
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               );
@@ -265,6 +294,17 @@ export function AgendaCalendar({
           </div>
         </div>
       )}
+
+      <CalendarDayDrawer
+        day={selectedDay}
+        events={selectedDayEvents}
+        open={selectedDay !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedDay(null);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -25,7 +25,7 @@ export function CalendarEventChip({ event }: CalendarEventChipProps) {
     <EventPreviewPopover
       event={event}
       contentSide="bottom"
-      triggerClassName="block w-full min-w-0"
+      triggerClassName="pointer-events-auto block w-full min-w-0"
     >
       <span
         className="block w-full truncate rounded-sm px-1 py-0.5 text-left text-[10px] leading-tight font-medium text-white sm:hidden"
