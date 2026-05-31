@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { EventsTable } from "@/components/admin/events-table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { parseAdminEventsSearchParams } from "@/lib/events/admin-events-params";
 import {
   getAdminEventsFilterOptions,
@@ -14,15 +16,20 @@ export const metadata: Metadata = adminMetadata({
     "Liste des événements synchronisés depuis iCal — corrections et modération.",
 });
 
-export const dynamic = "force-dynamic";
-
 type AdminEventsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function AdminEventsPage({
-  searchParams,
-}: AdminEventsPageProps) {
+function AdminEventsPageSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <Skeleton className="h-10 w-64" />
+      <Skeleton className="h-96 w-full rounded-xl" />
+    </div>
+  );
+}
+
+async function AdminEventsPageContent({ searchParams }: AdminEventsPageProps) {
   const resolvedSearchParams = await searchParams;
   const query = parseAdminEventsSearchParams(resolvedSearchParams);
 
@@ -43,5 +50,13 @@ export default async function AdminEventsPage({
 
       <EventsTable data={eventsTable} filterOptions={filterOptions} />
     </div>
+  );
+}
+
+export default function AdminEventsPage(props: AdminEventsPageProps) {
+  return (
+    <Suspense fallback={<AdminEventsPageSkeleton />}>
+      <AdminEventsPageContent {...props} />
+    </Suspense>
   );
 }

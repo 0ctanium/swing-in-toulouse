@@ -1,4 +1,9 @@
+import { cacheLife, cacheTag } from "next/cache";
+import { cache } from "react";
+
 import { db } from "@/db";
+import { CACHE_TAGS } from "@/lib/cache/tags";
+import { PUBLIC_PAGE_REVALIDATE } from "@/lib/cache/revalidate";
 import { getUpcomingEvents } from "@/lib/events/queries";
 import { getDefaultExpansionWindow } from "@/lib/ical/recurrence";
 import { loadVenueCanonicalMap } from "@/lib/venues/canonical";
@@ -21,7 +26,7 @@ function sortOptions(options: AgendaFilterOption[]) {
   );
 }
 
-export async function getAgendaFilterOptions(): Promise<AgendaFilterOptions> {
+export async function getAgendaFilterOptionsUncached(): Promise<AgendaFilterOptions> {
   const window = getDefaultExpansionWindow();
   const occurrences = await getUpcomingEvents({
     from: window.from,
@@ -82,3 +87,16 @@ export async function getAgendaFilterOptions(): Promise<AgendaFilterOptions> {
     venueSlugById,
   };
 }
+
+async function getAgendaFilterOptionsCached() {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.agendaFilters, CACHE_TAGS.events);
+
+  return getAgendaFilterOptionsUncached();
+}
+
+export const getAgendaFilterOptions = cache(getAgendaFilterOptionsCached);

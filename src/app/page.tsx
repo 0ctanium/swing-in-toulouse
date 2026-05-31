@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { addDays } from "date-fns";
+import { Suspense } from "react";
 
-import { CompactPlanningView } from "@/components/events/compact-planning-view";
 import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
-import { CommunityLinksSection } from "@/components/community/community-links-section";
-import { OrganizationsByDance } from "@/components/organizations/organizations-by-dance";
-import { getUpcomingEvents, listOrganizers } from "@/lib/events/queries";
+import { HomePageEventsSection } from "@/components/events/home-page-events-section";
+import { Skeleton } from "@/components/ui/skeleton";
 import { emptyIcalPayload } from "@/lib/ical/payload";
 import { publicMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
@@ -18,14 +16,17 @@ export const metadata: Metadata = publicMetadata({
   path: "/",
 });
 
-export const dynamic = "force-dynamic";
+function HomePageEventsSkeleton() {
+  return (
+    <>
+      <Skeleton className="h-6 w-48" />
+      <Skeleton className="h-28 w-full rounded-xl" />
+      <Skeleton className="h-48 w-full rounded-xl" />
+    </>
+  );
+}
 
-export default async function HomePage() {
-  const [events, organizers] = await Promise.all([
-    getUpcomingEvents({ to: addDays(new Date(), 14) }),
-    listOrganizers(),
-  ]);
-
+export default function HomePage() {
   return (
     <div className="flex flex-col gap-10">
       <section className="flex flex-col gap-4">
@@ -54,26 +55,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-          <div>
-            <h2 className="font-heading text-2xl font-semibold">
-              Prochains événements
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              Les 14 prochains jours
-            </p>
-          </div>
-          <Link href="/agenda" className="text-sm font-medium underline">
-            Tout voir
-          </Link>
-        </div>
-        <CompactPlanningView events={events} />
-      </section>
-
-      <CommunityLinksSection />
-
-      <OrganizationsByDance organizers={organizers} />
+      <Suspense fallback={<HomePageEventsSkeleton />}>
+        <HomePageEventsSection />
+      </Suspense>
     </div>
   );
 }

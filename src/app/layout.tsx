@@ -2,12 +2,10 @@ import type { Metadata } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { AdminModeBanner } from "@/components/admin/admin-mode-banner";
+import { AdminAwareChrome } from "@/components/layout/admin-aware-chrome";
 import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
 import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
-import { isAdminAuthenticated } from "@/lib/admin/auth";
 import { siteConfig } from "@/lib/site";
 
 import "./globals.css";
@@ -48,13 +46,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isAdminMode = await isAdminAuthenticated();
-
   return (
     <html
       lang="fr"
@@ -67,14 +63,16 @@ export default async function RootLayout({
       >
         <SpeedInsights />
         <ThemeProvider>
-          <AdminModeBanner />
-          <SiteHeader isAdminMode={isAdminMode} />
-          <main
-            className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10"
-            suppressHydrationWarning
-          >
-            <Providers isAdminMode={isAdminMode}>{children}</Providers>
-          </main>
+          <Providers>
+            <AdminAwareChrome>
+              <main
+                className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10"
+                suppressHydrationWarning
+              >
+                {children}
+              </main>
+            </AdminAwareChrome>
+          </Providers>
           <SiteFooter />
         </ThemeProvider>
       </body>

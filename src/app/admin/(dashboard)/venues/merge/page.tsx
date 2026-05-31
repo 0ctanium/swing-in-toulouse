@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { VenueMergeTool } from "@/components/admin/venue-merge-tool";
+import { Skeleton } from "@/components/ui/skeleton";
 import { adminMetadata } from "@/lib/metadata";
 import { getVenueMergePageData } from "@/lib/venues/matching";
 
@@ -11,9 +13,17 @@ export const metadata: Metadata = adminMetadata({
     "Fusion des doublons et correction des LOCATION iCal incohérentes.",
 });
 
-export const dynamic = "force-dynamic";
+function AdminVenuesMergePageSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <Skeleton className="h-4 w-40" />
+      <Skeleton className="h-10 w-80" />
+      <Skeleton className="h-96 w-full rounded-xl" />
+    </div>
+  );
+}
 
-export default async function AdminVenuesMergePage() {
+async function AdminVenuesMergePageContent() {
   const { venues, similarGroups, locationConflicts } =
     await getVenueMergePageData();
 
@@ -42,5 +52,13 @@ export default async function AdminVenuesMergePage() {
         locationConflicts={locationConflicts}
       />
     </div>
+  );
+}
+
+export default function AdminVenuesMergePage() {
+  return (
+    <Suspense fallback={<AdminVenuesMergePageSkeleton />}>
+      <AdminVenuesMergePageContent />
+    </Suspense>
   );
 }

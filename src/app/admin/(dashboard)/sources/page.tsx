@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { asc, isNull } from "drizzle-orm";
 
 import { SourcesAdmin } from "@/components/admin/sources-admin";
+import { Skeleton } from "@/components/ui/skeleton";
 import { db } from "@/db";
 import { organizations, venues } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
@@ -14,9 +16,16 @@ export const metadata: Metadata = adminMetadata({
     "Gestion des flux iCal synchronisés — création, édition et valeurs par défaut.",
 });
 
-export const dynamic = "force-dynamic";
+function AdminSourcesPageSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <Skeleton className="h-10 w-64" />
+      <Skeleton className="h-96 w-full rounded-xl" />
+    </div>
+  );
+}
 
-export default async function AdminSourcesPage() {
+async function AdminSourcesPageContent() {
   const [sourceRows, organizationRows, venueRows] = await Promise.all([
     listAdminSources(),
     db.query.organizations.findMany({
@@ -54,5 +63,13 @@ export default async function AdminSourcesPage() {
         venues={venueOptions}
       />
     </div>
+  );
+}
+
+export default function AdminSourcesPage() {
+  return (
+    <Suspense fallback={<AdminSourcesPageSkeleton />}>
+      <AdminSourcesPageContent />
+    </Suspense>
   );
 }

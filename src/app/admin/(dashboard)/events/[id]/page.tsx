@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { DuplicateMergePanel } from "@/components/admin/duplicate-merge-panel";
 import { EventOverrideForm } from "@/components/admin/event-override-form";
@@ -9,6 +10,7 @@ import {
   type AdminOccurrenceItem,
 } from "@/components/admin/occurrence-override-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getEventWithOverrides } from "@/lib/events/overrides";
 import {
   findDuplicateCandidates,
@@ -24,11 +26,20 @@ import { formatEventDate } from "@/lib/events/format";
 import type { EventMaster } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
 
-export const dynamic = "force-dynamic";
-
 type AdminEventPageProps = {
   params: Promise<{ id: string }>;
 };
+
+function AdminEventPageSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <Skeleton className="h-4 w-40" />
+      <Skeleton className="h-10 w-2/3" />
+      <Skeleton className="h-48 w-full rounded-xl" />
+      <Skeleton className="h-64 w-full rounded-xl" />
+    </div>
+  );
+}
 
 export async function generateMetadata({
   params,
@@ -46,7 +57,7 @@ export async function generateMetadata({
   });
 }
 
-export default async function AdminEventPage({ params }: AdminEventPageProps) {
+async function AdminEventPageContent({ params }: AdminEventPageProps) {
   const { id } = await params;
   const [eventData, occurrencesData, organizations, venues, duplicateInfo] =
     await Promise.all([
@@ -189,5 +200,13 @@ export default async function AdminEventPage({ params }: AdminEventPageProps) {
         />
       ) : null}
     </div>
+  );
+}
+
+export default function AdminEventPage(props: AdminEventPageProps) {
+  return (
+    <Suspense fallback={<AdminEventPageSkeleton />}>
+      <AdminEventPageContent {...props} />
+    </Suspense>
   );
 }

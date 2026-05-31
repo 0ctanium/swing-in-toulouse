@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { Suspense } from "react";
 
 import { AgendaView } from "@/components/events/agenda-view";
-import {
-  AGENDA_PREFERENCES_COOKIE,
-  parseAgendaPreferences,
-} from "@/lib/events/agenda-preferences";
+import { AgendaViewWithPreferences } from "@/components/events/agenda-view-with-preferences";
 import { publicMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = publicMetadata({
@@ -15,11 +12,7 @@ export const metadata: Metadata = publicMetadata({
   path: "/agenda",
 });
 
-export default async function AgendaPage() {
-  const cookieStore = await cookies();
-  const preferencesCookie = cookieStore.get(AGENDA_PREFERENCES_COOKIE)?.value;
-  const initialPreferences = parseAgendaPreferences(preferencesCookie);
-
+export default function AgendaPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -30,10 +23,9 @@ export default async function AgendaPage() {
           Vue calendrier par mois ou sur 4 semaines, ou liste chronologique dans le planning.
         </p>
       </div>
-      <AgendaView
-        initialPreferences={initialPreferences}
-        hasStoredPreferences={Boolean(preferencesCookie)}
-      />
+      <Suspense fallback={<AgendaView />}>
+        <AgendaViewWithPreferences />
+      </Suspense>
     </div>
   );
 }

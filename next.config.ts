@@ -12,6 +12,7 @@ const withMDX = createMDX({
 });
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   pageExtensions: ["ts", "tsx", "md", "mdx"],
   serverExternalPackages: ["node-ical", "pg"],
   async redirects() {

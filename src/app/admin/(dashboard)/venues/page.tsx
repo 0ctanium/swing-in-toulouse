@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { VenuesAdmin } from "@/components/admin/venues-admin";
 import { VenuesAdminAlerts } from "@/components/admin/venues-admin-alerts";
 import { VenuesGoogleMapsAlert } from "@/components/admin/venues-google-maps-alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { isGoogleMapsConfigured } from "@/env";
 import { adminMetadata } from "@/lib/metadata";
 import { getAdminVenuesPageData } from "@/lib/venues/matching";
@@ -13,9 +15,16 @@ export const metadata: Metadata = adminMetadata({
     "Liste des lieux, confirmation Google, alias permanents et réassignation.",
 });
 
-export const dynamic = "force-dynamic";
+function AdminVenuesPageSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <Skeleton className="h-10 w-64" />
+      <Skeleton className="h-96 w-full rounded-xl" />
+    </div>
+  );
+}
 
-export default async function AdminVenuesPage() {
+async function AdminVenuesPageContent() {
   const googleConfigured = isGoogleMapsConfigured();
   const {
     venues,
@@ -55,5 +64,13 @@ export default async function AdminVenuesPage() {
         googleConfigured={googleConfigured}
       />
     </div>
+  );
+}
+
+export default function AdminVenuesPage() {
+  return (
+    <Suspense fallback={<AdminVenuesPageSkeleton />}>
+      <AdminVenuesPageContent />
+    </Suspense>
   );
 }

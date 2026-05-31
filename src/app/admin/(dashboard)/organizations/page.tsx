@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { isNull } from "drizzle-orm";
 
 import { OrganizationsAdmin } from "@/components/admin/organizations-admin";
+import { Skeleton } from "@/components/ui/skeleton";
 import { db } from "@/db";
 import { venues } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
@@ -14,9 +16,16 @@ export const metadata: Metadata = adminMetadata({
     "Gestion des écoles et associations — création, édition et liaison des lieux.",
 });
 
-export const dynamic = "force-dynamic";
+function AdminOrganizationsPageSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <Skeleton className="h-10 w-64" />
+      <Skeleton className="h-96 w-full rounded-xl" />
+    </div>
+  );
+}
 
-export default async function AdminOrganizationsPage() {
+async function AdminOrganizationsPageContent() {
   const [organizations, venueRows] = await Promise.all([
     listAdminOrganizations(),
     db.query.venues.findMany({
@@ -42,5 +51,13 @@ export default async function AdminOrganizationsPage() {
         venues={venueOptions}
       />
     </div>
+  );
+}
+
+export default function AdminOrganizationsPage() {
+  return (
+    <Suspense fallback={<AdminOrganizationsPageSkeleton />}>
+      <AdminOrganizationsPageContent />
+    </Suspense>
   );
 }

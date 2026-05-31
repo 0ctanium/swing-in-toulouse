@@ -2,8 +2,6 @@ import { icalFeedRedirect } from "@/lib/ical/redirect";
 import { emptyIcalPayload } from "@/lib/ical/payload";
 import { getPostHogClient } from "@/lib/posthog-server";
 
-export const dynamic = "force-dynamic";
-
 type RouteContext = {
   params: Promise<{ slug: string }>;
 };

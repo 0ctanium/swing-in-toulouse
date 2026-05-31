@@ -1,15 +1,22 @@
 import type { MetadataRoute } from "next";
-
+import { cacheLife, cacheTag } from "next/cache";
 import { isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { events, organizations, venues } from "@/db/schema";
+import { CACHE_TAGS } from "@/lib/cache/tags";
+import { SITEMAP_REVALIDATE } from "@/lib/cache/revalidate";
 import { siteConfig } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+async function getSitemapData() {
+  "use cache";
+  cacheLife({
+    stale: SITEMAP_REVALIDATE,
+    revalidate: SITEMAP_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.events, CACHE_TAGS.organizers, CACHE_TAGS.venues);
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [allEvents, allOrganizations, allVenues] = await Promise.all([
+  return Promise.all([
     db
       .select({ slug: events.slug, updatedAt: events.updatedAt })
       .from(events)
@@ -22,6 +29,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .from(venues)
       .where(isNull(venues.canonicalVenueId)),
   ]);
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const [allEvents, allOrganizations, allVenues] = await getSitemapData();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {

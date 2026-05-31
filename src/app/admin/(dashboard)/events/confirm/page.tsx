@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { EventConfirmQueue } from "@/components/admin/event-confirm-queue";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getEventConfirmQueue,
   getEventConfirmQueueStats,
@@ -15,9 +17,16 @@ export const metadata: Metadata = adminMetadata({
     "File d’attente des événements importés à valider avant publication.",
 });
 
-export const dynamic = "force-dynamic";
+function AdminEventsConfirmPageSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <Skeleton className="h-10 w-80" />
+      <Skeleton className="h-96 w-full rounded-xl" />
+    </div>
+  );
+}
 
-export default async function AdminEventsConfirmPage() {
+async function AdminEventsConfirmPageContent() {
   const [items, stats, organizations, venues] = await Promise.all([
     getEventConfirmQueue(),
     getEventConfirmQueueStats(),
@@ -48,5 +57,13 @@ export default async function AdminEventsConfirmPage() {
         confirmedCount={stats.confirmedCount}
       />
     </div>
+  );
+}
+
+export default function AdminEventsConfirmPage() {
+  return (
+    <Suspense fallback={<AdminEventsConfirmPageSkeleton />}>
+      <AdminEventsConfirmPageContent />
+    </Suspense>
   );
 }

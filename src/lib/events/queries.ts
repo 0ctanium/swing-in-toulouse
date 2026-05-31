@@ -1,6 +1,11 @@
+import { addDays } from "date-fns";
+import { cacheLife, cacheTag } from "next/cache";
+import { cache } from "react";
 import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
+import { CACHE_TAGS } from "@/lib/cache/tags";
+import { PUBLIC_PAGE_REVALIDATE, SITEMAP_REVALIDATE } from "@/lib/cache/revalidate";
 import { events, organizations, venues } from "@/db/schema";
 import { expandEventsWithOverrides } from "@/lib/events/expand-with-overrides";
 import {
@@ -130,7 +135,7 @@ export type EventSlugResolution =
   | { kind: "event"; event: EventMaster }
   | { kind: "redirect"; targetSlug: string };
 
-export async function resolveEventBySlug(
+async function resolveEventBySlugUncached(
   slug: string,
 ): Promise<EventSlugResolution | null> {
   const row = await db.query.events.findFirst({
@@ -165,14 +170,54 @@ export async function resolveEventBySlug(
   return { kind: "event", event };
 }
 
-export async function getUpcomingEvents(options?: {
+type UpcomingEventsOptions = {
   organizationSlug?: string;
   venueSlug?: string;
   includeCancelled?: boolean;
   from?: Date;
   to?: Date;
+  daysAhead?: number;
   limit?: number;
-}): Promise<EventOccurrence[]> {
+};
+
+type UpcomingEventsCacheKey = {
+  organizationSlug?: string;
+  venueSlug?: string;
+  includeCancelled?: boolean;
+  fromIso?: string;
+  toIso?: string;
+  daysAhead?: number;
+  limit?: number;
+};
+
+function toUpcomingEventsCacheKey(
+  options?: UpcomingEventsOptions,
+): UpcomingEventsCacheKey {
+  return {
+    organizationSlug: options?.organizationSlug,
+    venueSlug: options?.venueSlug,
+    includeCancelled: options?.includeCancelled,
+    fromIso: options?.from?.toISOString(),
+    toIso: options?.to?.toISOString(),
+    daysAhead: options?.daysAhead,
+    limit: options?.limit,
+  };
+}
+
+function resolveUpcomingEventsWindow(key: UpcomingEventsCacheKey) {
+  const from = key.fromIso ? new Date(key.fromIso) : getDefaultFromDate();
+  const to = key.toIso
+    ? new Date(key.toIso)
+    : key.daysAhead
+      ? addDays(from, key.daysAhead)
+      : getDefaultExpansionWindow(from).to;
+
+  return { from, to };
+}
+
+export async function getUpcomingEventsUncached(options?: UpcomingEventsOptions): Promise<
+  EventOccurrence[]
+> {
   const from = options?.from ?? getDefaultFromDate();
   const window: ExpansionWindow = {
     from,
@@ -205,15 +250,15 @@ export async function getUpcomingEvents(options?: {
   return filterOccurrences(occurrences, window, options?.limit);
 }
 
-export async function getEventBySlug(slug: string) {
-  const resolution = await resolveEventBySlug(slug);
+async function getEventBySlugUncached(slug: string) {
+  const resolution = await resolveEventBySlugUncached(slug);
 
   if (!resolution) {
     return null;
   }
 
   if (resolution.kind === "redirect") {
-    return resolveEventBySlug(resolution.targetSlug).then((resolved) =>
+    return resolveEventBySlugUncached(resolution.targetSlug).then((resolved) =>
       resolved?.kind === "event" ? resolved.event : null,
     );
   }
@@ -221,7 +266,7 @@ export async function getEventBySlug(slug: string) {
   return resolution.event;
 }
 
-export async function getOrganizerBySlug(slug: string) {
+async function getOrganizerBySlugUncached(slug: string) {
   const organization = await db.query.organizations.findFirst({
     where: eq(organizations.slug, slug),
   });
@@ -256,13 +301,7 @@ export async function getOrganizerBySlug(slug: string) {
   };
 }
 
-/** @deprecated Use getOrganizerBySlug */
-export const getOrganizationBySlug = getOrganizerBySlug;
-
-export { resolveVenueBySlug };
-export type { VenueSlugResolution } from "@/lib/venues/canonical";
-
-export async function getVenueBySlug(slug: string) {
+async function getVenueBySlugUncached(slug: string) {
   const resolution = await resolveVenueBySlug(slug);
 
   if (!resolution) {
@@ -291,10 +330,12 @@ export async function getVenueBySlug(slug: string) {
   };
 }
 
-export async function getEventsForExport(options?: {
+type EventsForExportCacheKey = {
   organizationSlug?: string;
   venueSlug?: string;
-}) {
+};
+
+async function getEventsForExportUncached(options?: EventsForExportCacheKey) {
   const from = getDefaultFromDate();
   const masters = await fetchMasterEvents({
     organizationSlug: options?.organizationSlug,
@@ -339,22 +380,141 @@ export async function getEventsForExport(options?: {
   return merged.filter((master) => isMasterRelevantForExport(master, from));
 }
 
-export async function listOrganizers() {
+export async function listOrganizersUncached() {
   return db.query.organizations.findMany({
     where: eq(organizations.isActive, true),
     orderBy: (table, { asc }) => [asc(table.name)],
   });
 }
 
+async function resolveEventBySlugCached(slug: string) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.events, `event-slug-${slug}`);
+
+  return resolveEventBySlugUncached(slug);
+}
+
+export const resolveEventBySlug = cache(resolveEventBySlugCached);
+
+async function getUpcomingEventsCached(key: UpcomingEventsCacheKey) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.events);
+
+  const { from, to } = resolveUpcomingEventsWindow(key);
+
+  return getUpcomingEventsUncached({
+    organizationSlug: key.organizationSlug,
+    venueSlug: key.venueSlug,
+    includeCancelled: key.includeCancelled,
+    from,
+    to,
+    limit: key.limit,
+  });
+}
+
+export async function getUpcomingEvents(options?: UpcomingEventsOptions) {
+  return getUpcomingEventsCached(toUpcomingEventsCacheKey(options));
+}
+
+async function getEventBySlugCached(slug: string) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.events, `event-slug-${slug}`);
+
+  return getEventBySlugUncached(slug);
+}
+
+export const getEventBySlug = cache(getEventBySlugCached);
+
+async function getOrganizerBySlugCached(slug: string) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.organizers, CACHE_TAGS.events, `organizer-${slug}`);
+
+  return getOrganizerBySlugUncached(slug);
+}
+
+export const getOrganizerBySlug = cache(getOrganizerBySlugCached);
+
+/** @deprecated Use getOrganizerBySlug */
+export const getOrganizationBySlug = getOrganizerBySlug;
+
+export { resolveVenueBySlug };
+export type { VenueSlugResolution } from "@/lib/venues/canonical";
+
+async function getVenueBySlugCached(slug: string) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.venues, CACHE_TAGS.events, `venue-${slug}`);
+
+  return getVenueBySlugUncached(slug);
+}
+
+export const getVenueBySlug = cache(getVenueBySlugCached);
+
+async function getEventsForExportCached(options?: EventsForExportCacheKey) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.events);
+
+  return getEventsForExportUncached(options);
+}
+
+export async function getEventsForExport(options?: EventsForExportCacheKey) {
+  return getEventsForExportCached(options);
+}
+
+async function listOrganizersCached() {
+  "use cache";
+  cacheLife({
+    stale: SITEMAP_REVALIDATE,
+    revalidate: SITEMAP_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.organizers);
+
+  return listOrganizersUncached();
+}
+
+export const listOrganizers = cache(listOrganizersCached);
+
 /** @deprecated Use listOrganizers */
 export const listOrganizations = listOrganizers;
 
-export async function listVenues() {
+async function listVenuesCached() {
+  "use cache";
+  cacheLife({
+    stale: SITEMAP_REVALIDATE,
+    revalidate: SITEMAP_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.venues);
+
   return db.query.venues.findMany({
     where: isNull(venues.canonicalVenueId),
     orderBy: (table, { asc }) => [asc(table.name)],
   });
 }
+
+export const listVenues = cache(listVenuesCached);
 
 export async function listAdminEvents(limit = 50) {
   return db.query.events.findMany({

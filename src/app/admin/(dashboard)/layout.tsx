@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { AdminSubNav } from "@/components/admin/admin-sub-nav";
@@ -8,7 +9,15 @@ import { isAdminConfigured } from "@/env";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
 import { getEventConfirmQueueStats } from "@/lib/events/confirm-queue";
 
-export default async function AdminDashboardLayout({
+function AdminDashboardShell({ children }: { children?: React.ReactNode }) {
+  return (
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 -mt-4">
+      {children}
+    </div>
+  );
+}
+
+async function AdminDashboardLayoutInner({
   children,
 }: {
   children: React.ReactNode;
@@ -48,5 +57,17 @@ export default async function AdminDashboardLayout({
       <EventsPendingAlert pendingCount={pendingCount} />
       {children}
     </div>
+  );
+}
+
+export default function AdminDashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<AdminDashboardShell />}>
+      <AdminDashboardLayoutInner>{children}</AdminDashboardLayoutInner>
+    </Suspense>
   );
 }
