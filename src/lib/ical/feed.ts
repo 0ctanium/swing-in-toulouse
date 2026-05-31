@@ -176,7 +176,7 @@ export async function buildIcalFeedResponse(filters: IcalPayload) {
   return new NextResponse(calendar, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${meta.filename}"`,
+      "Content-Disposition": `inline; filename="${meta.filename}"`,
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
     },
   });

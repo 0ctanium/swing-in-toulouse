@@ -14,10 +14,6 @@ export type CalendarSubscribeOption = {
   external?: boolean;
 };
 
-function base64Encode(value: string) {
-  return Buffer.from(value, "utf8").toString("base64");
-}
-
 export function getIcalFeedAbsoluteUrl(payload: IcalPayload) {
   return new URL(buildIcalFeedPath(payload), siteConfig.url).toString();
 }
@@ -26,10 +22,12 @@ export function toWebcalUrl(httpsUrl: string) {
   return httpsUrl.replace(/^https?:\/\//, "webcal://");
 }
 
-export function getDefaultFeedName(
-  payload: IcalPayload,
-  feedName?: string,
-) {
+/** Google Calendar deep links expect a webcal URL, not a base64-encoded feed URL. */
+export function getGoogleCalendarSubscribeUrl(feedUrl: string) {
+  return `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(toWebcalUrl(feedUrl))}`;
+}
+
+export function getDefaultFeedName(payload: IcalPayload, feedName?: string) {
   if (feedName?.trim()) {
     return feedName.trim();
   }
@@ -60,14 +58,13 @@ export function buildCalendarSubscribeOptions(
 ): CalendarSubscribeOption[] {
   const feedUrl = getIcalFeedAbsoluteUrl(payload);
   const name = getDefaultFeedName(payload, feedName);
-  const googleCid = encodeURIComponent(base64Encode(feedUrl));
 
   return [
     {
       id: "google",
       label: "Google Agenda",
       description: "Ouvrir dans Google Calendar",
-      href: `https://calendar.google.com/calendar/r?cid=${googleCid}`,
+      href: getGoogleCalendarSubscribeUrl(feedUrl),
       external: true,
     },
     {
