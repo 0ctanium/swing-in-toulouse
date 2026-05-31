@@ -51,6 +51,11 @@ export function publicMetadata({
         locale: siteConfig.locale,
         type: "website",
       },
+      twitter: {
+        card: "summary_large_image",
+        title: openGraphTitle,
+        description,
+      },
     }),
   };
 }
