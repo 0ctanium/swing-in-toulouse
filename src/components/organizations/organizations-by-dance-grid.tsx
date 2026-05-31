@@ -5,7 +5,6 @@ import { Info } from "lucide-react";
 import { OrganizationPreviewPopover } from "@/components/organizations/organization-preview-popover";
 import type { OrganizerListItem } from "@/components/organizations/organizations-by-dance";
 import type { OrganizationDance } from "@/lib/organizations/dances";
-import { organizationUrl } from "@/lib/site";
 
 type DanceGroup = {
   dance: OrganizationDance;
@@ -47,13 +46,11 @@ function DanceGroupCard({
 type OrganizationsByDanceGridProps = {
   danceGroups: DanceGroup[];
   uncategorized: OrganizerListItem[];
-  schools: OrganizerListItem[];
 };
 
 export function OrganizationsByDanceGrid({
   danceGroups,
   uncategorized,
-  schools,
 }: OrganizationsByDanceGridProps) {
   return (
     <section id="ecoles" className="flex scroll-mt-6 flex-col gap-6">
@@ -76,16 +73,6 @@ export function OrganizationsByDanceGrid({
           <DanceGroupCard title="Autres" organizers={uncategorized} />
         ) : null}
       </div>
-
-      <nav aria-label="Liens vers les écoles" className="sr-only">
-        <ul>
-          {schools.map((school) => (
-            <li key={school.id}>
-              <a href={organizationUrl(school.slug)}>{school.name}</a>
-            </li>
-          ))}
-        </ul>
-      </nav>
     </section>
   );
 }

@@ -6,6 +6,8 @@ import { db } from "@/db";
 import { events, organizations, venues } from "@/db/schema";
 import { CACHE_TAGS } from "@/lib/cache/tags";
 import { SITEMAP_REVALIDATE } from "@/lib/cache/revalidate";
+import { buildArchiveMonthPath } from "@/lib/events/hub";
+import { listEventArchiveMonthsUncached } from "@/lib/events/queries";
 import { siteConfig } from "@/lib/site";
 
 async function getSitemapData() {
@@ -32,7 +34,8 @@ async function getSitemapData() {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [allEvents, allOrganizations, allVenues] = await getSitemapData();
+  const [[allEvents, allOrganizations, allVenues], archiveMonths] =
+    await Promise.all([getSitemapData(), listEventArchiveMonthsUncached()]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -46,6 +49,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
+    },
+    {
+      url: `${siteConfig.url}/evenements`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${siteConfig.url}/organisateurs`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteConfig.url}/lieux`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
     },
     {
       url: `${siteConfig.url}/mentions-legales`,
@@ -63,6 +84,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...staticRoutes,
+    ...archiveMonths.map((month) => ({
+      url: `${siteConfig.url}${buildArchiveMonthPath(month.year, month.month)}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    })),
     ...allEvents.map((event) => ({
       url: `${siteConfig.url}/evenement/${event.slug}`,
       lastModified: event.updatedAt,

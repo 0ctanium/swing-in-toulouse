@@ -8,12 +8,19 @@ import {
   EventDescriptionBlock,
   EventLocationLine,
 } from "@/components/events/event-details";
+import { RelatedEventsSection } from "@/components/events/related-events-section";
 import { EventPageAdminSlot } from "@/components/events/event-page-admin-slot";
+import { Breadcrumbs } from "@/components/seo/breadcrumbs";
+import { breadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { resolveEventBySlug } from "@/lib/events/queries";
+import { getRelatedEvents, resolveEventBySlug } from "@/lib/events/queries";
 import { emptyIcalPayload } from "@/lib/ical/payload";
+import {
+  eventBreadcrumbs,
+  eventStructuredData,
+} from "@/lib/seo/structured-data";
 import { CalendarPlus } from "lucide-react";
 import { Suspense } from "react";
 
@@ -48,10 +55,25 @@ async function EventPageContent({ params }: EventPageContentProps) {
   }
 
   const event = resolution.event;
+  const relatedEvents = await getRelatedEvents(
+    event.slug,
+    event.organization?.slug,
+    event.venue?.slug,
+  );
+  const breadcrumbs = eventBreadcrumbs(event);
+  const relatedTitle = event.organization
+    ? `Autres événements de ${event.organization.name}`
+    : event.venue
+      ? `Autres événements au ${event.venue.name}`
+      : "Événements similaires";
 
   return (
-    <article className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3">
+    <>
+      <JsonLd data={eventStructuredData(event)} />
+      <JsonLd data={breadcrumbJsonLd(breadcrumbs)} />
+      <article className="flex flex-col gap-6">
+        <Breadcrumbs items={breadcrumbs} />
+        <div className="flex flex-col gap-3">
         <EventBadges event={event} />
         <h1 className="font-heading text-4xl font-semibold tracking-tight">
           {event.title}
@@ -113,7 +135,15 @@ async function EventPageContent({ params }: EventPageContentProps) {
           </Button>
         ) : null}
       </div>
+
+      {relatedEvents.length > 0 ? (
+        <>
+          <Separator />
+          <RelatedEventsSection title={relatedTitle} events={relatedEvents} />
+        </>
+      ) : null}
     </article>
+    </>
   );
 }
 

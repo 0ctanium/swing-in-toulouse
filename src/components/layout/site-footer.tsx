@@ -25,6 +25,30 @@ export function SiteFooter() {
         </p>
         <nav className="flex flex-wrap gap-x-4 gap-y-1">
           <Link
+            href="/evenements"
+            className="text-foreground underline hover:no-underline"
+          >
+            Événements
+          </Link>
+          <Link
+            href="/organisateurs"
+            className="text-foreground underline hover:no-underline"
+          >
+            Organisateurs
+          </Link>
+          <Link
+            href="/lieux"
+            className="text-foreground underline hover:no-underline"
+          >
+            Lieux
+          </Link>
+          <Link
+            href="/agenda"
+            className="text-foreground underline hover:no-underline"
+          >
+            Agenda
+          </Link>
+          <Link
             href="/mentions-legales"
             className="text-foreground underline hover:no-underline"
           >

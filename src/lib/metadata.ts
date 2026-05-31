@@ -12,12 +12,17 @@ type PublicMetadataOptions = {
   title: Metadata["title"];
   description?: string;
   path?: string;
+  pagination?: {
+    previous?: string;
+    next?: string;
+  };
 };
 
 export function publicMetadata({
   title,
   description = siteConfig.description,
   path,
+  pagination,
 }: PublicMetadataOptions): Metadata {
   const canonical = path ? absoluteUrl(path) : undefined;
   const openGraphTitle =
@@ -30,6 +35,12 @@ export function publicMetadata({
   return {
     title,
     description,
+    ...(pagination && {
+      pagination: {
+        ...(pagination.previous && { previous: pagination.previous }),
+        ...(pagination.next && { next: pagination.next }),
+      },
+    }),
     ...(canonical && {
       alternates: { canonical },
       openGraph: {

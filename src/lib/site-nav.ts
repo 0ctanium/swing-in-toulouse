@@ -1,8 +1,10 @@
 export const siteNavItems = [
   { href: "/", label: "Accueil" },
   { href: "/agenda", label: "Agenda" },
+  { href: "/evenements", label: "Événements" },
+  { href: "/organisateurs", label: "Organisateurs" },
+  { href: "/lieux", label: "Lieux" },
   { href: "/#communaute", label: "Communauté" },
-  { href: "/#ecoles", label: "Écoles" },
 ] as const;
 
 export const siteNavLinkClassName =

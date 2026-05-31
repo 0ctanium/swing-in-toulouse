@@ -10,6 +10,7 @@ import {
   EventDescriptionBlock,
   EventLocationLine,
 } from "@/components/events/event-details";
+import { SrOnlyEntityLink } from "@/components/seo/sr-only-entity-link";
 import {
   Popover,
   PopoverContent,
@@ -43,13 +44,19 @@ export function EventPreviewPopover({
   );
 
   return (
-    <Popover>
+    <>
+      <SrOnlyEntityLink
+        href={`/evenement/${event.slug}`}
+        label={event.title}
+      />
+      <Popover>
       <PopoverTrigger
         className={cn(
           !children &&
             "block w-full truncate rounded px-1 py-0.5 text-left text-xs leading-tight transition-colors hover:bg-primary/10",
           triggerClassName,
         )}
+        aria-label={`Aperçu de ${event.title}`}
         title={event.title}
       >
         {children ?? (
@@ -96,11 +103,12 @@ export function EventPreviewPopover({
                 admin={event.admin}
                 compact
               />
-              <EventActionLinks event={event} layout="stack" showFullPageLink />
+              <EventActionLinks event={event} layout="stack" />
             </div>
           </div>
         </div>
       </PopoverContent>
     </Popover>
+    </>
   );
 }

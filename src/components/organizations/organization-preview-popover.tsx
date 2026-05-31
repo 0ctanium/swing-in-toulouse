@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ExternalLink, Info } from "lucide-react";
+import { Info } from "lucide-react";
 
 import { OrganizationCategoryBadge } from "@/components/organizations/organization-category-badge";
 import { OrganizationDanceBadges } from "@/components/organizations/organization-dance-badges";
@@ -9,7 +9,7 @@ import {
   OrganizationSocialIconLink,
   OrganizationWebsiteIconLink,
 } from "@/components/organizations/organization-social-icons";
-import { Button } from "@/components/ui/button";
+import { SrOnlyEntityLink } from "@/components/seo/sr-only-entity-link";
 import {
   Popover,
   PopoverContent,
@@ -19,7 +19,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { listOrganizationSocialLinks } from "@/lib/organizations/social-links";
-import { organizationUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 import type { OrganizerListItem } from "@/components/organizations/organizations-by-dance";
@@ -41,13 +40,18 @@ export function OrganizationPreviewPopover({
   const hasExternalLinks = organizer.website || socialLinks.length > 0;
 
   return (
-    <Popover>
+    <>
+      <SrOnlyEntityLink
+        href={`/organisateur/${organizer.slug}`}
+        label={organizer.name}
+      />
+      <Popover>
       <PopoverTrigger
         className={cn(
           "flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-left transition-colors hover:bg-muted/60",
           triggerClassName,
         )}
-        aria-label={`Informations sur ${organizer.name}`}
+        aria-label={`Aperçu de ${organizer.name}`}
       >
         {children ?? (
           <>
@@ -100,27 +104,9 @@ export function OrganizationPreviewPopover({
               </div>
             ) : null}
           </PopoverDescription>
-
-          <div className="border-t bg-muted/30 px-3 py-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-full justify-start px-2"
-              nativeButton={false}
-              render={
-                <a
-                  href={organizationUrl(organizer.slug)}
-                  target="_blank"
-                  rel="noreferrer"
-                />
-              }
-            >
-              <ExternalLink data-icon="inline-start" />
-              Voir la fiche complète
-            </Button>
-          </div>
         </div>
       </PopoverContent>
     </Popover>
+    </>
   );
 }

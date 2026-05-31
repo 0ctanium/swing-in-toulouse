@@ -1,13 +1,20 @@
 import { addDays } from "date-fns";
 import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { CACHE_TAGS } from "@/lib/cache/tags";
 import { PUBLIC_PAGE_REVALIDATE, SITEMAP_REVALIDATE } from "@/lib/cache/revalidate";
 import { events, organizations, venues } from "@/db/schema";
 import { expandEventsWithOverrides } from "@/lib/events/expand-with-overrides";
+import {
+  collectArchiveMonthsFromOccurrences,
+  getArchiveLookbackStart,
+  getLastCompleteArchiveMonthEnd,
+  getMonthWindowInSiteTimezone,
+  type ArchiveMonth,
+} from "@/lib/events/hub";
 import {
   applyMasterOverride,
   loadOverridesForEvents,
@@ -515,6 +522,162 @@ async function listVenuesCached() {
 }
 
 export const listVenues = cache(listVenuesCached);
+
+export async function listUpcomingEventsForHubUncached() {
+  const from = getDefaultFromDate();
+  const { to } = getDefaultExpansionWindow(from);
+
+  return getUpcomingEventsUncached({ from, to });
+}
+
+async function listUpcomingEventsForHubCached() {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.events);
+
+  return listUpcomingEventsForHubUncached();
+}
+
+export const listUpcomingEventsForHub = cache(listUpcomingEventsForHubCached);
+
+export async function listEventsInMonthUncached(year: number, month: number) {
+  const { from, to } = getMonthWindowInSiteTimezone(year, month);
+
+  return getUpcomingEventsUncached({ from, to });
+}
+
+async function listEventsInMonthCached(year: number, month: number) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.events, `events-month-${year}-${month}`);
+
+  return listEventsInMonthUncached(year, month);
+}
+
+export const listEventsInMonth = cache(listEventsInMonthCached);
+
+export async function listEventArchiveMonthsUncached(): Promise<ArchiveMonth[]> {
+  const now = getDefaultFromDate();
+  const from = getArchiveLookbackStart(now);
+  const to = getLastCompleteArchiveMonthEnd(now);
+
+  if (to < from) {
+    return [];
+  }
+
+  const occurrences = await getUpcomingEventsUncached({ from, to });
+
+  return collectArchiveMonthsFromOccurrences(occurrences, now);
+}
+
+async function listEventArchiveMonthsCached() {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.events);
+
+  return listEventArchiveMonthsUncached();
+}
+
+export const listEventArchiveMonths = cache(listEventArchiveMonthsCached);
+
+export async function getRelatedEventsUncached(
+  slug: string,
+  organizationSlug?: string | null,
+  venueSlug?: string | null,
+  limit = 5,
+) {
+  const from = getDefaultFromDate();
+  const { to } = getDefaultExpansionWindow(from);
+
+  let candidates: EventOccurrence[] = [];
+
+  if (organizationSlug) {
+    candidates = await getUpcomingEventsUncached({
+      organizationSlug,
+      from,
+      to,
+    });
+  } else if (venueSlug) {
+    candidates = await getUpcomingEventsUncached({
+      venueSlug,
+      from,
+      to,
+    });
+  }
+
+  return candidates.filter((item) => item.slug !== slug).slice(0, limit);
+}
+
+async function getRelatedEventsCached(
+  slug: string,
+  organizationSlug?: string | null,
+  venueSlug?: string | null,
+  limit = 5,
+) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.events, `related-events-${slug}`);
+
+  return getRelatedEventsUncached(slug, organizationSlug, venueSlug, limit);
+}
+
+export const getRelatedEvents = cache(getRelatedEventsCached);
+
+export async function listOrganizersForVenueUncached(venueId: string) {
+  const [byHomeVenue, masters] = await Promise.all([
+    db.query.organizations.findMany({
+      where: and(
+        eq(organizations.isActive, true),
+        eq(organizations.venueId, venueId),
+      ),
+    }),
+    fetchMastersForVenue(venueId),
+  ]);
+
+  const organizationIds = new Set([
+    ...byHomeVenue.map((organizer) => organizer.id),
+    ...masters
+      .map((master) => master.organizationId)
+      .filter((id): id is string => Boolean(id)),
+  ]);
+
+  if (organizationIds.size === 0) {
+    return [];
+  }
+
+  return db.query.organizations.findMany({
+    where: and(
+      eq(organizations.isActive, true),
+      inArray(organizations.id, [...organizationIds]),
+    ),
+    orderBy: (table, { asc }) => [asc(table.name)],
+  });
+}
+
+async function listOrganizersForVenueCached(venueId: string) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.organizers, CACHE_TAGS.venues, `venue-orgs-${venueId}`);
+
+  return listOrganizersForVenueUncached(venueId);
+}
+
+export const listOrganizersForVenue = cache(listOrganizersForVenueCached);
 
 export async function listAdminEvents(limit = 50) {
   return db.query.events.findMany({

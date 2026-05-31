@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, ExternalLink, Link2, MapPin, User } from "lucide-react";
+import { CalendarDays, Link2, MapPin, User } from "lucide-react";
 import Link from "next/link";
 import posthog from "posthog-js";
 
@@ -205,18 +205,14 @@ type EventActionLinksProps = {
   event: Pick<EventDisplayData, "slug" | "sourceUrl">;
   className?: string;
   layout?: "row" | "stack";
-  showFullPageLink?: boolean;
 };
 
 export function EventActionLinks({
   event,
   className,
   layout = "row",
-  showFullPageLink = false,
 }: EventActionLinksProps) {
-  const hasLinks = event.sourceUrl || showFullPageLink;
-
-  if (!hasLinks) {
+  if (!event.sourceUrl) {
     return null;
   }
 
@@ -227,52 +223,30 @@ export function EventActionLinks({
         className,
       )}
     >
-      {showFullPageLink ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          className={
-            layout === "stack" ? "h-8 w-full justify-start px-2" : undefined
-          }
-          nativeButton={false}
-          render={
-            <a
-              href={`/evenement/${event.slug}`}
-              target="_blank"
-              rel="noreferrer"
-            />
-          }
-        >
-          <ExternalLink data-icon="inline-start" />
-          Voir la fiche complète
-        </Button>
-      ) : null}
-      {event.sourceUrl ? (
-        <Button
-          variant={showFullPageLink ? "ghost" : "outline"}
-          size="sm"
-          className={
-            layout === "stack" ? "h-8 w-full justify-start px-2" : undefined
-          }
-          nativeButton={false}
-          render={
-            <a
-              href={event.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() =>
-                posthog.capture("event_external_link_clicked", {
-                  event_slug: event.slug,
-                  source_url: event.sourceUrl,
-                })
-              }
-            />
-          }
-        >
-          <Link2 data-icon="inline-start" />
-          Lien externe
-        </Button>
-      ) : null}
+      <Button
+        variant="outline"
+        size="sm"
+        className={
+          layout === "stack" ? "h-8 w-full justify-start px-2" : undefined
+        }
+        nativeButton={false}
+        render={
+          <a
+            href={event.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() =>
+              posthog.capture("event_external_link_clicked", {
+                event_slug: event.slug,
+                source_url: event.sourceUrl,
+              })
+            }
+          />
+        }
+      >
+        <Link2 data-icon="inline-start" />
+        Lien externe
+      </Button>
     </div>
   );
 }

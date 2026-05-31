@@ -1,9 +1,18 @@
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
 
 import { EventList } from "@/components/events/event-list";
+import { Breadcrumbs } from "@/components/seo/breadcrumbs";
+import { breadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VenueHeader } from "@/components/venues/venue-header";
-import { getVenueBySlug, resolveVenueBySlug } from "@/lib/events/queries";
+import { VenueOrganizersSection } from "@/components/venues/venue-organizers-section";
+import {
+  getVenueBySlug,
+  listOrganizersForVenue,
+  resolveVenueBySlug,
+} from "@/lib/events/queries";
+import { placeStructuredData, venueBreadcrumbs } from "@/lib/seo/structured-data";
 
 type VenuePageContentProps = {
   params: Promise<{ slug: string }>;
@@ -37,19 +46,34 @@ export async function VenuePageContent({ params }: VenuePageContentProps) {
     notFound();
   }
 
-  return (
-    <div className="flex flex-col gap-8">
-      <VenueHeader venue={venue} />
+  const venueOrganizers = await listOrganizersForVenue(venue.id);
+  const breadcrumbs = venueBreadcrumbs(venue);
 
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-2xl font-semibold">
-          Prochains événements
-        </h2>
-        <EventList
-          events={venue.events}
-          emptyMessage="Aucun événement à venir dans ce lieu."
-        />
-      </section>
-    </div>
+  return (
+    <>
+      <JsonLd data={placeStructuredData(venue)} />
+      <JsonLd data={breadcrumbJsonLd(breadcrumbs)} />
+      <div className="flex flex-col gap-8">
+        <Breadcrumbs items={breadcrumbs} />
+        <VenueHeader venue={venue} />
+
+        <VenueOrganizersSection organizers={venueOrganizers} />
+
+        <section className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <h2 className="font-heading text-2xl font-semibold">
+              Prochains événements
+            </h2>
+            <Link href="/lieux" className="text-sm font-medium underline">
+              Tous les lieux
+            </Link>
+          </div>
+          <EventList
+            events={venue.events}
+            emptyMessage="Aucun événement à venir dans ce lieu."
+          />
+        </section>
+      </div>
+    </>
   );
 }

@@ -102,7 +102,6 @@ export function OrganizationsByDance({ organizers }: OrganizationsByDanceProps) 
     <OrganizationsByDanceGrid
       danceGroups={danceGroups}
       uncategorized={uncategorized}
-      schools={schools}
     />
   );
 }
