@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import React, { useMemo, useState, type ReactNode } from "react";
 import { Check, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
@@ -56,7 +56,9 @@ export function CalendarSubscribeDialog({
 
   return (
     <Dialog>
-      {children ? <DialogTrigger>{children}</DialogTrigger> : null}
+      {children && React.isValidElement(children) ? (
+        <DialogTrigger render={children} />
+      ) : null}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

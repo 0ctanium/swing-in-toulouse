@@ -50,7 +50,7 @@ export default async function HomePage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
           <div>
             <h2 className="font-heading text-2xl font-semibold">
               Prochains événements

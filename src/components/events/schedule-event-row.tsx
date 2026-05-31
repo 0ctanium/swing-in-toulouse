@@ -32,18 +32,18 @@ export function ScheduleEventRow({ event }: ScheduleEventRowProps) {
       event={event}
       contentSide="right"
       triggerClassName={cn(
-        "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-background/70",
+        "flex w-full flex-col gap-1.5 px-4 py-3 text-left transition-colors hover:bg-background/70 sm:flex-row sm:items-start sm:gap-3",
         cancelled && "opacity-60",
       )}
     >
-      <span
-        aria-hidden
-        className="mt-1.5 size-2.5 shrink-0 rounded-full"
-        style={{ backgroundColor: color }}
-      />
-      <span className="w-28 shrink-0 text-sm text-muted-foreground tabular-nums sm:w-32">
-        {timeLabel}
-      </span>
+      <div className="flex items-center gap-2.5 sm:mt-1.5 sm:w-32 sm:shrink-0 sm:items-start">
+        <span
+          aria-hidden
+          className="size-2.5 shrink-0 rounded-full"
+          style={{ backgroundColor: color }}
+        />
+        <span className="text-sm text-muted-foreground tabular-nums">{timeLabel}</span>
+      </div>
       <span className="min-w-0 flex-1 text-sm leading-snug">
         <span
           className={cn(

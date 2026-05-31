@@ -36,7 +36,7 @@ function ScheduleDateLabel({ date }: ScheduleDateLabelProps) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-0.5 pt-0.5 text-center",
+        "flex items-center gap-3 sm:flex-col sm:items-center sm:gap-0.5 sm:pt-0.5 sm:text-center",
         today && "text-primary",
       )}
     >
@@ -64,8 +64,8 @@ function ScheduleDayGroup({ dayKey, events }: ScheduleDayGroupProps) {
   const date = new Date(`${dayKey}T12:00:00`);
 
   return (
-    <div className="flex border-b border-border/70 last:border-b-0">
-      <div className="w-20 shrink-0 border-r border-border/70 px-2 py-3 sm:w-24 sm:px-3">
+    <div className="border-b border-border/70 last:border-b-0 sm:flex">
+      <div className="border-b border-border/70 px-4 py-2.5 sm:w-24 sm:shrink-0 sm:border-b-0 sm:border-r sm:px-3 sm:py-3">
         <ScheduleDateLabel date={date} />
       </div>
       <div className="min-w-0 flex-1 divide-y divide-border/70">
