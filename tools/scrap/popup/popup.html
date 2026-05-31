@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Export Facebook events</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="panel">
+      <header class="header">
+        <p class="eyebrow">Swing in Toulouse</p>
+        <h1>Export group events</h1>
+      </header>
+
+      <p id="page-status" class="status">Checking page…</p>
+      <p id="store-status" class="status store-status" hidden></p>
+
+      <fieldset class="mode">
+        <legend>Scan list</legend>
+        <p class="hint mode-hint">
+          Controls which section of the group page is expanded. Export always
+          includes every saved event.
+        </p>
+        <label>
+          <input type="radio" name="mode" value="upcoming" checked />
+          Upcoming
+        </label>
+        <label>
+          <input type="radio" name="mode" value="past" />
+          Past
+        </label>
+      </fieldset>
+
+      <div id="past-cutoff-field" class="past-cutoff" hidden>
+        <label for="past-max-date">Max date</label>
+        <input id="past-max-date" type="date" />
+        <p class="hint">
+          Auto-stop when loading past events older than this date.
+        </p>
+      </div>
+
+      <div class="actions">
+        <button id="export-btn" type="button" disabled>Sync &amp; export</button>
+        <button id="stop-btn" type="button" class="secondary" hidden>
+          Stop &amp; save
+        </button>
+      </div>
+
+      <p id="progress" class="progress" hidden></p>
+
+      <section id="stats" class="stats" hidden>
+        <h2>This sync</h2>
+        <dl class="stats-grid">
+          <div>
+            <dt>New</dt>
+            <dd id="stat-new">0</dd>
+          </div>
+          <div>
+            <dt>Changed</dt>
+            <dd id="stat-changed">0</dd>
+          </div>
+          <div>
+            <dt>Unchanged</dt>
+            <dd id="stat-unchanged">0</dd>
+          </div>
+        </dl>
+        <h2>Calendar</h2>
+        <dl class="stats-grid stats-grid--single">
+          <div>
+            <dt>Total saved</dt>
+            <dd id="stat-export-total">0</dd>
+          </div>
+          <div>
+            <dt>Upcoming</dt>
+            <dd id="stat-upcoming">0</dd>
+          </div>
+          <div>
+            <dt>Not on page this scan</dt>
+            <dd id="stat-kept">0</dd>
+          </div>
+        </dl>
+      </section>
+
+      <p id="result" class="result" hidden></p>
+    </main>
+
+    <script src="../lib/log.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

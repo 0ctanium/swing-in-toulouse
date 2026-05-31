@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Swing — Export Facebook Group Events",
+  "description": "Export upcoming events from a Facebook group events page to an iCal file.",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "Export group events",
+    "default_popup": "popup/popup.html"
+  },
+  "permissions": ["activeTab", "downloads", "scripting", "storage"],
+  "host_permissions": ["https://www.facebook.com/*"],
+  "web_accessible_resources": [
+    {
+      "resources": ["scripts/page-sniffer.js", "scripts/page-event-fetch.js"],
+      "matches": ["https://www.facebook.com/*"]
+    }
+  ],
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.facebook.com/groups/*/events*"],
+      "js": [
+        "lib/log.js",
+        "lib/dates.js",
+        "lib/json.js",
+        "lib/html-parser.js",
+        "lib/event-detail.js",
+        "lib/scrape.js",
+        "scripts/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

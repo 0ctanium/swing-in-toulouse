@@ -1,0 +1,13 @@
+{
+  "name": "scrap",
+  "private": true,
+  "description": "Chrome extension to export Facebook group events to iCal",
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.280",
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
