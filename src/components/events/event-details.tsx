@@ -254,6 +254,7 @@ export function EventActionLinks({
           className={
             layout === "stack" ? "h-8 w-full justify-start px-2" : undefined
           }
+          nativeButton={false}
           render={
             <a
               href={event.sourceUrl}

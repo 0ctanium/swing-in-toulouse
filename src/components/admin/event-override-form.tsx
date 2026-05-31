@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { OrganizationSelect } from "@/components/admin/organization-select";
-import { VenueSelect, type VenueSelectOption } from "@/components/admin/venue-select";
+import {
+  VenueSelect,
+  type VenueSelectOption,
+} from "@/components/admin/venue-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EntitySelect } from "@/components/ui/entity-select";
@@ -261,7 +264,11 @@ export function EventOverrideForm({
             Supprimer l&apos;override
           </Button>
           {scope === "master" ? (
-            <Button variant="ghost" render={<Link href="/admin/events" />}>
+            <Button
+              variant="ghost"
+              nativeButton={false}
+              render={<Link href="/admin/events" />}
+            >
               Retour
             </Button>
           ) : null}

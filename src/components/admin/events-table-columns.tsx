@@ -30,11 +30,7 @@ function SortableHeader({
   onSortToggle,
 }: SortableHeaderProps) {
   const isActive = sort === column;
-  const Icon = isActive
-    ? dir === "asc"
-      ? ArrowUp
-      : ArrowDown
-    : ArrowUpDown;
+  const Icon = isActive ? (dir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
 
   return (
     <Button
@@ -234,6 +230,7 @@ export function createEventsTableColumns({
               <Button
                 variant="outline"
                 size="sm"
+                nativeButton={false}
                 render={<Link href="/admin/events/confirm" />}
               >
                 Confirmer
@@ -242,6 +239,7 @@ export function createEventsTableColumns({
             <Button
               variant="ghost"
               size="sm"
+              nativeButton={false}
               render={<Link href={`/admin/events/${event.id}`} />}
             >
               Modifier

@@ -51,8 +51,13 @@ export function OrganizationPreviewPopover({
       >
         {children ?? (
           <>
-            <span className="min-w-0 text-sm font-medium">{organizer.name}</span>
-            <Info className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="min-w-0 text-sm font-medium">
+              {organizer.name}
+            </span>
+            <Info
+              className="size-3.5 shrink-0 text-muted-foreground"
+              aria-hidden
+            />
           </>
         )}
       </PopoverTrigger>
@@ -75,7 +80,9 @@ export function OrganizationPreviewPopover({
           <PopoverDescription className="flex flex-col gap-3 px-3 pb-3 text-sm">
             <OrganizationDanceBadges dances={organizer.dances} />
             {organizer.description ? (
-              <p className="text-foreground line-clamp-4">{organizer.description}</p>
+              <p className="text-foreground line-clamp-4">
+                {organizer.description}
+              </p>
             ) : null}
             {hasExternalLinks ? (
               <div className="flex flex-wrap items-center gap-2">
@@ -99,6 +106,7 @@ export function OrganizationPreviewPopover({
               variant="ghost"
               size="sm"
               className="h-8 w-full justify-start px-2"
+              nativeButton={false}
               render={
                 <a
                   href={organizationUrl(organizer.slug)}

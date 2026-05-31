@@ -57,6 +57,7 @@ export function CalendarSubscribeDialogContent({
             key={option.id}
             variant="outline"
             className="h-auto justify-start px-3 py-3 text-left"
+            nativeButton={false}
             render={
               <a
                 href={option.href}
@@ -98,7 +99,11 @@ export function CalendarSubscribeDialogContent({
             aria-label="Copier le lien du calendrier"
             onClick={copyFeedUrl}
           >
-            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+            {copied ? (
+              <Check className="size-4" />
+            ) : (
+              <Copy className="size-4" />
+            )}
           </Button>
         </div>
       </div>

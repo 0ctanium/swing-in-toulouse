@@ -27,7 +27,9 @@ export function createSourcesTableColumns({
         return (
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="font-medium">{source.name}</span>
-            <span className="text-muted-foreground text-xs">/{source.slug}</span>
+            <span className="text-muted-foreground text-xs">
+              /{source.slug}
+            </span>
             <a
               href={source.url}
               target="_blank"
@@ -72,7 +74,9 @@ export function createSourcesTableColumns({
             {source.defaultLocationRaw ? (
               <span className="line-clamp-2">{source.defaultLocationRaw}</span>
             ) : (
-              <span className="text-muted-foreground">Pas de lieu par défaut</span>
+              <span className="text-muted-foreground">
+                Pas de lieu par défaut
+              </span>
             )}
             {categories.length > 0 ? (
               <span className="text-muted-foreground text-xs">
@@ -114,6 +118,7 @@ export function createSourcesTableColumns({
               <Button
                 variant="ghost"
                 size="sm"
+                nativeButton={false}
                 render={
                   <Link
                     href={`/organisateur/${source.organizationSlug}`}

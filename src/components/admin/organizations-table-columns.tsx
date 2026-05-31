@@ -183,6 +183,7 @@ export function createOrganizationsTableColumns({
             <Button
               variant="ghost"
               size="sm"
+              nativeButton={false}
               render={
                 <Link
                   href={`/organisateur/${organization.slug}`}

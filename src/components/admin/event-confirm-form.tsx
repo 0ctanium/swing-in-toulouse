@@ -5,7 +5,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { OrganizationSelect } from "@/components/admin/organization-select";
-import { VenueSelect, type VenueSelectOption } from "@/components/admin/venue-select";
+import {
+  VenueSelect,
+  type VenueSelectOption,
+} from "@/components/admin/venue-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +20,6 @@ import {
   buildMasterOverridePatch,
   hasMasterOverrideChangesFromForm,
 } from "@/lib/events/override-patch";
-import type { EventOverridePatch } from "@/lib/events/overrides.types";
 
 type OrganizationOption = { id: string; name: string };
 
@@ -42,7 +44,9 @@ function Field({
     <label className="flex flex-col gap-1 text-sm">
       <span className="font-medium">{label}</span>
       {syncedValue ? (
-        <span className="text-muted-foreground text-xs">iCal : {syncedValue}</span>
+        <span className="text-muted-foreground text-xs">
+          iCal : {syncedValue}
+        </span>
       ) : null}
       {children}
     </label>
@@ -243,6 +247,7 @@ export function EventConfirmForm({
           </Button>
           <Button
             variant="ghost"
+            nativeButton={false}
             render={<Link href={`/admin/events/${item.id}`} />}
           >
             Fiche complète
