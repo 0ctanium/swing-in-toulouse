@@ -1,13 +1,9 @@
-import Link from "next/link";
-import { MapPin } from "lucide-react";
-
 import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
 import { OrganizationCategoryBadge } from "@/components/organizations/organization-category-badge";
 import { OrganizationDanceBadges } from "@/components/organizations/organization-dance-badges";
-import type { Organization, Venue } from "@/db/schema";
+import type { Organization } from "@/db/schema";
 import { emptyIcalPayload } from "@/lib/ical/payload";
 import { listOrganizationSocialLinks } from "@/lib/organizations/social-links";
-import { getVenueDisplayAddress, getVenueMapsUrl } from "@/lib/venues/display";
 
 type OrganizerHeaderProps = {
   organizer: Pick<
@@ -20,12 +16,9 @@ type OrganizerHeaderProps = {
     | "dances"
     | "socialLinks"
   >;
-  venue: Venue | null;
 };
 
-export function OrganizerHeader({ organizer, venue }: OrganizerHeaderProps) {
-  const displayAddress = venue ? getVenueDisplayAddress(venue) : null;
-  const mapsUrl = venue ? getVenueMapsUrl(venue) : null;
+export function OrganizerHeader({ organizer }: OrganizerHeaderProps) {
   const socialLinks = listOrganizationSocialLinks(organizer.socialLinks);
 
   return (
@@ -43,27 +36,6 @@ export function OrganizerHeader({ organizer, venue }: OrganizerHeaderProps) {
         <p className="text-muted-foreground max-w-2xl text-lg">
           {organizer.description}
         </p>
-      ) : null}
-
-      {venue && displayAddress ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-muted-foreground inline-flex items-start gap-2 text-lg">
-            <MapPin className="mt-1 size-5 shrink-0" aria-hidden />
-            <Link href={`/lieu/${venue.slug}`} className="hover:underline">
-              {displayAddress}
-            </Link>
-          </p>
-          {mapsUrl ? (
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary w-fit text-sm font-medium hover:underline"
-            >
-              Ouvrir dans Google Maps
-            </a>
-          ) : null}
-        </div>
       ) : null}
 
       <div className="flex flex-wrap gap-3">

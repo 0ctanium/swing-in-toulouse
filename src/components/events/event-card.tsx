@@ -14,6 +14,7 @@ import {
   EventDateLine,
   EventDescriptionBlock,
   EventLocationLine,
+  EventOrganizerLine,
 } from "@/components/events/event-details";
 import type { AdminEventMeta } from "@/lib/events/admin-meta";
 import type { EventOccurrence } from "@/lib/events/queries";
@@ -35,6 +36,7 @@ export function EventCard({ event }: EventCardProps) {
         </div>
         <CardDescription className="flex flex-col gap-2">
           <EventDateLine event={event} />
+          <EventOrganizerLine event={event} className="text-sm" />
           <EventLocationLine event={event} />
         </CardDescription>
       </CardHeader>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { EventList } from "@/components/events/event-list";
 import { OrganizerHeader } from "@/components/organizations/organizer-header";
+import { VenueDetailsSection } from "@/components/venues/venue-details-section";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { breadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,7 +48,11 @@ export async function OrganizerPageContent({
       <JsonLd data={breadcrumbJsonLd(organizerBreadcrumbs(organizer))} />
       <div className="flex flex-col gap-8">
         <Breadcrumbs items={organizerBreadcrumbs(organizer)} />
-        <OrganizerHeader organizer={organizer} venue={organizer.venue} />
+        <OrganizerHeader organizer={organizer} />
+
+        {organizer.venue ? (
+          <VenueDetailsSection venue={organizer.venue} linkToVenuePage />
+        ) : null}
 
         <section className="flex flex-col gap-4">
           <div className="flex flex-wrap items-end justify-between gap-2">

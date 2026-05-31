@@ -1,13 +1,15 @@
 import { notFound, redirect } from "next/navigation";
 
 import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
+import { EventDescriptionMarkdown } from "@/components/events/event-description-markdown";
 import {
   EventActionLinks,
   EventBadges,
   EventDateLine,
-  EventDescriptionBlock,
   EventLocationLine,
+  EventOrganizerLine,
 } from "@/components/events/event-details";
+import { EventVenueAccordion } from "@/components/events/event-venue-accordion";
 import { RelatedEventsSection } from "@/components/events/related-events-section";
 import { EventPageAdminSlot } from "@/components/events/event-page-admin-slot";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
@@ -74,23 +76,25 @@ async function EventPageContent({ params }: EventPageContentProps) {
       <article className="flex flex-col gap-6">
         <Breadcrumbs items={breadcrumbs} />
         <div className="flex flex-col gap-3">
-        <EventBadges event={event} />
-        <h1 className="font-heading text-4xl font-semibold tracking-tight">
-          {event.title}
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          <EventDateLine event={event} />
-        </p>
-      </div>
+          <EventBadges event={event} />
+          <h1 className="font-heading text-4xl font-semibold tracking-tight">
+            {event.title}
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            <EventDateLine event={event} />
+          </p>
+          <EventOrganizerLine event={event} />
+        </div>
 
-      <EventLocationLine event={event} className="text-base" />
+      {!event.venue ? (
+        <EventLocationLine event={event} className="text-base" />
+      ) : null}
 
       {event.description ? (
-        <EventDescriptionBlock
-          description={event.description}
-          className="prose prose-neutral dark:prose-invert max-w-none text-base"
-        />
+        <EventDescriptionMarkdown description={event.description} />
       ) : null}
+
+      {event.venue ? <EventVenueAccordion venue={event.venue} /> : null}
 
       {event.source?.name ? (
         <p className="text-muted-foreground text-sm">

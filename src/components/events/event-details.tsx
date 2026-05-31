@@ -46,16 +46,6 @@ export function EventBadges({ event, className }: EventBadgesProps) {
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
-      {event.organization ? (
-        <Badge variant="secondary">
-          <Link
-            href={`/organisateur/${event.organization.slug}`}
-            className="hover:underline"
-          >
-            {event.organization.name}
-          </Link>
-        </Badge>
-      ) : null}
       {event.status === "cancelled" ? (
         <Badge variant="destructive">Annulé</Badge>
       ) : null}
@@ -82,6 +72,32 @@ export function EventDateLine({ event, className }: EventDateLineProps) {
       <CalendarDays className="mt-0.5 shrink-0 text-muted-foreground" />
       {formatEventDate(event.startAt, event.endAt, event.isAllDay)}
     </span>
+  );
+}
+
+type EventOrganizerLineProps = {
+  event: Pick<EventDisplayData, "organization">;
+  className?: string;
+};
+
+export function EventOrganizerLine({ event, className }: EventOrganizerLineProps) {
+  if (!event.organization) {
+    return null;
+  }
+
+  return (
+    <p className={cn("text-muted-foreground inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-lg", className)}>
+      <User className="size-5 shrink-0" aria-hidden />
+      <span>
+        Organisé par{" "}
+        <Link
+          href={`/organisateur/${event.organization.slug}`}
+          className="text-foreground font-medium hover:underline"
+        >
+          {event.organization.name}
+        </Link>
+      </span>
+    </p>
   );
 }
 

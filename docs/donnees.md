@@ -106,7 +106,9 @@
 
   Sur `/admin/venues`, filtrez « À confirmer » puis utilisez l'action **Confirmer** (dialogue Google Places). Un lieu actif est « confirmé » quand `address_confirmed_at` et les coordonnées sont renseignés.
 
-  Variable d'environnement : `GOOGLE_MAPS_API_KEY` (Places API + Geocoding API). La clé reste côté serveur — l'autocomplete admin passe par `/api/admin/places/*`.
+  Variable d'environnement : `GOOGLE_MAPS_API_KEY` (Places API, Geocoding API, Maps Static API). La clé reste côté serveur — l'autocomplete admin passe par `/api/admin/places/*` ; les pages publiques chargent carte et photos via `/api/maps/*`.
+
+  **Coût / cache** : les appels Places et Static Maps côté public sont mis en cache ~30 jours (`use cache` + en-têtes `Cache-Control` sur `/api/maps/*`). Le trafic ne doit pas multiplier les requêtes Google : une confirmation admin invalide les entrées du lieu concerné (`invalidateGoogleCachesForVenue`).
 
   La page `/admin/venues` (fusion) affiche une alerte si des lieux restent à confirmer.
 

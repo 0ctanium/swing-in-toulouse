@@ -5,6 +5,7 @@ import { EventList } from "@/components/events/event-list";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { breadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { Skeleton } from "@/components/ui/skeleton";
+import { VenueDetailsSection } from "@/components/venues/venue-details-section";
 import { VenueHeader } from "@/components/venues/venue-header";
 import { VenueOrganizersSection } from "@/components/venues/venue-organizers-section";
 import {
@@ -56,6 +57,8 @@ export async function VenuePageContent({ params }: VenuePageContentProps) {
       <div className="flex flex-col gap-8">
         <Breadcrumbs items={breadcrumbs} />
         <VenueHeader venue={venue} />
+
+        <VenueDetailsSection venue={venue} />
 
         <VenueOrganizersSection organizers={venueOrganizers} />
 
