@@ -57,14 +57,26 @@ export function effectiveVenueIdForEvent(
 }
 
 export async function getEventIdsOverriddenToVenue(venueId: string) {
-  const rows = await db.query.eventOverrides.findMany({
-    where: isNull(eventOverrides.occurrenceStartAt),
-    columns: { eventId: true, patch: true },
-  });
+  const [rows, canonicalMap] = await Promise.all([
+    db.query.eventOverrides.findMany({
+      columns: { eventId: true, patch: true },
+    }),
+    loadVenueCanonicalMap(),
+  ]);
 
-  return rows
-    .filter((row) => row.patch.venueId === venueId)
-    .map((row) => row.eventId);
+  const eventIds = new Set<string>();
+  for (const row of rows) {
+    const overrideVenueId = row.patch.venueId;
+    if (overrideVenueId == null) {
+      continue;
+    }
+
+    if (resolveCanonicalVenueId(overrideVenueId, canonicalMap) === venueId) {
+      eventIds.add(row.eventId);
+    }
+  }
+
+  return [...eventIds];
 }
 
 export async function fetchMastersForVenue(
@@ -109,11 +121,22 @@ export async function fetchMastersForVenue(
   }) as Promise<EventMaster[]>;
 }
 
-export function filterOccurrencesForVenue(
+export async function filterOccurrencesForVenue(
   occurrences: EventOccurrence[],
   venueId: string,
 ) {
-  return occurrences.filter((occurrence) => occurrence.venue?.id === venueId);
+  const canonicalMap = await loadVenueCanonicalMap();
+
+  return occurrences.filter((occurrence) => {
+    const occurrenceVenueId = occurrence.venue?.id;
+    if (!occurrenceVenueId) {
+      return false;
+    }
+
+    return (
+      resolveCanonicalVenueId(occurrenceVenueId, canonicalMap) === venueId
+    );
+  });
 }
 
 export async function computeEffectiveVenueEventCounts() {

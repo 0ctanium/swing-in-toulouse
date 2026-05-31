@@ -24,6 +24,10 @@ import {
   filterOccurrencesForVenue,
 } from "@/lib/venues/effective-venue";
 import { loadOrganizationDisplayVenue } from "@/lib/organizations/location";
+import {
+  fetchMastersForOrganization,
+  filterOccurrencesForOrganization,
+} from "@/lib/organizations/effective-organization";
 import { resolveVenueBySlug } from "@/lib/venues/canonical";
 import {
   getDefaultExpansionWindow,
@@ -56,7 +60,9 @@ async function fetchMasterEvents(options?: {
       return [];
     }
 
-    filters.push(eq(events.organizationId, organization.id));
+    return fetchMastersForOrganization(organization.id, {
+      includeCancelled: options?.includeCancelled,
+    });
   }
 
   if (options?.venueSlug) {
@@ -250,8 +256,21 @@ export async function getUpcomingEventsUncached(options?: UpcomingEventsOptions)
 
   let occurrences = await expandEventsWithOverrides(masters, window);
 
+  if (options?.organizationSlug) {
+    const organization = await db.query.organizations.findFirst({
+      where: eq(organizations.slug, options.organizationSlug),
+    });
+
+    if (organization) {
+      occurrences = filterOccurrencesForOrganization(
+        occurrences,
+        organization.id,
+      );
+    }
+  }
+
   if (venueId) {
-    occurrences = filterOccurrencesForVenue(occurrences, venueId);
+    occurrences = await filterOccurrencesForVenue(occurrences, venueId);
   }
 
   return filterOccurrences(occurrences, window, options?.limit);
@@ -284,19 +303,7 @@ async function getOrganizerBySlugUncached(slug: string) {
 
   const venue = await loadOrganizationDisplayVenue(organization.venueId);
 
-  const masters = await db.query.events.findMany({
-    where: and(
-      eq(events.organizationId, organization.id),
-      eq(events.status, "published"),
-      isNull(events.canonicalEventId),
-    ),
-    with: {
-      source: true,
-      organization: true,
-      venue: true,
-    },
-    orderBy: (eventsTable, { asc }) => [asc(eventsTable.startAt)],
-  }) as EventMaster[];
+  const masters = await fetchMastersForOrganization(organization.id);
 
   const window = getDefaultExpansionWindow();
   const occurrences = await expandEventsWithOverrides(masters, window);
@@ -304,7 +311,10 @@ async function getOrganizerBySlugUncached(slug: string) {
   return {
     ...organization,
     venue,
-    events: filterOccurrences(occurrences, window),
+    events: filterOccurrences(
+      filterOccurrencesForOrganization(occurrences, organization.id),
+      window,
+    ),
   };
 }
 
@@ -331,7 +341,7 @@ async function getVenueBySlugUncached(slug: string) {
   return {
     ...venue,
     events: filterOccurrences(
-      filterOccurrencesForVenue(occurrences, venue.id),
+      await filterOccurrencesForVenue(occurrences, venue.id),
       window,
     ),
   };
@@ -646,10 +656,17 @@ export async function listOrganizersForVenueUncached(venueId: string) {
     fetchMastersForVenue(venueId),
   ]);
 
+  const window = getDefaultExpansionWindow();
+  const occurrences = await expandEventsWithOverrides(masters, window);
+  const venueOccurrences = await filterOccurrencesForVenue(
+    occurrences,
+    venueId,
+  );
+
   const organizationIds = new Set([
     ...byHomeVenue.map((organizer) => organizer.id),
-    ...masters
-      .map((master) => master.organizationId)
+    ...filterOccurrences(venueOccurrences, window)
+      .map((occurrence) => occurrence.organization?.id)
       .filter((id): id is string => Boolean(id)),
   ]);
 
