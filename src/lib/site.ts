@@ -6,13 +6,15 @@ import {
 } from "@/lib/ical/payload";
 
 export const siteConfig = {
-  name: "Swing In Toulouse",
+  name: "Swingin Toulouse",
+  title:
+    "Lindy Hop, Blues, Balboa, Boogie à Toulouse : Agenda des soirées swing | Swingin Toulouse",
   description:
-    "L'agenda swing à Toulouse — soirées, cours, stages et festivals de Lindy Hop, Boogie Woogie et plus.",
+    "L'agenda swing à Toulouse : soirées, cours, stages et festivals de Lindy Hop, Blues, Balboa, Boogie Woogie et plus.",
   url: env.NEXT_PUBLIC_SITE_URL,
   locale: "fr-FR",
   timezone: "Europe/Paris",
-  icalProdId: "-//Swing in Toulouse//Agenda//FR",
+  icalProdId: "-//Swingin Toulouse//Agenda//FR",
   icalDomain: "swing-toulouse.fr",
 } as const;
 

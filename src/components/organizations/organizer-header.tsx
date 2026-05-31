@@ -12,7 +12,13 @@ import { getVenueDisplayAddress, getVenueMapsUrl } from "@/lib/venues/display";
 type OrganizerHeaderProps = {
   organizer: Pick<
     Organization,
-    "name" | "description" | "website" | "slug" | "category" | "dances" | "socialLinks"
+    | "name"
+    | "description"
+    | "website"
+    | "slug"
+    | "category"
+    | "dances"
+    | "socialLinks"
   >;
   venue: Venue | null;
 };
@@ -84,7 +90,7 @@ export function OrganizerHeader({ organizer, venue }: OrganizerHeaderProps) {
         ))}
         <CalendarSubscribeDialog
           payload={{ ...emptyIcalPayload(), org: [organizer.slug] }}
-          feedName={`${organizer.name} | Swing in Toulouse`}
+          feedName={`${organizer.name} | Swingin Toulouse`}
         >
           <button className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted">
             Calendrier iCal

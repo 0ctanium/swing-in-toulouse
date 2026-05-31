@@ -4,7 +4,7 @@ import { adminMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = adminMetadata({
   title: "Administration",
-  description: "Tableau de bord admin Swing in Toulouse.",
+  description: "Tableau de bord admin Swingin Toulouse.",
 });
 
 export default function AdminHomePage() {
