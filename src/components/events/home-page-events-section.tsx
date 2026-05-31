@@ -51,7 +51,7 @@ export async function HomePageEventsSection() {
         <CompactPlanningView events={events} />
       </section>
 
-      <SwingDancesSection />
+      {/* <SwingDancesSection /> */}
 
       <CommunityLinksSection />
 

@@ -161,7 +161,7 @@ async function upsertOrganizer(organizer: SeedOrganizer) {
     })
     .returning();
 
-  console.log(`Organisateur créé : ${organizer.name}`);
+  console.info(`Organisateur créé : ${organizer.name}`);
   return created;
 }
 
@@ -207,7 +207,7 @@ async function upsertSource(source: SeedSource) {
       },
     });
 
-  console.log(`Source créée : ${source.name}`);
+  console.info(`Source créée : ${source.name}`);
 }
 
 async function main() {

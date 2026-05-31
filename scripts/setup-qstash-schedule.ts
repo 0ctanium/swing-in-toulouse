@@ -7,11 +7,11 @@ import { ensureHourlySyncSchedule } from "@/lib/qstash";
 async function main() {
   const schedule = await ensureHourlySyncSchedule();
 
-  console.log("QStash schedule configured:");
-  console.log(`  id: ${schedule.scheduleId}`);
-  console.log(`  cron: ${schedule.cron}`);
-  console.log(`  destination: ${schedule.destination}`);
-  console.log(`  (CRON_SYNC_URL / default: ${getCronSyncUrl()})`);
+  console.info("QStash schedule configured:");
+  console.info(`  id: ${schedule.scheduleId}`);
+  console.info(`  cron: ${schedule.cron}`);
+  console.info(`  destination: ${schedule.destination}`);
+  console.info(`  (CRON_SYNC_URL / default: ${getCronSyncUrl()})`);
 }
 
 main()
