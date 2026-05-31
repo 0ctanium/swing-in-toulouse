@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { notFound, redirect } from "next/navigation";
-import { CalendarPlus } from "lucide-react";
 
+import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
 import {
   EventActionLinks,
   EventBadges,
@@ -17,7 +17,9 @@ import { Separator } from "@/components/ui/separator";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
 import { getEventWithOverrides } from "@/lib/events/overrides";
 import { getEventBySlug, resolveEventBySlug } from "@/lib/events/queries";
+import { emptyIcalPayload } from "@/lib/ical/payload";
 import { publicMetadata } from "@/lib/metadata";
+import { CalendarPlus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -115,10 +117,17 @@ export default async function EventPage({ params }: EventPageProps) {
       ) : null}
 
       <div className="flex flex-wrap gap-3">
-        <Button render={<a href={`/evenement/${event.slug}.ics`} download />}>
-          <CalendarPlus data-icon="inline-start" />
-          Ajouter au calendrier
-        </Button>
+        <CalendarSubscribeDialog
+          payload={{ ...emptyIcalPayload(), event: [event.slug] }}
+          feedName={event.title}
+          title="Ajouter au calendrier"
+          description="Choisissez votre application pour ajouter cet événement."
+        >
+          <Button render={<a href={`/evenement/${event.slug}.ics`} download />}>
+            <CalendarPlus data-icon="inline-start" />
+            Ajouter au calendrier
+          </Button>
+        </CalendarSubscribeDialog>
         <EventActionLinks event={event} />
         {event.organization?.website ? (
           <Button

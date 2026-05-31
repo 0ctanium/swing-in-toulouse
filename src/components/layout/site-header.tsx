@@ -1,11 +1,12 @@
 import Link from "next/link";
 
+import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
 import { cn } from "@/lib/utils";
+import { emptyIcalPayload } from "@/lib/ical/payload";
 
 const navItems = [
   { href: "/", label: "Accueil" },
   { href: "/agenda", label: "Agenda" },
-  { href: "/agenda.ics", label: "Calendrier iCal" },
 ];
 
 type SiteHeaderProps = {
@@ -36,6 +37,14 @@ export function SiteHeader({ isAdminMode = false }: SiteHeaderProps) {
               {item.label}
             </Link>
           ))}
+          <CalendarSubscribeDialog payload={emptyIcalPayload()}>
+            <button
+              type="button"
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              Calendrier iCal
+            </button>
+          </CalendarSubscribeDialog>
           {isAdminMode ? (
             <Link
               href="/admin"

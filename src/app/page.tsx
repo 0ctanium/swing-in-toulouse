@@ -3,6 +3,7 @@ import Link from "next/link";
 import { addDays } from "date-fns";
 
 import { EventList } from "@/components/events/event-list";
+import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
 import {
   Card,
   CardContent,
@@ -11,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getUpcomingEvents, listOrganizers } from "@/lib/events/queries";
+import { emptyIcalPayload } from "@/lib/ical/payload";
 import { publicMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
 
@@ -48,12 +50,7 @@ export default async function HomePage() {
           >
             Voir l&apos;agenda
           </Link>
-          <Link
-            href="/ical/e30.ical"
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
-          >
-            S&apos;abonner au calendrier
-          </Link>
+          <CalendarSubscribeDialog payload={emptyIcalPayload()} />
         </div>
       </section>
 

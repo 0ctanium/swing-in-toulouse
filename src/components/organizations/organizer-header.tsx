@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 
+import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
 import { OrganizationCategoryBadge } from "@/components/organizations/organization-category-badge";
 import type { Organization, Venue } from "@/db/schema";
+import { emptyIcalPayload } from "@/lib/ical/payload";
 import { getVenueDisplayAddress, getVenueMapsUrl } from "@/lib/venues/display";
 
 type OrganizerHeaderProps = {
@@ -64,12 +66,14 @@ export function OrganizerHeader({ organizer, venue }: OrganizerHeaderProps) {
             Site web
           </a>
         ) : null}
-        <Link
-          href={`/organisateur/${organizer.slug}.ics`}
-          className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
+        <CalendarSubscribeDialog
+          payload={{ ...emptyIcalPayload(), org: [organizer.slug] }}
+          feedName={`${organizer.name} | Swing in Toulouse`}
         >
-          Calendrier iCal
-        </Link>
+          <button className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted">
+            Calendrier iCal
+          </button>
+        </CalendarSubscribeDialog>
       </div>
     </section>
   );

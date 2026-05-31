@@ -1,4 +1,6 @@
+import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { emptyIcalPayload } from "@/lib/ical/payload";
 import { siteConfig } from "@/lib/site";
 
 export function SiteFooter() {
@@ -10,9 +12,14 @@ export function SiteFooter() {
         </p>
         <p>
           Abonnez-vous au calendrier :{" "}
-          <a href="/agenda.ics" className="text-foreground underline">
-            Calendrier iCal (Tous les événements)
-          </a>
+          <CalendarSubscribeDialog payload={emptyIcalPayload()}>
+            <button
+              type="button"
+              className="text-foreground underline hover:no-underline"
+            >
+              Calendrier iCal (Tous les événements)
+            </button>
+          </CalendarSubscribeDialog>
         </p>
         <div className="flex items-center justify-between gap-3">
           <span className="text-foreground">Apparence</span>
