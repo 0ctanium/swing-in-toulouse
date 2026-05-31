@@ -23,7 +23,7 @@ export function useAdminLogin() {
     mutationKey: [...adminQueryKeys.all, "login"],
     mutationFn: adminLogin,
     onSuccess: () => {
-      router.push("/admin/events");
+      router.push("/admin");
       router.refresh();
     },
   });
