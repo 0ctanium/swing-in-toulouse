@@ -1,8 +1,6 @@
 import { Suspense } from "react";
 
-import { AdminModeBanner } from "@/components/admin/admin-mode-banner";
 import { AdminModeProvider } from "@/components/admin/admin-mode-provider";
-import { SiteHeader } from "@/components/layout/site-header";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
 
 async function AdminAwareChromeInner({
@@ -13,30 +11,22 @@ async function AdminAwareChromeInner({
   const isAdminMode = await isAdminAuthenticated();
 
   return (
-    <AdminModeProvider isAdminMode={isAdminMode}>
-      <AdminModeBanner />
-      <SiteHeader />
-      {children}
-    </AdminModeProvider>
+    <AdminModeProvider isAdminMode={isAdminMode}>{children}</AdminModeProvider>
   );
 }
 
-function AdminAwareChromeFallback() {
-  return (
-    <AdminModeProvider isAdminMode={false}>
-      <SiteHeader />
-    </AdminModeProvider>
-  );
+function AdminAwareChromeFallback({ children }: { children: React.ReactNode }) {
+  return <AdminModeProvider isAdminMode={false}>{children}</AdminModeProvider>;
 }
 
-export function AdminAwareChrome({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function AdminAwareChrome({ children }: { children: React.ReactNode }) {
+  const content = <Suspense>{children}</Suspense>;
+
   return (
-    <Suspense fallback={<AdminAwareChromeFallback />}>
-      <AdminAwareChromeInner>{children}</AdminAwareChromeInner>
+    <Suspense
+      fallback={<AdminAwareChromeFallback>{content}</AdminAwareChromeFallback>}
+    >
+      <AdminAwareChromeInner>{content}</AdminAwareChromeInner>
     </Suspense>
   );
 }

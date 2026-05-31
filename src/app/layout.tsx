@@ -6,6 +6,8 @@ import { AdminAwareChrome } from "@/components/layout/admin-aware-chrome";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AdminModeBanner } from "@/components/admin/admin-mode-banner";
+import { SiteHeader } from "@/components/layout/site-header";
 import { siteConfig } from "@/lib/site";
 
 import "./globals.css";
@@ -65,6 +67,8 @@ export default function RootLayout({
         <ThemeProvider>
           <Providers>
             <AdminAwareChrome>
+              <AdminModeBanner />
+              <SiteHeader />
               <main
                 className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10"
                 suppressHydrationWarning
