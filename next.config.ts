@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/agenda.ics",
-        destination: "/api/ical/e30.ics",
+        destination: "/api/ical/e30=.ics",
         statusCode: 307,
       },
     ];

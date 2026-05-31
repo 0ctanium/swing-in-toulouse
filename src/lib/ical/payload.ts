@@ -17,7 +17,7 @@ export type IcalPayload = AgendaFilters & {
 };
 
 /** Stable segment for the global (unfiltered) feed. */
-export const GLOBAL_ICAL_PAYLOAD = "e30";
+export const GLOBAL_ICAL_PAYLOAD = "e30=";
 
 export class IcalPayloadError extends Error {
   constructor(message: string) {

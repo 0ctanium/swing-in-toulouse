@@ -115,7 +115,7 @@
   Les événements récurrents sont stockés **une seule fois** en base avec leur `RRULE`.
 
   - **Affichage web** : expansion à la volée (12 prochains mois)
-  - **Export iCal** (`/ical/{payload}.ical`, global = `/ical/e30.ical`) : règle de récurrence conservée ; anciennes URL (`/agenda.ics`, etc.) redirigent vers le payload canonique
+  - **Export iCal** (`/ical/{payload}.ical`, global = `/ical/e30=.ical`) : règle de récurrence conservée ; anciennes URL (`/agenda.ics`, etc.) redirigent vers le payload canonique
 
   ## Overrides admin
 
