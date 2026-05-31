@@ -13,6 +13,8 @@ import {
   normalizeOrganizationWebsite,
   organizationWriteSchema,
 } from "@/lib/organizations/schemas";
+import { normalizeOrganizationDances } from "@/lib/organizations/dances";
+import { normalizeOrganizationSocialLinks } from "@/lib/organizations/social-links";
 
 export async function GET(request: NextRequest) {
   const authError = await assertAdminApi(request);
@@ -66,6 +68,9 @@ export async function POST(request: NextRequest) {
       description: parsed.data.description?.trim() || null,
       website: normalizeOrganizationWebsite(parsed.data.website),
       category: parsed.data.category ?? null,
+      dances: normalizeOrganizationDances(parsed.data.dances) ?? null,
+      socialLinks:
+        normalizeOrganizationSocialLinks(parsed.data.socialLinks) ?? null,
       venueId,
       isActive: parsed.data.isActive ?? true,
     })

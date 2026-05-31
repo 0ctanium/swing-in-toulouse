@@ -12,6 +12,8 @@ import {
   normalizeOrganizationWebsite,
   organizationPatchSchema,
 } from "@/lib/organizations/schemas";
+import { normalizeOrganizationDances } from "@/lib/organizations/dances";
+import { normalizeOrganizationSocialLinks } from "@/lib/organizations/social-links";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -76,6 +78,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         : {}),
       ...(parsed.data.category !== undefined
         ? { category: parsed.data.category }
+        : {}),
+      ...(parsed.data.dances !== undefined
+        ? { dances: normalizeOrganizationDances(parsed.data.dances) }
+        : {}),
+      ...(parsed.data.socialLinks !== undefined
+        ? {
+            socialLinks: normalizeOrganizationSocialLinks(
+              parsed.data.socialLinks,
+            ),
+          }
         : {}),
       ...(parsed.data.venueId !== undefined
         ? { venueId: parsed.data.venueId }

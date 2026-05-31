@@ -4,13 +4,7 @@ import { addDays } from "date-fns";
 
 import { CompactPlanningView } from "@/components/events/compact-planning-view";
 import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { OrganizationsByDance } from "@/components/organizations/organizations-by-dance";
 import { getUpcomingEvents, listOrganizers } from "@/lib/events/queries";
 import { emptyIcalPayload } from "@/lib/ical/payload";
 import { publicMetadata } from "@/lib/metadata";
@@ -71,42 +65,7 @@ export default async function HomePage() {
         <CompactPlanningView events={events} />
       </section>
 
-      {organizers.length > 0 ? (
-        <section className="flex flex-col gap-4">
-          <h2 className="font-heading text-2xl font-semibold">Organisateurs</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {organizers.map((organizer) => (
-              <Card key={organizer.id}>
-                <CardHeader>
-                  <CardTitle>
-                    <Link
-                      href={`/organisateur/${organizer.slug}`}
-                      className="hover:underline"
-                    >
-                      {organizer.name}
-                    </Link>
-                  </CardTitle>
-                  {organizer.description ? (
-                    <CardDescription>{organizer.description}</CardDescription>
-                  ) : null}
-                </CardHeader>
-                {organizer.website ? (
-                  <CardContent>
-                    <a
-                      href={organizer.website}
-                      className="text-sm underline"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Site web
-                    </a>
-                  </CardContent>
-                ) : null}
-              </Card>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <OrganizationsByDance organizers={organizers} />
     </div>
   );
 }

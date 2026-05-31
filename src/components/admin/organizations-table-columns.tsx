@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatOrganizationCategory } from "@/lib/organizations/categories";
 import type { AdminOrganizationRow } from "@/lib/organizations/admin";
+import { listOrganizationSocialLinks } from "@/lib/organizations/social-links";
 import { organizationUrl } from "@/lib/site";
 
 type CreateOrganizationsTableColumnsOptions = {
@@ -53,6 +54,54 @@ export function createOrganizationsTableColumns({
           <Badge variant="secondary">{label}</Badge>
         ) : (
           <span className="text-muted-foreground text-sm">—</span>
+        );
+      },
+    },
+    {
+      accessorKey: "dances",
+      header: "Danses",
+      cell: ({ row }) => {
+        const dances = row.original.dances;
+
+        if (!dances?.length) {
+          return <span className="text-muted-foreground text-sm">—</span>;
+        }
+
+        return (
+          <div className="flex max-w-48 flex-wrap gap-1">
+            {dances.map((dance) => (
+              <Badge key={dance} variant="outline" className="text-xs">
+                {dance}
+              </Badge>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      id: "socialLinks",
+      header: "Réseaux",
+      cell: ({ row }) => {
+        const links = listOrganizationSocialLinks(row.original.socialLinks);
+
+        if (links.length === 0) {
+          return <span className="text-muted-foreground text-sm">—</span>;
+        }
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            {links.map((link) => (
+              <a
+                key={link.platform}
+                href={link.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm hover:underline"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
         );
       },
     },

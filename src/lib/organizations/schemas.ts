@@ -1,24 +1,10 @@
 import { z } from "zod";
 
 import { organizationCategoryValues } from "@/lib/organizations/categories";
+import { organizationDanceValues } from "@/lib/organizations/dances";
+import { organizationSocialPlatformValues } from "@/lib/organizations/social-links";
 
-export function normalizeOrganizationWebsite(
-  value: string | null | undefined,
-) {
-  const trimmed = value?.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  try {
-    const url = new URL(
-      trimmed.includes("://") ? trimmed : `https://${trimmed}`,
-    );
-    return url.toString();
-  } catch {
-    return trimmed;
-  }
-}
+export { normalizeOrganizationWebsite } from "@/lib/organizations/urls";
 
 const slugSchema = z
   .string()
@@ -29,12 +15,29 @@ const slugSchema = z
     "Slug invalide (lettres minuscules, chiffres et tirets).",
   );
 
+const organizationSocialLinksSchema = z
+  .object(
+    Object.fromEntries(
+      organizationSocialPlatformValues.map((platform) => [
+        platform,
+        z.string().trim().nullable().optional(),
+      ]),
+    ),
+  )
+  .nullable()
+  .optional();
+
 export const organizationWriteSchema = z.object({
   name: z.string().trim().min(1, "Le nom est requis."),
   slug: slugSchema.optional(),
   description: z.string().trim().nullable().optional(),
   website: z.string().trim().nullable().optional(),
   category: z.enum(organizationCategoryValues).nullable().optional(),
+  dances: z
+    .array(z.enum(organizationDanceValues))
+    .nullable()
+    .optional(),
+  socialLinks: organizationSocialLinksSchema,
   venueId: z
     .string()
     .uuid("Le lieu sélectionné est invalide.")

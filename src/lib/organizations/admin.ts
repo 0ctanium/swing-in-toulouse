@@ -3,6 +3,8 @@ import { and, asc, count, eq, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { organizations, sources, venues } from "@/db/schema";
 import type { OrganizationCategory } from "@/db/schema";
+import type { OrganizationDance } from "@/lib/organizations/dances";
+import type { OrganizationSocialLinks } from "@/lib/organizations/social-links";
 import { computeEffectiveOrganizationEventCounts } from "@/lib/organizations/effective-organization";
 import { generateOrganizationSlug } from "@/lib/slug";
 
@@ -13,6 +15,8 @@ export type AdminOrganizationRow = {
   description: string | null;
   website: string | null;
   category: OrganizationCategory | null;
+  dances: OrganizationDance[] | null;
+  socialLinks: OrganizationSocialLinks | null;
   venueId: string | null;
   venueName: string | null;
   venueSlug: string | null;
@@ -89,6 +93,8 @@ export async function listAdminOrganizations(): Promise<AdminOrganizationRow[]> 
     description: organization.description,
     website: organization.website,
     category: organization.category,
+    dances: organization.dances ?? null,
+    socialLinks: organization.socialLinks ?? null,
     venueId: organization.venueId,
     venueName: organization.venue?.name ?? null,
     venueSlug: organization.venue?.slug ?? null,

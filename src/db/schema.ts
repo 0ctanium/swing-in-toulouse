@@ -16,6 +16,8 @@ import {
 
 import type { IcalStoredData } from "@/lib/ical/types";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
+import type { OrganizationDance } from "@/lib/organizations/dances";
+import type { OrganizationSocialLinks } from "@/lib/organizations/social-links";
 
 export const eventStatusEnum = pgEnum("event_status", [
   "published",
@@ -90,6 +92,8 @@ export const organizations = pgTable(
       onDelete: "set null",
     }),
     category: organizationCategoryEnum("category"),
+    dances: text("dances").array().$type<OrganizationDance[]>(),
+    socialLinks: jsonb("social_links").$type<OrganizationSocialLinks>(),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
