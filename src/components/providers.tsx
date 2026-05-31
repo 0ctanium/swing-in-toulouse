@@ -5,6 +5,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { useState } from "react";
 
 import { AdminModeProvider } from "@/components/admin/admin-mode-provider";
+import { CalendarSubscribeDialogRoot } from "@/components/calendar/calendar-subscribe-dialog-root";
 import { Toaster } from "@/components/ui/sonner";
 
 export function Providers({
@@ -30,6 +31,7 @@ export function Providers({
       <QueryClientProvider client={queryClient}>
         <AdminModeProvider isAdminMode={isAdminMode}>
           {children}
+          <CalendarSubscribeDialogRoot />
           <Toaster richColors closeButton position="top-center" />
         </AdminModeProvider>
       </QueryClientProvider>
