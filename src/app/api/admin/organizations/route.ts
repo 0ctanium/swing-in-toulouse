@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { organizations } from "@/db/schema";
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidatePublicOrganizerCache } from "@/lib/cache/invalidate";
 import {
   getSelectableVenueById,
   listAdminOrganizations,
@@ -75,6 +76,8 @@ export async function POST(request: NextRequest) {
       isActive: parsed.data.isActive ?? true,
     })
     .returning();
+
+  invalidatePublicOrganizerCache();
 
   return NextResponse.json({ organization: created }, { status: 201 });
 }

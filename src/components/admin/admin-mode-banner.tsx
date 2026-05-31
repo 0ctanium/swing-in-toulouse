@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Settings2 } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { useAdminMode } from "@/components/admin/admin-mode-provider";
@@ -9,8 +10,10 @@ import { cn } from "@/lib/utils";
 
 export function AdminModeBanner({ className }: { className?: string }) {
   const { isAdminMode } = useAdminMode();
+  const pathname = usePathname();
+  const isAdminPage = pathname.startsWith("/admin");
 
-  if (!isAdminMode) {
+  if (!isAdminMode || isAdminPage) {
     return null;
   }
 
@@ -28,10 +31,10 @@ export function AdminModeBanner({ className }: { className?: string }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href="/admin/events"
+            href="/admin"
             className="rounded-md px-2 py-1 font-medium hover:bg-amber-500/15"
           >
-            Calendrier admin
+            Admin
           </Link>
           <AdminLogoutButton />
         </div>

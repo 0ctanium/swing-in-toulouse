@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { organizations } from "@/db/schema";
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidatePublicOrganizerCache } from "@/lib/cache/invalidate";
 import {
   getSelectableVenueById,
   resolveUniqueOrganizationSlug,
@@ -99,6 +100,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     .where(eq(organizations.id, id))
     .returning();
 
+  invalidatePublicOrganizerCache();
+
   return NextResponse.json({ organization: updated });
 }
 
@@ -123,6 +126,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   }
 
   await db.delete(organizations).where(eq(organizations.id, id));
+
+  invalidatePublicOrganizerCache();
 
   return NextResponse.json({ success: true });
 }

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { sources } from "@/db/schema";
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidateAllPublicCache } from "@/lib/cache/invalidate";
 import {
   getOrganizationById,
   resolveUniqueSourceSlug,
@@ -87,6 +88,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     .where(eq(sources.id, id))
     .returning();
 
+  invalidateAllPublicCache();
+
   return NextResponse.json({ source: updated });
 }
 
@@ -108,6 +111,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   }
 
   await db.delete(sources).where(eq(sources.id, id));
+
+  invalidateAllPublicCache();
 
   return NextResponse.json({ success: true });
 }

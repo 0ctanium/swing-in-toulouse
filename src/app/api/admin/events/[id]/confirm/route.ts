@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidatePublicEventCache } from "@/lib/cache/invalidate";
 import { confirmEvent } from "@/lib/events/confirm-event";
 import { eventOverridePatchSchema } from "@/lib/events/overrides.types";
 
@@ -38,6 +39,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       { status: 404 },
     );
   }
+
+  invalidatePublicEventCache();
 
   return NextResponse.json({ event: updated });
 }

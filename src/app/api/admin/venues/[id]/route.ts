@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { venues } from "@/db/schema";
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidatePublicVenueCache } from "@/lib/cache/invalidate";
 import { venueCategoryValues } from "@/lib/venues/categories";
 
 type RouteContext = {
@@ -74,6 +75,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     })
     .where(eq(venues.id, id))
     .returning();
+
+  invalidatePublicVenueCache();
 
   return NextResponse.json({ venue: updated });
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidatePublicEventCache } from "@/lib/cache/invalidate";
 import {
   deleteEventOverride,
   getEventWithOverrides,
@@ -59,6 +60,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     patch: parsed.data,
   });
 
+  invalidatePublicEventCache();
+
   return NextResponse.json({ override });
 }
 
@@ -79,6 +82,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       ? new Date(occurrenceStartAtRaw)
       : null,
   });
+
+  invalidatePublicEventCache();
 
   return NextResponse.json({ ok: true });
 }

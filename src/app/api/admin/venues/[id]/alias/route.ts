@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidatePublicVenueCache } from "@/lib/cache/invalidate";
 import {
   clearVenueAlias,
   VenueCanonicalError,
@@ -20,6 +21,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
   try {
     await clearVenueAlias(id);
+    invalidatePublicVenueCache();
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof VenueCanonicalError) {

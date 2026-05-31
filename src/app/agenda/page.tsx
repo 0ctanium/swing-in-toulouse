@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { AgendaPrefetchBoundary } from "@/components/events/agenda-prefetch-boundary";
 import { AgendaView } from "@/components/events/agenda-view";
-import { AgendaViewWithPreferences } from "@/components/events/agenda-view-with-preferences";
 import { publicMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = publicMetadata({
@@ -24,7 +24,7 @@ export default function AgendaPage() {
         </p>
       </div>
       <Suspense fallback={<AgendaView />}>
-        <AgendaViewWithPreferences />
+        <AgendaPrefetchBoundary />
       </Suspense>
     </div>
   );

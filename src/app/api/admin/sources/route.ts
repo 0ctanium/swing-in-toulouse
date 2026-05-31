@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { sources } from "@/db/schema";
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidateAllPublicCache } from "@/lib/cache/invalidate";
 import { generateSourceSlug } from "@/lib/slug";
 import {
   getOrganizationById,
@@ -73,6 +74,8 @@ export async function POST(request: NextRequest) {
       isActive: parsed.data.isActive ?? true,
     })
     .returning();
+
+  invalidateAllPublicCache();
 
   return NextResponse.json({ source: created }, { status: 201 });
 }

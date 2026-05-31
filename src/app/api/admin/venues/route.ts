@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { venues } from "@/db/schema";
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidatePublicVenueCache } from "@/lib/cache/invalidate";
 import { generateVenueSlug } from "@/lib/slug";
 import { resolveUniqueVenueSlug } from "@/lib/venues/admin";
 import { summarizeDebug, venueMatchingLog } from "@/lib/venues/matching-debug";
@@ -53,6 +54,8 @@ export async function POST(request: NextRequest) {
       category: parsed.data.category ?? null,
     })
     .returning();
+
+  invalidatePublicVenueCache();
 
   return NextResponse.json({ venue: created }, { status: 201 });
 }

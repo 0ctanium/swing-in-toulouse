@@ -30,6 +30,11 @@ type AdminEventPageProps = {
   params: Promise<{ id: string }>;
 };
 
+export const metadata: Metadata = adminMetadata({
+  title: "Événement",
+  description: "Corrections et occurrences pour un événement synchronisé.",
+});
+
 function AdminEventPageSkeleton() {
   return (
     <div className="flex flex-col gap-6">
@@ -39,22 +44,6 @@ function AdminEventPageSkeleton() {
       <Skeleton className="h-64 w-full rounded-xl" />
     </div>
   );
-}
-
-export async function generateMetadata({
-  params,
-}: AdminEventPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const eventData = await getEventWithOverrides(id);
-
-  if (!eventData) {
-    return adminMetadata({ title: "Événement introuvable" });
-  }
-
-  return adminMetadata({
-    title: eventData.synced.title,
-    description: `Corrections et occurrences pour « ${eventData.synced.title} ».`,
-  });
 }
 
 async function AdminEventPageContent({ params }: AdminEventPageProps) {

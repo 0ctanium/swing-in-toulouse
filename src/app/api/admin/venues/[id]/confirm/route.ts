@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { venues } from "@/db/schema";
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidatePublicVenueCache } from "@/lib/cache/invalidate";
 import { isGoogleMapsConfigured } from "@/env";
 import {
   geocodeAddress,
@@ -77,6 +78,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       })
       .where(eq(venues.id, id))
       .returning();
+
+    invalidatePublicVenueCache();
 
     return NextResponse.json({ venue: updated, place });
   } catch (error) {

@@ -15,18 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { emptyIcalPayload } from "@/lib/ical/payload";
 import {
-  siteNavAdminLinkClassName,
   siteNavItems,
   siteNavLinkClassName,
   siteNavMobileLinkClassName,
 } from "@/lib/site-nav";
 import { cn } from "@/lib/utils";
 
-type SiteHeaderNavProps = {
-  isAdminMode?: boolean;
-};
-
-export function SiteHeaderNav({ isAdminMode = false }: SiteHeaderNavProps) {
+export function SiteHeaderNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   function closeMobileMenu() {
@@ -37,7 +32,11 @@ export function SiteHeaderNav({ isAdminMode = false }: SiteHeaderNavProps) {
     <>
       <nav className="hidden items-center gap-1 md:flex">
         {siteNavItems.map((item) => (
-          <Link key={item.href} href={item.href} className={siteNavLinkClassName}>
+          <Link
+            key={item.href}
+            href={item.href}
+            className={siteNavLinkClassName}
+          >
             {item.label}
           </Link>
         ))}
@@ -46,11 +45,6 @@ export function SiteHeaderNav({ isAdminMode = false }: SiteHeaderNavProps) {
             Calendrier iCal
           </button>
         </CalendarSubscribeDialog>
-        {isAdminMode ? (
-          <Link href="/admin" className={siteNavAdminLinkClassName}>
-            Admin
-          </Link>
-        ) : null}
       </nav>
 
       <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -90,15 +84,6 @@ export function SiteHeaderNav({ isAdminMode = false }: SiteHeaderNavProps) {
                 Calendrier iCal
               </button>
             </CalendarSubscribeDialog>
-            {isAdminMode ? (
-              <Link
-                href="/admin"
-                className={cn(siteNavMobileLinkClassName, siteNavAdminLinkClassName)}
-                onClick={closeMobileMenu}
-              >
-                Admin
-              </Link>
-            ) : null}
           </nav>
         </DialogContent>
       </Dialog>

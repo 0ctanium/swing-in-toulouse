@@ -15,7 +15,7 @@ async function AdminAwareChromeInner({
   return (
     <AdminModeProvider isAdminMode={isAdminMode}>
       <AdminModeBanner />
-      <SiteHeader isAdminMode={isAdminMode} />
+      <SiteHeader />
       {children}
     </AdminModeProvider>
   );
@@ -24,7 +24,7 @@ async function AdminAwareChromeInner({
 function AdminAwareChromeFallback() {
   return (
     <AdminModeProvider isAdminMode={false}>
-      <SiteHeader isAdminMode={false} />
+      <SiteHeader />
     </AdminModeProvider>
   );
 }

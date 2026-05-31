@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidatePublicVenueCache } from "@/lib/cache/invalidate";
 import { summarizeDebug, venueMatchingLog } from "@/lib/venues/matching-debug";
 import {
   bulkAssignVenue,
@@ -69,6 +70,10 @@ export async function POST(request: NextRequest) {
       ...result,
       debug: result.debug ? summarizeDebug(result.debug) : undefined,
     };
+
+    if (response.updated > 0) {
+      invalidatePublicVenueCache();
+    }
 
     venueMatchingLog("bulk-assign response", {
       matched: response.matched,

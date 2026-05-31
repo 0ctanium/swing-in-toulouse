@@ -1,22 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchJson } from "@/lib/api/fetch-json";
-import type { AgendaFilterOptions } from "@/lib/events/agenda-filter-options";
+import {
+  agendaFilterOptionsQueryOptions,
+} from "@/lib/events/event-query-options";
 
-export const agendaFilterOptionsQueryKey = ["events", "filters"] as const;
-
-async function fetchAgendaFilterOptions() {
-  return fetchJson<AgendaFilterOptions>(
-    "/api/events/filters",
-    undefined,
-    "Impossible de charger les filtres.",
-  );
-}
+export { agendaFilterOptionsQueryKey } from "@/lib/events/event-query-options";
 
 export function useAgendaFilterOptions() {
   return useQuery({
-    queryKey: agendaFilterOptionsQueryKey,
-    queryFn: fetchAgendaFilterOptions,
+    ...agendaFilterOptionsQueryOptions(),
     staleTime: 5 * 60 * 1000,
   });
 }

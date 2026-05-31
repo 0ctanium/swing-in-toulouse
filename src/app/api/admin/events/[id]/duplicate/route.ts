@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { assertAdminApi } from "@/lib/admin/auth";
+import { invalidatePublicEventCache } from "@/lib/cache/invalidate";
 import {
   DuplicateLinkError,
   findDuplicateCandidates,
@@ -63,6 +64,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   try {
     const updated = await linkDuplicateEvent(id, body.data.canonicalEventId);
     const info = await getDuplicateLinkInfo(updated.id);
+    invalidatePublicEventCache();
     return NextResponse.json(info);
   } catch (error) {
     if (error instanceof DuplicateLinkError) {
@@ -84,6 +86,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
     await unlinkDuplicateEvent(id);
     const info = await getDuplicateLinkInfo(id);
+    invalidatePublicEventCache();
     return NextResponse.json(info);
   } catch (error) {
     if (error instanceof DuplicateLinkError) {
