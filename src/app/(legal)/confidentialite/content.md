@@ -39,6 +39,7 @@ L'accès à l'interface d'administration est réservé à l'éditeur. Un cookie 
 
 - assurer le fonctionnement et la sécurité du site ;
 - mesurer l'audience et améliorer le service (statistiques anonymes) ;
+- tester et améliorer la page d'accueil (tests A/B sur la présentation du hero) ;
 - mémoriser vos préférences d'affichage sur l'agenda ;
 - gérer l'accès à l'espace d'administration.
 
@@ -51,6 +52,7 @@ L'accès à l'interface d'administration est réservé à l'éditeur. Un cookie 
 ## 5. Durée de conservation
 
 - Données de mesure d'audience : 13 mois maximum (recommandation CNIL) ;
+- Cookie identifiant PostHog (`ph_distinct_id`) : 24 mois ;
 - Cookie de préférences agenda : 12 mois ;
 - Cookie de session admin : durée de la session de navigation.
 
@@ -98,19 +100,25 @@ Un cookie est un petit fichier déposé sur votre terminal lors de la visite d'u
 
 Ces cookies sont déposés pour le bon fonctionnement du service. Ils ne servent pas à vous profiler ni à vous suivre sur d'autres sites.
 
-### Mesure d'audience (PostHog)
+### Mesure d'audience et tests (PostHog)
 
-Le site utilise PostHog, hébergé en Union européenne (eu.posthog.com), pour collecter des statistiques de fréquentation anonymes (pages vues, clics sur les liens, filtres appliqués).
+Le site utilise PostHog, hébergé en Union européenne (eu.posthog.com), pour collecter des statistiques de fréquentation anonymes (pages vues, clics sur les liens, filtres appliqués) et pour mener des tests d'affichage sur la page d'accueil (comparaison de variantes de présentation).
 
 La configuration retenue vise une mesure d'audience sans profilage publicitaire : pas de reciblage, pas de croisement avec d'autres sites, pas de session replay ni de fonctionnalités de tracking avancées.
 
-PostHog peut utiliser le stockage local du navigateur (localStorage) pour générer un identifiant anonyme de visite. Cet identifiant ne permet pas de vous identifier personnellement.
+Un cookie `ph_distinct_id` peut être déposé pour attribuer de façon stable un identifiant anonyme de visite entre vos sessions, afin de mesurer l'audience et d'assigner une variante de test cohérente. Cet identifiant ne permet pas de vous identifier personnellement.
+
+PostHog peut également utiliser le stockage local du navigateur (localStorage) dans le même objectif.
+
+| Nom | Finalité | Durée |
+| --- | --- | --- |
+| `ph_distinct_id` | Identifiant anonyme de visite (audience PostHog, tests A/B page d'accueil) | 24 mois |
 
 ### Bandeau de consentement
 
 Conformément aux recommandations de la CNIL, un bandeau de consentement aux cookies n'est pas affiché sur ce site car :
 
-- seuls des cookies fonctionnels et une mesure d'audience anonyme sont utilisés ;
+- seuls des cookies fonctionnels, un cookie d'identifiant anonyme PostHog et une mesure d'audience anonyme sont utilisés ;
 - aucun cookie publicitaire ou de profilage n'est déposé ;
 - aucun traceur tiers à des fins marketing n'est employé.
 

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { HomePageEventsSection } from "@/components/events/home-page-events-section";
-import { HomeHeroAb } from "@/components/home/home-hero-ab";
 import { HomeHero } from "@/components/home/home-hero";
+import { HomePageHeroSection } from "@/components/home/home-page-hero-section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { publicMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
@@ -28,11 +28,15 @@ function HomeHeroFallback() {
   return <HomeHero variant="a" art="vinyl" showPicker={false} />;
 }
 
-export default function HomePage() {
+type HomePageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default function HomePage({ searchParams }: HomePageProps) {
   return (
     <div className="flex flex-col gap-12 md:gap-16">
       <Suspense fallback={<HomeHeroFallback />}>
-        <HomeHeroAb />
+        <HomePageHeroSection searchParams={searchParams} />
       </Suspense>
 
       <Suspense fallback={<HomePageEventsSkeleton />}>

@@ -13,12 +13,14 @@ import { emptyIcalPayload } from "@/lib/ical/payload";
 export type HeroExperimentTracking = {
   heroLayoutVariant: HeroVariant;
   heroArtVariant?: HeroArtVariant;
+  flagVariant?: string | null;
 };
 
 export function HeroActions({
   className,
   heroLayoutVariant,
   heroArtVariant,
+  flagVariant,
 }: HeroExperimentTracking & {
   className?: string;
 }) {
@@ -29,6 +31,7 @@ export function HeroActions({
         : "home_hero_calendar_clicked",
       {
         hero_layout_variant: heroLayoutVariant,
+        ...(flagVariant ? { flag_variant: flagVariant } : {}),
         ...(heroArtVariant ? { hero_art_variant: heroArtVariant } : {}),
       },
     );

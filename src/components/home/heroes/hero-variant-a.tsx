@@ -16,6 +16,7 @@ export function HeroVariantA({
   art = "vinyl",
   heroLayoutVariant,
   heroArtVariant,
+  flagVariant,
 }: HeroVariantAProps) {
   return (
     <section
@@ -52,6 +53,7 @@ export function HeroVariantA({
           className="flex flex-wrap gap-3 pt-1"
           heroLayoutVariant={heroLayoutVariant}
           heroArtVariant={heroArtVariant ?? art}
+          flagVariant={flagVariant}
         />
       </div>
     </section>

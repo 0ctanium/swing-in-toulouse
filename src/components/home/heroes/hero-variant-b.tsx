@@ -6,7 +6,10 @@ import {
   type HeroExperimentTracking,
 } from "./hero-shared";
 
-export function HeroVariantB({ heroLayoutVariant }: HeroExperimentTracking) {
+export function HeroVariantB({
+  heroLayoutVariant,
+  flagVariant,
+}: HeroExperimentTracking) {
   return (
     <section
       aria-labelledby="home-hero-heading"
@@ -32,7 +35,10 @@ export function HeroVariantB({ heroLayoutVariant }: HeroExperimentTracking) {
         </p>
       </div>
 
-      <HeroActions heroLayoutVariant={heroLayoutVariant} />
+      <HeroActions
+        heroLayoutVariant={heroLayoutVariant}
+        flagVariant={flagVariant}
+      />
     </section>
   );
 }

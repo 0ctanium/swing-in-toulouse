@@ -54,7 +54,10 @@ function AgendaPreviewStack() {
   );
 }
 
-export function HeroVariantC({ heroLayoutVariant }: HeroExperimentTracking) {
+export function HeroVariantC({
+  heroLayoutVariant,
+  flagVariant,
+}: HeroExperimentTracking) {
   return (
     <section
       aria-labelledby="home-hero-heading"
@@ -80,7 +83,10 @@ export function HeroVariantC({ heroLayoutVariant }: HeroExperimentTracking) {
           {homeHero.followUp}
         </p>
 
-        <HeroActions heroLayoutVariant={heroLayoutVariant} />
+        <HeroActions
+          heroLayoutVariant={heroLayoutVariant}
+          flagVariant={flagVariant}
+        />
       </div>
 
       <AgendaPreviewStack />

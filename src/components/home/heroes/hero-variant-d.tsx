@@ -3,7 +3,10 @@ import { organizationDanceValues } from "@/lib/organizations/dances";
 
 import { HeroActions, type HeroExperimentTracking } from "./hero-shared";
 
-export function HeroVariantD({ heroLayoutVariant }: HeroExperimentTracking) {
+export function HeroVariantD({
+  heroLayoutVariant,
+  flagVariant,
+}: HeroExperimentTracking) {
   return (
     <section
       aria-labelledby="home-hero-heading"
@@ -42,7 +45,10 @@ export function HeroVariantD({ heroLayoutVariant }: HeroExperimentTracking) {
           {organizationDanceValues.join(" · ")}
         </p>
 
-        <HeroActions heroLayoutVariant={heroLayoutVariant} />
+        <HeroActions
+          heroLayoutVariant={heroLayoutVariant}
+          flagVariant={flagVariant}
+        />
       </div>
     </section>
   );
