@@ -16,11 +16,13 @@ import {
   getDefaultFromDate,
   isMasterRelevantForExport,
 } from "@/lib/ical/recurrence";
+import { buildNormalizedEventsForExport } from "@/lib/ical/export-events";
 import {
   hasActiveIcalPayload,
   type IcalPayload,
 } from "@/lib/ical/payload";
-import { serializeCalendar, toNormalizedEvent } from "@/lib/ical/serializer";
+import { serializeCalendar } from "@/lib/ical/serializer";
+import { loadOverridesForEvents } from "@/lib/events/overrides";
 import { loadVenueCanonicalMap } from "@/lib/venues/canonical";
 import { siteConfig } from "@/lib/site";
 
@@ -162,16 +164,15 @@ async function buildFeedMeta(filters: IcalPayload, events: EventMaster[]) {
 
 export async function buildIcalFeedResponse(filters: IcalPayload) {
   const events = await getFilteredEventsForExport(filters);
+  const overrides = await loadOverridesForEvents(events.map((event) => event.id));
+  const normalized = await buildNormalizedEventsForExport(events, overrides);
   const meta = await buildFeedMeta(filters, events);
 
-  const calendar = serializeCalendar(
-    events.map((event) => toNormalizedEvent(event)),
-    {
-      name: meta.name,
-      description: meta.description,
-      prodId: siteConfig.icalProdId,
-    },
-  );
+  const calendar = serializeCalendar(normalized, {
+    name: meta.name,
+    description: meta.description,
+    prodId: siteConfig.icalProdId,
+  });
 
   return new NextResponse(calendar, {
     headers: {

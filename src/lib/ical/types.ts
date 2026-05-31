@@ -41,6 +41,12 @@ export type NormalizedEvent = {
   endAt?: Date;
   isAllDay: boolean;
   location?: string;
+  structuredLocation?: {
+    title: string;
+    geo: { lat: number; lon: number };
+  };
+  geo?: { lat: number; lon: number };
+  url?: string;
   sourceUrl?: string;
   status: EventStatus;
   categories?: string[];
@@ -48,6 +54,7 @@ export type NormalizedEvent = {
   sequence: number;
   lastModified: Date;
   recurrenceRule?: string;
+  recurrenceId?: Date;
   icalData?: IcalStoredData;
 };
 

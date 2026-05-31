@@ -55,6 +55,30 @@ function writeProperty(name: string, value: string, params?: string) {
   return foldLine(`${key}:${value}`);
 }
 
+function writeOrganizer(organizer: NonNullable<NormalizedEvent["organizer"]>) {
+  if (organizer.email) {
+    return foldLine(
+      `ORGANIZER;CN=${escapeIcalText(organizer.name)}:mailto:${organizer.email}`,
+    );
+  }
+
+  return writeProperty("ORGANIZER", escapeIcalText(organizer.name));
+}
+
+function writeGeo(geo: NonNullable<NormalizedEvent["geo"]>) {
+  return writeProperty("GEO", `${geo.lat};${geo.lon}`);
+}
+
+function writeAppleStructuredLocation(
+  structuredLocation: NonNullable<NormalizedEvent["structuredLocation"]>,
+) {
+  const { title, geo } = structuredLocation;
+
+  return foldLine(
+    `X-APPLE-STRUCTURED-LOCATION;VALUE=URI;X-APPLE-RADIUS=72;X-TITLE=${escapeIcalText(title)}:geo:${geo.lat},${geo.lon}`,
+  );
+}
+
 function serializeEvent(event: NormalizedEvent) {
   const lines = [
     "BEGIN:VEVENT",
@@ -66,6 +90,16 @@ function serializeEvent(event: NormalizedEvent) {
   if (event.endAt) {
     lines.push(
       writeProperty("DTEND", formatLocal(event.endAt), `TZID=${TIMEZONE}`),
+    );
+  }
+
+  if (event.recurrenceId) {
+    lines.push(
+      writeProperty(
+        "RECURRENCE-ID",
+        formatLocal(event.recurrenceId),
+        `TZID=${TIMEZONE}`,
+      ),
     );
   }
 
@@ -81,8 +115,16 @@ function serializeEvent(event: NormalizedEvent) {
     lines.push(writeProperty("LOCATION", escapeIcalText(event.location)));
   }
 
-  if (event.sourceUrl) {
-    lines.push(writeProperty("URL", event.sourceUrl));
+  if (event.geo) {
+    lines.push(writeGeo(event.geo));
+  }
+
+  if (event.structuredLocation) {
+    lines.push(writeAppleStructuredLocation(event.structuredLocation));
+  }
+
+  if (event.url) {
+    lines.push(writeProperty("URL", event.url));
   }
 
   lines.push(writeProperty("STATUS", mapDbStatus(event.status)));
@@ -95,23 +137,22 @@ function serializeEvent(event: NormalizedEvent) {
     );
   }
 
-  if (event.organizer?.email) {
-    lines.push(
-      writeProperty(
-        "ORGANIZER",
-        `;CN=${escapeIcalText(event.organizer.name)}:mailto:${event.organizer.email}`,
-      ),
-    );
-  } else   if (event.organizer?.name) {
-    lines.push(
-      writeProperty("ORGANIZER", `;CN=${escapeIcalText(event.organizer.name)}`),
-    );
+  if (event.organizer) {
+    lines.push(writeOrganizer(event.organizer));
+  }
+
+  if (event.icalData?.transparency) {
+    lines.push(writeProperty("TRANSP", event.icalData.transparency));
   }
 
   if (event.recurrenceRule) {
     for (const line of event.recurrenceRule.split("\n")) {
       const trimmed = line.trim();
-      if (trimmed.startsWith("RRULE:") || trimmed.startsWith("EXDATE")) {
+      if (
+        trimmed.startsWith("RRULE:") ||
+        trimmed.startsWith("EXDATE") ||
+        trimmed.startsWith("RDATE")
+      ) {
         lines.push(foldLine(trimmed));
       }
     }
@@ -174,38 +215,4 @@ export function serializeCalendar(
   return `${lines.join("\r\n")}\r\n`;
 }
 
-export function toNormalizedEvent(event: {
-  uid: string;
-  title: string;
-  description: string | null;
-  startAt: Date;
-  endAt: Date | null;
-  isAllDay: boolean;
-  locationRaw: string | null;
-  url: string | null;
-  sourceUrl: string | null;
-  status: "published" | "cancelled";
-  recurrenceRule: string | null;
-  categories: string[] | null;
-  sequence: number;
-  lastModified: Date;
-  icalData?: import("./types").IcalStoredData | null;
-}): NormalizedEvent {
-  return {
-    uid: event.uid,
-    title: event.title,
-    description: event.description ?? undefined,
-    startAt: event.startAt,
-    endAt: event.endAt ?? undefined,
-    isAllDay: event.isAllDay,
-    location: event.locationRaw ?? undefined,
-    sourceUrl: event.sourceUrl ?? undefined,
-    status: event.status === "cancelled" ? "cancelled" : "confirmed",
-    recurrenceRule: event.recurrenceRule ?? undefined,
-    categories: event.categories ?? undefined,
-    sequence: event.sequence,
-    lastModified: event.lastModified,
-    organizer: event.icalData?.organizer,
-    icalData: event.icalData ?? undefined,
-  };
-}
+export { buildNormalizedEvent } from "./export-fields";
