@@ -1,10 +1,18 @@
 "use client";
 
-import { Check, ChevronDown, X } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronDown, ListFilter, X } from "lucide-react";
 import posthog from "posthog-js";
 import { useQueryStates } from "nuqs";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -16,7 +24,7 @@ import {
   hasActiveAgendaFilters,
   type AgendaFilters,
 } from "@/lib/events/agenda-filters";
-import type { AgendaFilterOption } from "@/lib/events/agenda-filter-options";
+import type { AgendaFilterOptions } from "@/lib/events/agenda-filter-options";
 import { useAgendaFilterOptions } from "@/lib/events/use-agenda-filter-options";
 import { cn } from "@/lib/utils";
 
@@ -25,9 +33,15 @@ type AgendaFiltersBarProps = {
   onFiltersChange: (filters: Partial<AgendaFilters>) => void;
 };
 
+function countActiveFilterDimensions(filters: AgendaFilters) {
+  return [filters.category, filters.venue, filters.org].filter(
+    (values) => values.length > 0,
+  ).length;
+}
+
 function formatSelectedSummary(
   values: string[],
-  options: AgendaFilterOption[],
+  options: AgendaFilterOptions["categories"],
   placeholder: string,
 ) {
   if (values.length === 0) {
@@ -60,7 +74,7 @@ function FilterMultiSelect({
   label: string;
   values: string[];
   placeholder: string;
-  options: AgendaFilterOption[];
+  options: AgendaFilterOptions["categories"];
   disabled?: boolean;
   onChange: (values: string[]) => void;
 }) {
@@ -138,16 +152,94 @@ function FilterMultiSelect({
   );
 }
 
+type AgendaFiltersFieldsProps = {
+  filters: AgendaFilters;
+  data: AgendaFilterOptions;
+  onFiltersChange: (filters: Partial<AgendaFilters>) => void;
+};
+
+function AgendaFiltersFields({
+  filters,
+  data,
+  onFiltersChange,
+}: AgendaFiltersFieldsProps) {
+  const activeFilters = hasActiveAgendaFilters(filters);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <FilterMultiSelect
+          label="Catégorie"
+          values={filters.category}
+          placeholder="Toutes les catégories"
+          options={data.categories}
+          onChange={(category) => {
+            onFiltersChange({ category });
+            posthog.capture("agenda_filter_applied", {
+              filter_type: "category",
+              values: category,
+            });
+          }}
+        />
+        <FilterMultiSelect
+          label="Lieu"
+          values={filters.venue}
+          placeholder="Tous les lieux"
+          options={data.venues}
+          onChange={(venue) => {
+            onFiltersChange({ venue });
+            posthog.capture("agenda_filter_applied", {
+              filter_type: "venue",
+              values: venue,
+            });
+          }}
+        />
+        <FilterMultiSelect
+          label="Organisateur"
+          values={filters.org}
+          placeholder="Tous les organisateurs"
+          options={data.organizations}
+          onChange={(org) => {
+            onFiltersChange({ org });
+            posthog.capture("agenda_filter_applied", {
+              filter_type: "organizer",
+              values: org,
+            });
+          }}
+        />
+      </div>
+      {activeFilters ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-fit px-2 text-muted-foreground"
+          onClick={() => {
+            onFiltersChange({ category: [], venue: [], org: [] });
+            posthog.capture("agenda_filter_cleared");
+          }}
+        >
+          <X data-icon="inline-start" />
+          Effacer les filtres
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 function AgendaFiltersSkeleton() {
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
-      {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="flex flex-col gap-1.5">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-8 w-full" />
-        </div>
-      ))}
-    </div>
+    <>
+      <Skeleton className="h-9 w-full sm:hidden" />
+      <div className="hidden gap-3 sm:grid sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="flex flex-col gap-1.5">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -162,6 +254,7 @@ export function AgendaFiltersBar({
   filters,
   onFiltersChange,
 }: AgendaFiltersBarProps) {
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const { data, isPending, isError, refetch } = useAgendaFilterOptions();
 
   if (isError) {
@@ -181,60 +274,50 @@ export function AgendaFiltersBar({
     return <AgendaFiltersSkeleton />;
   }
 
-  const activeFilters = hasActiveAgendaFilters(filters);
+  const activeFilterCount = countActiveFilterDimensions(filters);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <FilterMultiSelect
-          label="Catégorie"
-          values={filters.category}
-          placeholder="Toutes les catégories"
-          options={data.categories}
-          onChange={(category) => {
-            onFiltersChange({ category });
-            posthog.capture("agenda_filter_applied", { filter_type: "category", values: category });
-          }}
-        />
-        <FilterMultiSelect
-          label="Lieu"
-          values={filters.venue}
-          placeholder="Tous les lieux"
-          options={data.venues}
-          onChange={(venue) => {
-            onFiltersChange({ venue });
-            posthog.capture("agenda_filter_applied", { filter_type: "venue", values: venue });
-          }}
-        />
-        <FilterMultiSelect
-          label="Organisateur"
-          values={filters.org}
-          placeholder="Tous les organisateurs"
-          options={data.organizations}
-          onChange={(org) => {
-            onFiltersChange({ org });
-            posthog.capture("agenda_filter_applied", { filter_type: "organizer", values: org });
-          }}
+    <>
+      <div className="sm:hidden">
+        <Dialog open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+          <DialogTrigger
+            render={
+              <Button variant="outline" className="h-9 w-full justify-between">
+                <span className="inline-flex items-center gap-2">
+                  <ListFilter className="size-4" />
+                  Filtres
+                </span>
+                {activeFilterCount > 0 ? (
+                  <span className="bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-full text-xs font-medium tabular-nums">
+                    {activeFilterCount}
+                  </span>
+                ) : null}
+              </Button>
+            }
+          />
+          <DialogContent className="top-4 left-4 right-4 w-auto max-w-none translate-none sm:top-1/2 sm:left-1/2 sm:right-auto sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2">
+            <DialogHeader>
+              <DialogTitle>Filtres</DialogTitle>
+            </DialogHeader>
+            <AgendaFiltersFields
+              filters={filters}
+              data={data}
+              onFiltersChange={(nextFilters) => {
+                onFiltersChange(nextFilters);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="hidden sm:block">
+        <AgendaFiltersFields
+          filters={filters}
+          data={data}
+          onFiltersChange={onFiltersChange}
         />
       </div>
-      {activeFilters ? (
-        <div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-muted-foreground"
-            onClick={() => {
-              onFiltersChange({ category: [], venue: [], org: [] });
-              posthog.capture("agenda_filter_cleared");
-            }}
-          >
-            <X data-icon="inline-start" />
-            Effacer les filtres
-          </Button>
-        </div>
-      ) : null}
-    </div>
+    </>
   );
 }
 

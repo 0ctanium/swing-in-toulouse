@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import posthog from "posthog-js";
 
 import { AgendaCalendar } from "@/components/events/agenda-calendar";
@@ -22,17 +22,26 @@ import {
 import { usePlanningEvents } from "@/lib/events/use-events";
 import { cn } from "@/lib/utils";
 
+const AGENDA_MOBILE_MEDIA_QUERY = "(max-width: 639px)";
+
 function ViewToggle({
   value,
   options,
   onChange,
+  className,
 }: {
   value: string;
   options: Array<{ value: string; label: string }>;
   onChange: (value: string) => void;
+  className?: string;
 }) {
   return (
-    <div className="inline-flex rounded-lg border bg-muted/40 p-1">
+    <div
+      className={cn(
+        "inline-flex rounded-lg border bg-muted/40 p-0.5 sm:p-1",
+        className,
+      )}
+    >
       {options.map((option) => (
         <Button
           key={option.value}
@@ -40,7 +49,7 @@ function ViewToggle({
           variant="ghost"
           size="sm"
           className={cn(
-            "rounded-md",
+            "h-7 rounded-md px-2.5 text-xs sm:h-8 sm:px-3 sm:text-sm",
             value === option.value && "bg-background shadow-sm",
           )}
           onClick={() => onChange(option.value)}
@@ -104,10 +113,12 @@ function PlanningList({ filters, venueSlugById }: PlanningListProps) {
 
 type AgendaViewProps = {
   initialPreferences?: AgendaPreferences;
+  hasStoredPreferences?: boolean;
 };
 
 export function AgendaView({
   initialPreferences = defaultAgendaPreferences,
+  hasStoredPreferences = false,
 }: AgendaViewProps) {
   const { filters, setFilters, venueSlugById } = useAgendaFilterContext();
   const [viewMode, setViewMode] = useState<ViewMode>(initialPreferences.viewMode);
@@ -115,12 +126,22 @@ export function AgendaView({
     initialPreferences.agendaMode,
   );
 
+  useLayoutEffect(() => {
+    if (hasStoredPreferences) {
+      return;
+    }
+
+    if (window.matchMedia(AGENDA_MOBILE_MEDIA_QUERY).matches) {
+      setViewMode("planning");
+    }
+  }, [hasStoredPreferences]);
+
   useEffect(() => {
     writeAgendaPreferencesCookie({ viewMode, agendaMode });
   }, [viewMode, agendaMode]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       <AgendaFiltersBar
         filters={filters}
         onFiltersChange={(nextFilters) => {
@@ -128,7 +149,7 @@ export function AgendaView({
         }}
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2">
         <ViewToggle
           value={viewMode}
           options={[
@@ -146,7 +167,7 @@ export function AgendaView({
             value={agendaMode}
             options={[
               { value: "month", label: "Mois" },
-              { value: "4-weeks", label: "4 semaines" },
+              { value: "4-weeks", label: "4 sem." },
             ]}
             onChange={(value) => setAgendaMode(value as AgendaMode)}
           />

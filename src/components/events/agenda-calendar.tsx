@@ -131,13 +131,18 @@ export function AgendaCalendar({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-heading text-xl font-semibold capitalize">
+    <div className="flex flex-col gap-3 sm:gap-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-heading min-w-0 text-base leading-tight font-semibold capitalize sm:text-xl">
           {label}
         </h2>
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" onClick={goToday}>
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs sm:h-8 sm:px-2.5 sm:text-sm"
+            onClick={goToday}
+          >
             Aujourd&apos;hui
           </Button>
           <Button

@@ -17,9 +17,8 @@ export const metadata: Metadata = publicMetadata({
 
 export default async function AgendaPage() {
   const cookieStore = await cookies();
-  const initialPreferences = parseAgendaPreferences(
-    cookieStore.get(AGENDA_PREFERENCES_COOKIE)?.value,
-  );
+  const preferencesCookie = cookieStore.get(AGENDA_PREFERENCES_COOKIE)?.value;
+  const initialPreferences = parseAgendaPreferences(preferencesCookie);
 
   return (
     <div className="flex flex-col gap-6">
@@ -31,7 +30,10 @@ export default async function AgendaPage() {
           Vue calendrier par mois ou sur 4 semaines, ou liste chronologique dans le planning.
         </p>
       </div>
-      <AgendaView initialPreferences={initialPreferences} />
+      <AgendaView
+        initialPreferences={initialPreferences}
+        hasStoredPreferences={Boolean(preferencesCookie)}
+      />
     </div>
   );
 }
