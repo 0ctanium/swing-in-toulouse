@@ -192,8 +192,9 @@ export function CommunityLinksSection() {
 
   return (
     <section
+      id="communaute"
       aria-labelledby="community-heading"
-      className="flex flex-col gap-8 rounded-2xl border border-border/60 bg-muted/40 px-5 py-10 md:px-8"
+      className="flex scroll-mt-6 flex-col gap-8 rounded-2xl border border-border/60 bg-muted/40 px-5 py-10 md:px-8"
     >
       <SectionHeader />
 

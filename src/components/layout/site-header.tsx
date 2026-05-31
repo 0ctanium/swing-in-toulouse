@@ -7,6 +7,8 @@ import { emptyIcalPayload } from "@/lib/ical/payload";
 const navItems = [
   { href: "/", label: "Accueil" },
   { href: "/agenda", label: "Agenda" },
+  { href: "/#communaute", label: "Communauté" },
+  { href: "/#ecoles", label: "Écoles" },
 ];
 
 type SiteHeaderProps = {

@@ -56,7 +56,7 @@ export function OrganizationsByDanceGrid({
   schools,
 }: OrganizationsByDanceGridProps) {
   return (
-    <section className="flex flex-col gap-6">
+    <section id="ecoles" className="flex scroll-mt-6 flex-col gap-6">
       <div>
         <h2 className="font-heading text-2xl font-semibold">
           Écoles par discipline
