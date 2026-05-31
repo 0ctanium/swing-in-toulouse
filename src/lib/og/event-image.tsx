@@ -29,7 +29,6 @@ type EventOgData = Pick<
   | "isAllDay"
   | "categories"
   | "organization"
-  | "source"
   | "venue"
   | "status"
   | "icalData"
@@ -37,7 +36,7 @@ type EventOgData = Pick<
 >;
 
 function organizerLabel(event: EventOgData) {
-  return event.organization?.name ?? event.source.name;
+  return event.organization?.name ?? null;
 }
 
 function locationLabel(event: EventOgData) {
@@ -172,7 +171,7 @@ function EventOgLayout({
               {!allDay && scheduleLabel ? ` · ${scheduleLabel}` : null}
             </span>
             {venue ? <span>Lieu · {truncate(venue, 60)}</span> : null}
-            <span>Par · {truncate(organizer, 60)}</span>
+            {organizer ? <span>Par · {truncate(organizer, 60)}</span> : null}
           </OgMetaLines>
 
           <OgBadges badges={badges} />

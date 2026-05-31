@@ -15,7 +15,7 @@ type EventPageProps = {
 function organizerLabel(
   event: NonNullable<Awaited<ReturnType<typeof getEventBySlug>>>,
 ) {
-  return event.organization?.name ?? event.source.name;
+  return event.organization?.name ?? null;
 }
 
 export async function generateMetadata({
@@ -30,9 +30,12 @@ export async function generateMetadata({
 
   const dateLabel = format(event.startAt, "d MMMM yyyy", { locale: fr });
   const title = `${event.title} – ${dateLabel}`;
+  const organizer = organizerLabel(event);
   const description =
     event.description ??
-    `${event.title} à Toulouse le ${dateLabel}, proposé par ${organizerLabel(event)}.`;
+    (organizer
+      ? `${event.title} à Toulouse le ${dateLabel}, proposé par ${organizer}.`
+      : `${event.title} à Toulouse le ${dateLabel}.`);
 
   return publicMetadata({
     title,

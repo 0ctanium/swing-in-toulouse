@@ -180,14 +180,6 @@ export async function VenueDetailsSection({
           ) : null}
 
           <div className="flex flex-wrap gap-3">
-            {linkToVenuePage && !showVenueTitle ? (
-              <Link
-                href={`/lieu/${venue.slug}`}
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                Fiche du lieu
-              </Link>
-            ) : null}
             {mapsUrl ? (
               <a
                 href={mapsUrl}

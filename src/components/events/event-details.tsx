@@ -80,13 +80,21 @@ type EventOrganizerLineProps = {
   className?: string;
 };
 
-export function EventOrganizerLine({ event, className }: EventOrganizerLineProps) {
+export function EventOrganizerLine({
+  event,
+  className,
+}: EventOrganizerLineProps) {
   if (!event.organization) {
     return null;
   }
 
   return (
-    <p className={cn("text-muted-foreground inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-lg", className)}>
+    <p
+      className={cn(
+        "text-muted-foreground inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-lg",
+        className,
+      )}
+    >
       <User className="size-5 shrink-0" aria-hidden />
       <span>
         Organisé par{" "}
@@ -219,50 +227,34 @@ export function EventMetaLines({ event, className }: EventMetaLinesProps) {
 
 type EventActionLinksProps = {
   event: Pick<EventDisplayData, "slug" | "sourceUrl">;
-  className?: string;
-  layout?: "row" | "stack";
-};
+} & Omit<React.ComponentProps<typeof Button>, "nativeButton" | "render">;
 
-export function EventActionLinks({
-  event,
-  className,
-  layout = "row",
-}: EventActionLinksProps) {
+export function EventActionLinks({ event, ...props }: EventActionLinksProps) {
   if (!event.sourceUrl) {
     return null;
   }
 
   return (
-    <div
-      className={cn(
-        layout === "stack" ? "flex flex-col gap-1" : "flex flex-wrap gap-2",
-        className,
-      )}
+    <Button
+      variant="outline"
+      {...props}
+      nativeButton={false}
+      render={
+        <a
+          href={event.sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() =>
+            posthog.capture("event_external_link_clicked", {
+              event_slug: event.slug,
+              source_url: event.sourceUrl,
+            })
+          }
+        />
+      }
     >
-      <Button
-        variant="outline"
-        size="sm"
-        className={
-          layout === "stack" ? "h-8 w-full justify-start px-2" : undefined
-        }
-        nativeButton={false}
-        render={
-          <a
-            href={event.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() =>
-              posthog.capture("event_external_link_clicked", {
-                event_slug: event.slug,
-                source_url: event.sourceUrl,
-              })
-            }
-          />
-        }
-      >
-        <Link2 data-icon="inline-start" />
-        Lien externe
-      </Button>
-    </div>
+      <Link2 data-icon="inline-start" />
+      Lien externe
+    </Button>
   );
 }

@@ -55,11 +55,13 @@ export function EventCard({ event }: EventCardProps) {
         }
       >
         <EventBadges event={event} />
-        <EventActionLinks event={event} />
-        <AdminEventActions
-          masterEventId={event.masterEventId}
-          admin={event.admin}
-        />
+        <div className="flex flex-wrap gap-2 flex-1">
+          <EventActionLinks event={event} size="sm" />
+          <AdminEventActions
+            masterEventId={event.masterEventId}
+            admin={event.admin}
+          />
+        </div>
       </CardContent>
     </Card>
   );
