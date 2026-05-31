@@ -8,7 +8,7 @@ const TIMEZONE = siteConfig.timezone;
 
 export const ALL_DAY_LABEL = "Jour entier";
 
-function calendarDayKey(date: Date) {
+export function calendarDayKey(date: Date) {
   return formatInTimeZone(date, TIMEZONE, "yyyy-MM-dd");
 }
 
@@ -55,6 +55,22 @@ function getAllDayInclusiveEnd(startAt: Date, endAt: Date) {
   }
 
   return addDays(toZonedTime(endAt, TIMEZONE), -1);
+}
+
+export function getEventInclusiveCalendarDay(
+  startAt: Date,
+  endAt: Date | null,
+  isAllDay = false,
+) {
+  if (!endAt) {
+    return calendarDayKey(startAt);
+  }
+
+  if (isAllDayEvent(startAt, endAt, isAllDay)) {
+    return calendarDayKey(getAllDayInclusiveEnd(startAt, endAt));
+  }
+
+  return calendarDayKey(endAt);
 }
 
 function formatAllDayEventDate(startAt: Date, endAt: Date) {
