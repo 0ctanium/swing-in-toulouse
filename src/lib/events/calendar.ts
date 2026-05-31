@@ -80,3 +80,5 @@ export function getEventsForDay(
 export { isSameDay, isSameMonth, isToday, addMonths, addWeeks };
 
 export const WEEKDAY_LABELS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
+
+export const WEEKDAY_LABELS_COMPACT = ["L", "M", "M", "J", "V", "S", "D"];
