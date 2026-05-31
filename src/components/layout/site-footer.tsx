@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { emptyIcalPayload } from "@/lib/ical/payload";
@@ -21,6 +23,20 @@ export function SiteFooter() {
             </button>
           </CalendarSubscribeDialog>
         </p>
+        <nav className="flex flex-wrap gap-x-4 gap-y-1">
+          <Link
+            href="/mentions-legales"
+            className="text-foreground underline hover:no-underline"
+          >
+            Mentions légales
+          </Link>
+          <Link
+            href="/confidentialite"
+            className="text-foreground underline hover:no-underline"
+          >
+            Confidentialité
+          </Link>
+        </nav>
         <div className="flex items-center justify-between gap-3">
           <span className="text-foreground">Apparence</span>
           <ThemeSwitcher />

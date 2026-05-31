@@ -1,9 +1,18 @@
 import type { NextConfig } from "next";
 import { withPostHogConfig } from "@posthog/nextjs-config";
+import createMDX from "@next/mdx";
 
 import "./src/env";
 
+const withMDX = createMDX({
+  extension: /\.mdx?$/,
+  options: {
+    remarkPlugins: ["remark-gfm"],
+  },
+});
+
 const nextConfig: NextConfig = {
+  pageExtensions: ["ts", "tsx", "md", "mdx"],
   serverExternalPackages: ["node-ical", "pg"],
   async redirects() {
     return [
@@ -45,7 +54,7 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
 };
 
-export default withPostHogConfig(nextConfig, {
+export default withPostHogConfig(withMDX(nextConfig), {
   personalApiKey: process.env.POSTHOG_API_KEY!,
   envId: "190420",
   host: "https://eu.i.posthog.com",
