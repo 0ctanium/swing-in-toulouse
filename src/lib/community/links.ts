@@ -87,6 +87,11 @@ export const externalResourceCategories: CommunityResourceCategory[] = [
         label: "Toulouse Triple Swing",
         href: "https://teamup.com/ksxbw7fp28sigfndvd",
       },
+      {
+        id: "swingspots",
+        label: "Swingspots",
+        href: "https://swingspots.studer.fr/#agenda",
+      },
     ],
   },
 ];
