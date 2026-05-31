@@ -2,16 +2,23 @@
 
 import { Dialog } from "@/components/ui/dialog";
 import { CalendarSubscribeDialogContent } from "@/components/calendar/calendar-subscribe-dialog-content";
-import { calendarSubscribeHandle } from "@/lib/calendar-subscribe-handle";
+import {
+  calendarSubscribeHandle,
+  CalendarSubscribeOpenPayload,
+} from "@/lib/calendar-subscribe-handle";
 
 export function CalendarSubscribeDialogRoot() {
   return (
     <Dialog handle={calendarSubscribeHandle}>
-      {({ payload: openConfig }) =>
-        openConfig?.payload ? (
-          <CalendarSubscribeDialogContent {...openConfig} />
-        ) : null
-      }
+      {(props) => {
+        const { payload } = props as { payload: CalendarSubscribeOpenPayload };
+
+        if (!payload?.payload) {
+          return null;
+        }
+
+        return <CalendarSubscribeDialogContent {...payload} />;
+      }}
     </Dialog>
   );
 }

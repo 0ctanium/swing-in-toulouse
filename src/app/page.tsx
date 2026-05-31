@@ -10,6 +10,7 @@ import { getUpcomingEvents, listOrganizers } from "@/lib/events/queries";
 import { emptyIcalPayload } from "@/lib/ical/payload";
 import { publicMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = publicMetadata({
   title: { absolute: siteConfig.name },
@@ -35,8 +36,8 @@ export default async function HomePage() {
           Tous les événements swing à Toulouse, au même endroit
         </h1>
         <p className="text-muted-foreground max-w-2xl text-lg">
-          {siteConfig.description} Import automatique depuis les calendriers
-          des organisateurs — abonnez-vous au flux iCal pour ne rien manquer.
+          {siteConfig.description} Import automatique depuis les calendriers des
+          organisateurs — abonnez-vous au flux iCal pour ne rien manquer.
         </p>
         <div className="flex flex-wrap gap-3">
           <Link
@@ -45,7 +46,11 @@ export default async function HomePage() {
           >
             Voir l&apos;agenda
           </Link>
-          <CalendarSubscribeDialog payload={emptyIcalPayload()} />
+          <CalendarSubscribeDialog payload={emptyIcalPayload()}>
+            <Button variant="outline" className="h-9">
+              S&apos;abonner au calendrier
+            </Button>
+          </CalendarSubscribeDialog>
         </div>
       </section>
 

@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useMemo, type ReactElement, type ReactNode } from "react";
+import React, { useMemo, type ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   calendarSubscribeHandle,
   type CalendarSubscribeOpenPayload,
 } from "@/lib/calendar-subscribe-handle";
 import type { IcalPayload } from "@/lib/ical/payload";
+import { DialogTrigger } from "../ui/dialog";
 
 type CalendarSubscribeDialogProps = {
   payload: IcalPayload;
@@ -16,26 +16,6 @@ type CalendarSubscribeDialogProps = {
   description?: string;
   children?: ReactNode;
 };
-
-type ClickableChild = ReactElement<{
-  onClick?: React.MouseEventHandler<HTMLElement>;
-}>;
-
-function openCalendarSubscribeDialog(openPayload: CalendarSubscribeOpenPayload) {
-  calendarSubscribeHandle.openWithPayload(openPayload);
-}
-
-function withCalendarSubscribeClick(
-  child: ClickableChild,
-  openPayload: CalendarSubscribeOpenPayload,
-) {
-  return React.cloneElement(child, {
-    onClick: (event: React.MouseEvent<HTMLElement>) => {
-      openCalendarSubscribeDialog(openPayload);
-      child.props.onClick?.(event);
-    },
-  });
-}
 
 export function CalendarSubscribeDialog({
   payload,
@@ -54,13 +34,15 @@ export function CalendarSubscribeDialog({
     [description, feedName, payload, title],
   );
 
-  if (children && React.isValidElement(children)) {
-    return withCalendarSubscribeClick(children as ClickableChild, openPayload);
+  if (!children || !React.isValidElement(children)) {
+    return null;
   }
 
   return (
-    <Button variant="outline" onClick={() => openCalendarSubscribeDialog(openPayload)}>
-      S&apos;abonner au calendrier
-    </Button>
+    <DialogTrigger
+      handle={calendarSubscribeHandle}
+      payload={openPayload}
+      render={children}
+    />
   );
 }

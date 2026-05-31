@@ -123,7 +123,10 @@ export default async function EventPage({ params }: EventPageProps) {
           title="Ajouter au calendrier"
           description="Choisissez votre application pour ajouter cet événement."
         >
-          <Button render={<a href={`/evenement/${event.slug}.ics`} download />}>
+          <Button
+            nativeButton={false}
+            render={<a href={`/evenement/${event.slug}.ics`} download />}
+          >
             <CalendarPlus data-icon="inline-start" />
             Ajouter au calendrier
           </Button>
