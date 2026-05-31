@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
 
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AdminModeBanner } from "@/components/admin/admin-mode-banner";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -64,6 +65,7 @@ export default async function RootLayout({
         className="flex min-h-full flex-col antialiased"
         suppressHydrationWarning
       >
+        <SpeedInsights />
         <ThemeProvider>
           <AdminModeBanner />
           <SiteHeader isAdminMode={isAdminMode} />
