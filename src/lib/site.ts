@@ -8,9 +8,9 @@ import {
 export const siteConfig = {
   name: "Swingin Toulouse",
   title:
-    "Lindy Hop, Blues, Balboa, Boogie à Toulouse : Agenda des soirées swing | Swingin Toulouse",
+    "Lindy Hop, Blues, Balboa, West Coast Swing à Toulouse : Agenda des soirées swing | Swingin Toulouse",
   description:
-    "L'agenda swing à Toulouse : soirées, cours, stages et festivals de Lindy Hop, Blues, Balboa, Boogie Woogie et plus.",
+    "L'agenda swing à Toulouse : soirées, cours, stages et festivals de Lindy Hop, Blues, Balboa, West Coast Swing, rock & boogie et toutes les danses swing.",
   url: env.NEXT_PUBLIC_SITE_URL,
   locale: "fr-FR",
   timezone: "Europe/Paris",

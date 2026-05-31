@@ -7,17 +7,21 @@ import { useState } from "react";
 import { CalendarSubscribeDialogRoot } from "@/components/calendar/calendar-subscribe-dialog-root";
 import { Toaster } from "@/components/ui/sonner";
 import { getQueryClient } from "@/lib/query/get-query-client";
+import posthog from "posthog-js";
+import { PostHogProvider } from "@posthog/react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => getQueryClient());
 
   return (
-    <NuqsAdapter>
-      <QueryClientProvider client={queryClient}>
-        {children}
-        <CalendarSubscribeDialogRoot />
-        <Toaster richColors closeButton position="top-center" />
-      </QueryClientProvider>
-    </NuqsAdapter>
+    <PostHogProvider client={posthog}>
+      <NuqsAdapter>
+        <QueryClientProvider client={queryClient}>
+          {children}
+          <CalendarSubscribeDialogRoot />
+          <Toaster richColors closeButton position="top-center" />
+        </QueryClientProvider>
+      </NuqsAdapter>
+    </PostHogProvider>
   );
 }

@@ -1,7 +1,7 @@
 <wizard-report>
 # PostHog post-wizard report
 
-The wizard has completed a deep integration of PostHog analytics into Swing In Toulouse, a Next.js 16 App Router application.
+The wizard has completed a deep integration of PostHog analytics into Swingin Toulouse, a Next.js 16 App Router application.
 
 **Changes made:**
 
@@ -26,6 +26,26 @@ The wizard has completed a deep integration of PostHog analytics into Swing In T
 | `calendar_feed_downloaded` | User downloads the full iCal calendar feed | `src/app/api/ical/[payload].ics/route.ts` |
 | `event_ical_downloaded` | User downloads an individual event's iCal file | `src/app/api/ical/evenement/[slug]/route.ts` |
 | `organizer_calendar_subscribed` | User subscribes to an organizer's iCal feed | `src/app/api/ical/organisateur/[slug]/route.ts` |
+| `home_hero_shown` | Hero variant shown on homepage (A/B test exposure) | `src/components/home/use-home-hero-experiment.ts` |
+| `home_hero_agenda_clicked` | User clicks "Voir l'agenda" in homepage hero | `src/components/home/heroes/hero-shared.tsx` |
+| `home_hero_calendar_clicked` | User clicks "S'abonner au calendrier" in homepage hero | `src/components/home/heroes/hero-shared.tsx` |
+
+## A/B test — homepage hero (`home-hero`)
+
+Flag multivarié unique avec payloads JSON :
+
+| Variant key | Payload | Rollout |
+|---|---|---|
+| `a_vinyl` | `{ "variant": "a", "illustration": "vinyl" }` | 12.5 % |
+| `a_scene` | `{ "variant": "a", "illustration": "scene" }` | 12.5 % |
+| `b` | `{ "variant": "b" }` | 25 % |
+| `c` | `{ "variant": "c" }` | 25 % |
+| `d` | `{ "variant": "d" }` | 25 % |
+
+- **Exposition** : `home_hero_shown` (propriétés `flag_variant`, `hero_layout_variant`, `hero_art_variant` si A)
+- **Objectifs** : `home_hero_agenda_clicked`, `home_hero_calendar_clicked`
+
+Preview manuel : `/?hero-preview=1` · Override : `/?hero=c` ou `/?art=scene`
 
 ## Next steps
 

@@ -2,7 +2,7 @@
 
 # Mentions légales
 
-Conformément aux dispositions des articles 6-III et 19 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), les présentes mentions légales s'appliquent au site Swing In Toulouse.
+Conformément aux dispositions des articles 6-III et 19 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), les présentes mentions légales s'appliquent au site Swingin Toulouse.
 
 ## 1. Éditeur du site
 
@@ -44,7 +44,7 @@ Toute reproduction, représentation ou exploitation non autorisée du site ou de
 
 ## 5. Limitation de responsabilité
 
-Swing In Toulouse agrège des événements swing à Toulouse à partir de sources publiques (calendriers iCal). Les informations sont fournies à titre indicatif et peuvent comporter des erreurs ou retards de mise à jour.
+Swingin Toulouse agrège des événements swing à Toulouse à partir de sources publiques (calendriers iCal). Les informations sont fournies à titre indicatif et peuvent comporter des erreurs ou retards de mise à jour.
 
 L'éditeur ne saurait être tenu responsable des informations publiées par les organisateurs, ni des annulations ou modifications d'événements. En cas de doute, vérifiez toujours auprès de l'organisateur concerné.
 

@@ -10,9 +10,6 @@ export function SiteHeader() {
           <span className="font-heading block text-xl font-semibold tracking-tight">
             Swingin Toulouse
           </span>
-          <span className="text-muted-foreground block text-xs">
-            Lindy Hop · Boogie · Bal swing
-          </span>
         </Link>
         <SiteHeaderNav />
       </div>

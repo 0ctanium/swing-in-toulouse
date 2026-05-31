@@ -10,6 +10,7 @@ import {
   OrganizationWebsiteIconLink,
 } from "@/components/organizations/organization-social-icons";
 import { SrOnlyEntityLink } from "@/components/seo/sr-only-entity-link";
+import { PopoverFicheLink } from "@/components/seo/popover-fiche-link";
 import {
   Popover,
   PopoverContent,
@@ -104,6 +105,11 @@ export function OrganizationPreviewPopover({
               </div>
             ) : null}
           </PopoverDescription>
+
+          <PopoverFicheLink
+            href={`/organisateur/${organizer.slug}`}
+            label={organizer.name}
+          />
         </div>
       </PopoverContent>
     </Popover>

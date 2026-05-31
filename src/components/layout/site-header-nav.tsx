@@ -42,7 +42,7 @@ export function SiteHeaderNav() {
         ))}
         <CalendarSubscribeDialog payload={emptyIcalPayload()}>
           <button type="button" className={siteNavLinkClassName}>
-            Calendrier iCal
+            S&apos;abonner
           </button>
         </CalendarSubscribeDialog>
       </nav>
@@ -81,7 +81,7 @@ export function SiteHeaderNav() {
                 className={siteNavMobileLinkClassName}
                 onClick={closeMobileMenu}
               >
-                Calendrier iCal
+                S&apos;abonner
               </button>
             </CalendarSubscribeDialog>
           </nav>

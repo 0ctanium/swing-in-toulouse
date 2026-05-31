@@ -3,6 +3,7 @@ import { addDays } from "date-fns";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { CompactPlanningView } from "@/components/events/compact-planning-view";
+import { SwingDancesSection } from "@/components/home/swing-dances-section";
 import { CommunityLinksSection } from "@/components/community/community-links-section";
 import { OrganizationsByDance } from "@/components/organizations/organizations-by-dance";
 import { CACHE_TAGS } from "@/lib/cache/tags";
@@ -39,7 +40,8 @@ export async function HomePageEventsSection() {
               Prochains événements
             </h2>
             <p className="text-muted-foreground text-sm">
-              Les 14 prochains jours
+              Lindy Hop, Blues, Balboa, West Coast Swing, rock & boogie — les 14
+              prochains jours
             </p>
           </div>
           <Link href="/agenda" className="text-sm font-medium underline">
@@ -48,6 +50,8 @@ export async function HomePageEventsSection() {
         </div>
         <CompactPlanningView events={events} />
       </section>
+
+      <SwingDancesSection />
 
       <CommunityLinksSection />
 

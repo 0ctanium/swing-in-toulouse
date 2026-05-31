@@ -42,18 +42,18 @@ export const whatsappGroups: CommunityLink[] = [
 /** Groupes Facebook — libellés à ajuster si besoin. */
 export const facebookGroups: CommunityLink[] = [
   {
-    id: "facebook-swing",
-    label: "Communauté swing Toulouse",
+    id: "facebook-lindy-hop-and-swing-toulouse",
+    label: "Lindy Hop et Swing sur Toulouse",
     href: "https://www.facebook.com/groups/20393438108",
   },
   {
-    id: "facebook-blues",
-    label: "Blues Dance Toulouse",
+    id: "facebook-blues-dance-toulouse",
+    label: "Blues Dance à Toulouse",
     href: "https://www.facebook.com/groups/blues.dance.toulouse",
   },
   {
-    id: "facebook-third",
-    label: "Groupe Facebook Toulouse",
+    id: "facebook-west-coast-swing-france",
+    label: "West Coast Swing France",
     href: "https://www.facebook.com/groups/350290171682887",
   },
 ];

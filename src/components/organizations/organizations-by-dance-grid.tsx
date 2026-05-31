@@ -58,6 +58,10 @@ export function OrganizationsByDanceGrid({
         <h2 className="font-heading text-2xl font-semibold">
           Écoles par discipline
         </h2>
+        <p className="text-muted-foreground mt-2 text-sm">
+          Écoles toulousaines par style de danse — Lindy Hop, Blues, Balboa,
+          West Coast Swing et rock & boogie.
+        </p>
         <div
           className="bg-primary/25 mt-3 h-px w-full"
           role="presentation"

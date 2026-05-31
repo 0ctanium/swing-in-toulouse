@@ -35,6 +35,9 @@ importers:
       '@posthog/nextjs-config':
         specifier: ^1.9.38
         version: 1.9.38(next@16.2.6(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(webpack@5.107.2)
+      '@posthog/react':
+        specifier: ^1.9.1
+        version: 1.9.1(@types/react@19.2.15)(posthog-js@1.376.4)(react@19.2.4)
       '@t3-oss/env-nextjs':
         specifier: ^0.13.11
         version: 0.13.11(typescript@5.9.3)(zod@4.4.3)
@@ -1373,6 +1376,16 @@ packages:
 
   '@posthog/plugin-utils@1.1.1':
     resolution: {integrity: sha512-vCbaFeuwf9Pc0gI5bkCGvkOn2Bxru2KbZJtOa6loTJjanCNoMsjECEPijr7X5oln1IIg+VKnGiwV4tKY2b7NuQ==}
+
+  '@posthog/react@1.9.1':
+    resolution: {integrity: sha512-tIGjs8WzKPrHQmSyM/2a3GoedQkttkxgmCsdn0kgy+6mIiSNk36FAFGKbWFJ7/Kln5bHwcM/MQhiGYbwQG8bQQ==}
+    peerDependencies:
+      '@types/react': '>=16.8.0'
+      posthog-js: '>=1.257.2'
+      react: '>=16.8.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@posthog/types@1.376.4':
     resolution: {integrity: sha512-EoDEvA925lf6yxPpbP4wozlXgu4b9WEqxZlFBUDd4k2akP5R/RWyHpvQT8aYyfY6BtSLn8TnVwxPQOM4b90isA==}
@@ -6031,6 +6044,13 @@ snapshots:
   '@posthog/plugin-utils@1.1.1':
     dependencies:
       cross-spawn: 7.0.6
+
+  '@posthog/react@1.9.1(@types/react@19.2.15)(posthog-js@1.376.4)(react@19.2.4)':
+    dependencies:
+      posthog-js: 1.376.4
+      react: 19.2.4
+    optionalDependencies:
+      '@types/react': 19.2.15
 
   '@posthog/types@1.376.4': {}
 

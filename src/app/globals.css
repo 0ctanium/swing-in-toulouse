@@ -11,7 +11,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-fraunces), ui-serif, Georgia, serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -128,5 +128,46 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@keyframes hero-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -10px;
+  }
+}
+
+@keyframes hero-spin {
+  from {
+    rotate: 0deg;
+  }
+  to {
+    rotate: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-icon-float {
+    animation: hero-float 5s ease-in-out infinite;
+  }
+
+  .hero-icon-float-delayed {
+    animation: hero-float 6s ease-in-out infinite 0.5s;
+  }
+
+  .hero-icon-float-slow {
+    animation: hero-float 7s ease-in-out infinite 1s;
+  }
+
+  .hero-icon-spin {
+    animation: hero-spin 90s linear infinite;
+  }
+
+  .hero-icon-spin-slower {
+    animation: hero-spin 120s linear infinite;
   }
 }

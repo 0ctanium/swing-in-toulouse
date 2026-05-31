@@ -2,7 +2,7 @@
 
 # Politique de confidentialité et cookies
 
-La présente politique décrit comment Swing In Toulouse traite les données à caractère personnel, conformément au Règlement (UE) 2016/679 (RGPD) et à la loi Informatique et Libertés.
+La présente politique décrit comment Swingin Toulouse traite les données à caractère personnel, conformément au Règlement (UE) 2016/679 (RGPD) et à la loi Informatique et Libertés.
 
 Le site est un service gratuit, sans vente ni publicité, édité par Benjamin Lepas-Garguilo à titre non professionnel.
 
@@ -87,7 +87,7 @@ Vous pouvez également introduire une réclamation auprès de la [CNIL](https://
 
 ## 9. Cookies et traceurs
 
-Un cookie est un petit fichier déposé sur votre terminal lors de la visite d'un site. Swing In Toulouse utilise les cookies et traceurs suivants :
+Un cookie est un petit fichier déposé sur votre terminal lors de la visite d'un site. Swingin Toulouse utilise les cookies et traceurs suivants :
 
 ### Cookies strictement nécessaires
 

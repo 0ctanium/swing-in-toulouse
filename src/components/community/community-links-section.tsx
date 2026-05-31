@@ -26,8 +26,8 @@ function SectionHeader() {
         aria-hidden
       />
       <p className="text-muted-foreground mt-4 text-sm leading-relaxed md:text-base">
-        Discussions locales, calendriers partagés et agendas festivals pour
-        planifier vos sorties swing.
+        Discussions locales par style de danse, calendriers partagés et agendas
+        festivals pour planifier vos sorties swing à Toulouse.
       </p>
     </div>
   );

@@ -26,6 +26,7 @@
     "@opentelemetry/resources": "^2.7.1",
     "@opentelemetry/sdk-logs": "^0.218.0",
     "@posthog/nextjs-config": "^1.9.38",
+    "@posthog/react": "^1.9.1",
     "@t3-oss/env-nextjs": "^0.13.11",
     "@tanstack/react-query": "^5.100.14",
     "@tanstack/react-table": "^8.21.3",

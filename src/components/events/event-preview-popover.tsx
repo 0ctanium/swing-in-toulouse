@@ -11,6 +11,7 @@ import {
   EventLocationLine,
 } from "@/components/events/event-details";
 import { SrOnlyEntityLink } from "@/components/seo/sr-only-entity-link";
+import { PopoverFicheLink } from "@/components/seo/popover-fiche-link";
 import {
   Popover,
   PopoverContent,
@@ -102,6 +103,11 @@ export function EventPreviewPopover({
                 masterEventId={event.masterEventId}
                 admin={event.admin}
                 compact
+              />
+              <PopoverFicheLink
+                href={`/evenement/${event.slug}`}
+                label={event.title}
+                embedded
               />
               <EventActionLinks event={event} layout="stack" />
             </div>
