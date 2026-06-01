@@ -380,7 +380,9 @@ export function AgendaCalendar({
                 key={weekday}
                 className="px-0.5 py-1.5 text-center text-[10px] font-medium text-muted-foreground sm:px-2 sm:py-2 sm:text-xs sm:uppercase"
               >
-                <span className="sm:hidden">{WEEKDAY_LABELS_COMPACT[index]}</span>
+                <span className="sm:hidden">
+                  {WEEKDAY_LABELS_COMPACT[index]}
+                </span>
                 <span className="hidden sm:inline">{weekday}</span>
               </div>
             ))}

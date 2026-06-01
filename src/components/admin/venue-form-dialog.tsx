@@ -28,7 +28,16 @@ type VenueFormDialogProps = {
   venue: AdminVenueRow | null;
 };
 
-function emptyFormState() {
+type VenueFormState = {
+  name: string;
+  slug: string;
+  address: string;
+  city: string;
+  category: string;
+  locationKind: VenueLocationKind;
+};
+
+function emptyFormState(): VenueFormState {
   return {
     name: "",
     slug: "",
@@ -39,7 +48,7 @@ function emptyFormState() {
   };
 }
 
-function formStateFromVenue(venue: AdminVenueRow) {
+function formStateFromVenue(venue: AdminVenueRow): VenueFormState {
   return {
     name: venue.name,
     slug: venue.slug,

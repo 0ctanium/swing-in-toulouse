@@ -153,7 +153,11 @@ function scoreDuplicate(
   const venuePlaceId = venue.googlePlaceId?.trim();
 
   if (inputPlaceId && venuePlaceId && inputPlaceId === venuePlaceId) {
-    return { confidence: "certain", reasons: ["place_id"], distanceMeters: null };
+    return {
+      confidence: "certain",
+      reasons: ["place_id"],
+      distanceMeters: null,
+    };
   }
 
   const inputLat = input.latitude;
@@ -201,23 +205,14 @@ function scoreDuplicate(
   const inputKey = addressKeyFromInput(input);
   const venueKey = addressKeyFromVenue(venue);
 
-  if (
-    inputKey &&
-    venueKey &&
-    inputKey.length >= 8 &&
-    inputKey === venueKey
-  ) {
+  if (inputKey && venueKey && inputKey.length >= 8 && inputKey === venueKey) {
     if (!confidence || CONFIDENCE_RANK[confidence] < CONFIDENCE_RANK.likely) {
       confidence = "likely";
     }
     if (!reasons.includes("address")) {
       reasons.push("address");
     }
-  } else if (
-    inputKey &&
-    venueKey &&
-    fuzzyAddressSimilar(inputKey, venueKey)
-  ) {
+  } else if (inputKey && venueKey && fuzzyAddressSimilar(inputKey, venueKey)) {
     if (!confidence) {
       confidence = "possible";
     }
@@ -354,8 +349,10 @@ export function explainVenuePairMatch(
   };
 }
 
-export function formatVenuePairMatchReasons(explanation: VenuePairMatchExplanation) {
-  const parts = explanation.reasons.map(duplicateReasonLabel);
+export function formatVenuePairMatchReasons(
+  explanation: VenuePairMatchExplanation,
+) {
+  const parts: string[] = explanation.reasons.map(duplicateReasonLabel);
 
   if (explanation.distanceMeters != null) {
     const hasCoordinateReason = explanation.reasons.includes("coordinates");
@@ -367,10 +364,7 @@ export function formatVenuePairMatchReasons(explanation: VenuePairMatchExplanati
   return parts.join(" · ");
 }
 
-export function venuesMatchForGrouping(
-  a: VenueComparable,
-  b: VenueComparable,
-) {
+export function venuesMatchForGrouping(a: VenueComparable, b: VenueComparable) {
   if (a.id === b.id || a.canonicalVenueId || b.canonicalVenueId) {
     return false;
   }

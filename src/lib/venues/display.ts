@@ -15,8 +15,10 @@ type VenueAddressFields = Pick<
   | "addressConfirmedAt"
   | "latitude"
   | "longitude"
-  | "locationKind"
->;
+> & {
+  locationKind?: VenueLocationKind;
+  name?: string;
+};
 
 type VenueMapsFields = Pick<
   Venue,
@@ -53,7 +55,7 @@ export function getVenueDisplayAddress(venue: VenueAddressFields) {
   }
 
   if (kind === "area" || kind === "none") {
-    return venue.name.trim() || venue.city?.trim() || null;
+    return venue.name?.trim() || venue.city?.trim() || null;
   }
 
   return venue.city?.trim() ?? null;

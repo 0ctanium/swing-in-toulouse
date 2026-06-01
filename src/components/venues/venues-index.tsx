@@ -18,6 +18,7 @@ type VenuesIndexProps = {
       | "addressConfirmedAt"
       | "latitude"
       | "longitude"
+      | "locationKind"
     >
   >;
 };
