@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { venueCategoryValues } from "@/lib/venues/categories";
+import { venueLocationKindValues } from "@/lib/venues/location-kind";
 
 const slugSchema = z
   .string()
@@ -17,6 +18,7 @@ export const venueWriteSchema = z.object({
   address: z.string().trim().nullable().optional(),
   city: z.string().trim().min(1, "La ville est requise."),
   category: z.enum(venueCategoryValues).nullable().optional(),
+  locationKind: z.enum(venueLocationKindValues).optional(),
 });
 
 export type VenueWriteInput = z.infer<typeof venueWriteSchema>;

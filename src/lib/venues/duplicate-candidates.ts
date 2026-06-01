@@ -1,5 +1,9 @@
 import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
 import {
+  isPreciseVenueLocation,
+  type VenueLocationKind,
+} from "@/lib/venues/location-kind";
+import {
   distanceMeters,
   extractPostcode,
   fuzzyAddressSimilar,
@@ -23,6 +27,7 @@ export type VenueComparable = {
   formattedAddress: string | null;
   addressConfirmedAt: Date | null;
   canonicalVenueId: string | null;
+  locationKind: VenueLocationKind;
   eventCount: number;
 };
 
@@ -133,6 +138,10 @@ function scoreDuplicate(
   venue: VenueComparable,
 ): ScoredMatch | null {
   if (venue.id === input.excludeVenueId || venue.canonicalVenueId) {
+    return null;
+  }
+
+  if (!isPreciseVenueLocation(venue.locationKind)) {
     return null;
   }
 
@@ -298,6 +307,66 @@ export function findVenueDuplicateCandidates(
   });
 }
 
+export type VenuePairMatchExplanation = {
+  reasons: DuplicateReason[];
+  distanceMeters: number | null;
+  confidence: DuplicateConfidence;
+};
+
+export function explainVenuePairMatch(
+  a: VenueComparable,
+  b: VenueComparable,
+): VenuePairMatchExplanation {
+  const reasons: DuplicateReason[] = [];
+
+  if (namesSimilar(a.name, b.name)) {
+    reasons.push("name");
+  }
+
+  const scored = scoreDuplicate(
+    {
+      excludeVenueId: a.id,
+      name: a.name,
+      address: a.address,
+      city: a.city,
+      formattedAddress: a.formattedAddress,
+      googlePlaceId: a.googlePlaceId,
+      latitude: a.latitude,
+      longitude: a.longitude,
+      minConfidence: "possible",
+    },
+    b,
+  );
+
+  if (scored) {
+    for (const reason of scored.reasons) {
+      if (!reasons.includes(reason)) {
+        reasons.push(reason);
+      }
+    }
+  }
+
+  return {
+    reasons,
+    distanceMeters: scored?.distanceMeters ?? null,
+    confidence:
+      scored?.confidence ?? (reasons.includes("name") ? "possible" : "likely"),
+  };
+}
+
+export function formatVenuePairMatchReasons(explanation: VenuePairMatchExplanation) {
+  const parts = explanation.reasons.map(duplicateReasonLabel);
+
+  if (explanation.distanceMeters != null) {
+    const hasCoordinateReason = explanation.reasons.includes("coordinates");
+    if (!hasCoordinateReason) {
+      parts.push(`~${Math.round(explanation.distanceMeters)} m`);
+    }
+  }
+
+  return parts.join(" · ");
+}
+
 export function venuesMatchForGrouping(
   a: VenueComparable,
   b: VenueComparable,
@@ -308,6 +377,13 @@ export function venuesMatchForGrouping(
 
   if (namesSimilar(a.name, b.name)) {
     return true;
+  }
+
+  if (
+    !isPreciseVenueLocation(a.locationKind) ||
+    !isPreciseVenueLocation(b.locationKind)
+  ) {
+    return false;
   }
 
   const matches = findVenueDuplicateCandidates([b], {

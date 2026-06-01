@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       address: parsed.data.address?.trim() || null,
       city: parsed.data.city.trim(),
       category: parsed.data.category ?? null,
+      locationKind: parsed.data.locationKind ?? "place",
     })
     .returning();
 

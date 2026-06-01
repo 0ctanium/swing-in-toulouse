@@ -3,12 +3,12 @@
 ## Todo
 
 - [x] Set alias to permanent by default
-- [ ] Allow venues to have any kind of address (cities, etc)
+- [x] Allow venues to have any kind of address (cities, etc)
 - [x] Detect similar venues by comparing similar addresses (and not only name)
-- [ ] Dismiss a venue being incorrect, and keep it unconfirmed
+- [x] Dismiss merge suggestions for distinct venues (pair dismissals on merge page)
 - [ ] Allow to automatically attribute org when and event has the same venue has the org address. Or at least suggest it in the event confirmation
 - [ ] Update the scrapper to find events from group discussions.
-- [ ] Allow to hide event from the override form. If already possible, improve UI for it
+- [ ] Allow to hide event in the override form. If already possible, improve UI for it
 - [ ] Fix OG images text overflow
 - [ ] Change popover cards to have all links redirect to the matching entity card rather than the meta line to prevent users going on the venue from the event card, even if he clicked on the venue link.
 - [ ] Investigate why for TRAC, related events are not shown.

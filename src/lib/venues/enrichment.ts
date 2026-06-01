@@ -15,7 +15,11 @@ import {
 import type { PlaceDisplayData } from "@/lib/google/place-display";
 import { buildStaticMapProxyUrl } from "@/lib/google/static-map";
 
-import { getVenueDisplayAddress, getVenueMapsUrl } from "./display";
+import {
+  getVenueDisplayAddress,
+  getVenueMapsUrl,
+  venueShowsPreciseMap,
+} from "./display";
 
 export type VenueDetailsFields = Pick<
   Venue,
@@ -30,6 +34,7 @@ export type VenueDetailsFields = Pick<
   | "latitude"
   | "longitude"
   | "addressConfirmedAt"
+  | "locationKind"
 >;
 
 export type VenueEnrichment = {
@@ -64,24 +69,29 @@ async function loadVenueEnrichmentUncached(
   venue: VenueDetailsFields,
 ): Promise<VenueEnrichment> {
   const displayAddress = getVenueDisplayAddress(venue);
-  const mapsUrl = getVenueMapsUrl(venue);
+  const showPreciseMap = venueShowsPreciseMap(venue);
+  const mapsUrl = showPreciseMap ? getVenueMapsUrl(venue) : null;
 
   const [coordinates, place] = await Promise.all([
-    resolveCoordinates(venue),
-    isGoogleMapsConfigured() && venue.googlePlaceId
+    showPreciseMap ? resolveCoordinates(venue) : Promise.resolve(null),
+    showPreciseMap &&
+    isGoogleMapsConfigured() &&
+    venue.googlePlaceId
       ? getPlaceDisplayData(venue.googlePlaceId)
       : Promise.resolve(null),
   ]);
 
-  const mapImageSrc = coordinates
-    ? buildStaticMapProxyUrl(coordinates.latitude, coordinates.longitude)
-    : null;
+  const mapImageSrc =
+    showPreciseMap && coordinates
+      ? buildStaticMapProxyUrl(coordinates.latitude, coordinates.longitude)
+      : null;
 
   return {
     displayAddress,
     mapsUrl: mapsUrl ?? place?.googleMapsUri ?? null,
-    mapImageSrc: isGoogleMapsConfigured() ? mapImageSrc : null,
-    place,
+    mapImageSrc:
+      showPreciseMap && isGoogleMapsConfigured() ? mapImageSrc : null,
+    place: showPreciseMap ? place : null,
   };
 }
 

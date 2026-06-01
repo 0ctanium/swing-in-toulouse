@@ -12,13 +12,21 @@ import {
 } from "@/components/admin/venue-duplicate-alert";
 import { Button } from "@/components/ui/button";
 import { useVenueDuplicateCandidates } from "@/lib/admin/use-venue-duplicates";
-import { useBulkAssignVenues, useConfirmVenue } from "@/lib/admin/use-venues";
-import type { VenueCategory } from "@/db/schema";
+import {
+  useBulkAssignVenues,
+  useConfirmVenue,
+  useConfirmVenueArea,
+} from "@/lib/admin/use-venues";
+import type { VenueCategory, VenueLocationKind } from "@/db/schema";
 import type { PlaceDetails } from "@/lib/google/places";
 import { useDebouncedValue } from "@/lib/google/use-places";
 import type { AdminVenueRow } from "@/lib/venues/admin-venue-row";
 import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
 import { duplicateSearchFromPlace } from "@/lib/venues/duplicate-candidates";
+import {
+  isPreciseVenueLocation,
+  venueLocationKindOptions,
+} from "@/lib/venues/location-kind";
 
 function initialSearchQuery(venue: AdminVenueRow) {
   if (venue.formattedAddress) {
@@ -67,6 +75,7 @@ export function VenueConfirmRow({
   onSaved,
 }: VenueConfirmRowProps) {
   const confirmVenue = useConfirmVenue();
+  const confirmVenueArea = useConfirmVenueArea();
   const bulkAssign = useBulkAssignVenues();
   const addressPlaceholder = useMemo(() => initialSearchQuery(venue), [venue]);
   const initialPlace = useMemo(
@@ -78,11 +87,18 @@ export function VenueConfirmRow({
   const [category, setCategory] = useState<VenueCategory | null>(
     venue.category,
   );
+  const [locationKind, setLocationKind] = useState<VenueLocationKind>(
+    venue.locationKind,
+  );
+  const [city, setCity] = useState(venue.city);
+  const [areaAddress, setAreaAddress] = useState(venue.address ?? "");
   const [originalPlace] = useState<PlaceDetails | null>(initialPlace);
   const [selectedPlace, setSelectedPlace] = useState<PlaceDetails | null>(
     initialPlace,
   );
-  const pending = confirmVenue.isPending || bulkAssign.isPending;
+  const isPrecise = isPreciseVenueLocation(locationKind);
+  const pending =
+    confirmVenue.isPending || confirmVenueArea.isPending || bulkAssign.isPending;
 
   const weakDuplicateSearch = useMemo(
     () => ({
@@ -116,11 +132,11 @@ export function VenueConfirmRow({
 
   const weakDuplicates = useVenueDuplicateCandidates(
     venue.id,
-    mode === "create" ? weakDuplicateSearch : null,
+    isPrecise && mode === "create" ? weakDuplicateSearch : null,
   );
   const strongDuplicates = useVenueDuplicateCandidates(
     venue.id,
-    strongDuplicateSearch,
+    isPrecise ? strongDuplicateSearch : null,
   );
 
   const duplicateCandidates = selectedPlace
@@ -165,6 +181,44 @@ export function VenueConfirmRow({
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Alias impossible.",
+      );
+    }
+  }
+
+  async function confirmArea() {
+    const trimmedName = venueName.trim();
+
+    if (!trimmedName) {
+      toast.error("Le nom du lieu est requis.");
+      return;
+    }
+
+    if (!city.trim()) {
+      toast.error("La ville est requise.");
+      return;
+    }
+
+    const kind = locationKind === "none" ? "none" : "area";
+
+    try {
+      await confirmVenueArea.mutateAsync({
+        venueId: venue.id,
+        name: trimmedName,
+        city: city.trim(),
+        address: areaAddress.trim() || null,
+        category,
+        locationKind: kind,
+      });
+
+      toast.success(
+        kind === "none"
+          ? `${trimmedName} enregistré (sans adresse précise).`
+          : `${trimmedName} enregistré comme zone.`,
+      );
+      onSaved?.();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Enregistrement impossible.",
       );
     }
   }
@@ -222,9 +276,42 @@ export function VenueConfirmRow({
         </div>
       ) : (
         <p className="text-muted-foreground text-xs">
-          Modifiez le nom ou l&apos;adresse Google, puis enregistrez.
+          Modifiez le type, le nom ou l&apos;adresse, puis enregistrez.
         </p>
       )}
+
+      <fieldset className="flex flex-col gap-2 rounded-lg border p-3">
+        <legend className="px-1 text-sm font-medium">Type de lieu</legend>
+        <div className="flex flex-col gap-2">
+          {venueLocationKindOptions().map((option) => (
+            <label
+              key={option.value}
+              className="flex cursor-pointer items-start gap-2 text-sm"
+            >
+              <input
+                type="radio"
+                name={`venue-location-kind-${venue.id}`}
+                className="mt-1"
+                checked={locationKind === option.value}
+                disabled={pending}
+                onChange={() => {
+                  setLocationKind(option.value);
+                  if (!isPreciseVenueLocation(option.value)) {
+                    setSelectedPlace(null);
+                  }
+                }}
+              />
+              <span>{option.label}</span>
+            </label>
+          ))}
+        </div>
+        {!isPrecise ? (
+          <p className="text-muted-foreground text-xs">
+            Pas de point GPS : la carte publique affiche le libellé sans pin
+            Google.
+          </p>
+        ) : null}
+      </fieldset>
 
       <div className="flex flex-col gap-1.5">
         <label
@@ -283,69 +370,108 @@ export function VenueConfirmRow({
         />
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor={`venue-address-${venue.id}`}
-          className="text-sm font-medium"
-        >
-          {mode === "edit" && originalPlace ? "Adresse actuelle" : "Adresse"}
-        </label>
-        {mode === "edit" && originalPlace ? (
-          <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
-            <p className="font-medium">{originalPlace.formattedAddress}</p>
-            <p className="text-muted-foreground text-xs">
-              {originalPlace.city} · {originalPlace.latitude.toFixed(5)},{" "}
-              {originalPlace.longitude.toFixed(5)}
-            </p>
+      {isPrecise ? (
+        <>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor={`venue-address-${venue.id}`}
+              className="text-sm font-medium"
+            >
+              {mode === "edit" && originalPlace
+                ? "Adresse actuelle"
+                : "Adresse"}
+            </label>
+            {mode === "edit" && originalPlace ? (
+              <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                <p className="font-medium">{originalPlace.formattedAddress}</p>
+                <p className="text-muted-foreground text-xs">
+                  {originalPlace.city} · {originalPlace.latitude.toFixed(5)},{" "}
+                  {originalPlace.longitude.toFixed(5)}
+                </p>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-      </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor={`venue-address-search-${venue.id}`}
-          className="text-sm font-medium"
-        >
-          {mode === "edit" ? "Modifier l'adresse" : "Adresse"}
-        </label>
-        <GooglePlacesAutocomplete
-          key={`${venue.id}-${mode}`}
-          id={`venue-address-search-${venue.id}`}
-          defaultQuery={mode === "edit" ? "" : addressPlaceholder}
-          placeholder={
-            mode === "edit"
-              ? "Rechercher une nouvelle adresse sur Google…"
-              : "Rechercher une adresse sur Google…"
-          }
-          disabled={pending}
-          onSelect={setSelectedPlace}
-        />
-      </div>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor={`venue-address-search-${venue.id}`}
+              className="text-sm font-medium"
+            >
+              {mode === "edit" ? "Modifier l'adresse" : "Adresse Google"}
+            </label>
+            <GooglePlacesAutocomplete
+              key={`${venue.id}-${mode}-place`}
+              id={`venue-address-search-${venue.id}`}
+              defaultQuery={mode === "edit" ? "" : addressPlaceholder}
+              placeholder={
+                mode === "edit"
+                  ? "Rechercher une nouvelle adresse sur Google…"
+                  : "Rechercher une adresse sur Google…"
+              }
+              disabled={pending}
+              onSelect={setSelectedPlace}
+            />
+          </div>
 
-      {selectedPlace && mode === "create" ? (
-        <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
-          <p className="font-medium">{selectedPlace.formattedAddress}</p>
-          <p className="text-muted-foreground text-xs">
-            {selectedPlace.city} · {selectedPlace.latitude.toFixed(5)},{" "}
-            {selectedPlace.longitude.toFixed(5)}
-          </p>
-        </div>
-      ) : null}
+          {selectedPlace && mode === "create" ? (
+            <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+              <p className="font-medium">{selectedPlace.formattedAddress}</p>
+              <p className="text-muted-foreground text-xs">
+                {selectedPlace.city} · {selectedPlace.latitude.toFixed(5)},{" "}
+                {selectedPlace.longitude.toFixed(5)}
+              </p>
+            </div>
+          ) : null}
 
-      {hasNewAddressSelection && selectedPlace ? (
-        <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2 text-sm">
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-            Nouvelle sélection
-          </p>
-          <p className="font-medium">{selectedPlace.formattedAddress}</p>
-          <p className="text-muted-foreground text-xs">
-            {selectedPlace.city} · {selectedPlace.latitude.toFixed(5)},{" "}
-            {selectedPlace.longitude.toFixed(5)}
-          </p>
-        </div>
-      ) : null}
+          {hasNewAddressSelection && selectedPlace ? (
+            <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2 text-sm">
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                Nouvelle sélection
+              </p>
+              <p className="font-medium">{selectedPlace.formattedAddress}</p>
+              <p className="text-muted-foreground text-xs">
+                {selectedPlace.city} · {selectedPlace.latitude.toFixed(5)},{" "}
+                {selectedPlace.longitude.toFixed(5)}
+              </p>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={`venue-city-${venue.id}`} className="text-sm font-medium">
+              Ville
+            </label>
+            <input
+              id={`venue-city-${venue.id}`}
+              className="rounded-lg border bg-background px-3 py-2 text-sm"
+              value={city}
+              disabled={pending}
+              onChange={(event) => setCity(event.target.value)}
+            />
+          </div>
+          {locationKind === "area" ? (
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor={`venue-area-address-${venue.id}`}
+                className="text-sm font-medium"
+              >
+                Précision (optionnel)
+              </label>
+              <input
+                id={`venue-area-address-${venue.id}`}
+                className="rounded-lg border bg-background px-3 py-2 text-sm"
+                value={areaAddress}
+                disabled={pending}
+                placeholder="ex. quartier, parc, place…"
+                onChange={(event) => setAreaAddress(event.target.value)}
+              />
+            </div>
+          ) : null}
+        </>
+      )}
 
-      {strongDuplicateMatches.length > 0 ? (
+      {isPrecise && strongDuplicateMatches.length > 0 ? (
         <VenueDuplicateAlert
           title="Un lieu similaire existe déjà"
           description="Même adresse ou même lieu Google. Vous pouvez créer un alias permanent plutôt que confirmer un doublon."
@@ -355,7 +481,7 @@ export function VenueConfirmRow({
         />
       ) : null}
 
-      {weakDuplicateMatches.length > 0 ? (
+      {isPrecise && weakDuplicateMatches.length > 0 ? (
         <VenueDuplicateAlert
           title={
             selectedPlace
@@ -374,18 +500,33 @@ export function VenueConfirmRow({
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          size="sm"
-          disabled={pending || !selectedPlace || !venueName.trim()}
-          onClick={confirm}
-        >
-          {pending
-            ? "Enregistrement…"
-            : mode === "edit"
-              ? "Enregistrer"
-              : "Confirmer"}
-        </Button>
+        {isPrecise ? (
+          <Button
+            type="button"
+            size="sm"
+            disabled={pending || !selectedPlace || !venueName.trim()}
+            onClick={confirm}
+          >
+            {pending
+              ? "Enregistrement…"
+              : mode === "edit"
+                ? "Enregistrer"
+                : "Confirmer l'adresse"}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            disabled={pending || !venueName.trim() || !city.trim()}
+            onClick={confirmArea}
+          >
+            {pending
+              ? "Enregistrement…"
+              : locationKind === "none"
+                ? "Enregistrer"
+                : "Valider la zone"}
+          </Button>
+        )}
         {onCancel ? (
           <Button
             type="button"
@@ -403,5 +544,9 @@ export function VenueConfirmRow({
 }
 
 export function venueConfirmMode(venue: AdminVenueRow): "create" | "edit" {
+  if (!isPreciseVenueLocation(venue.locationKind)) {
+    return "edit";
+  }
+
   return isVenueAddressConfirmed(venue) ? "edit" : "create";
 }

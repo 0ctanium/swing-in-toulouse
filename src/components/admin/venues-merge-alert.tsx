@@ -25,7 +25,7 @@ export function VenuesMergeAlert({
 
   if (locationConflictCount > 0) {
     parts.push(
-      `${locationConflictCount} conflit${locationConflictCount > 1 ? "s" : ""} LOCATION iCal`,
+      `${locationConflictCount} libellé${locationConflictCount > 1 ? "s" : ""} iCal partagé${locationConflictCount > 1 ? "s" : ""}`,
     );
   }
 

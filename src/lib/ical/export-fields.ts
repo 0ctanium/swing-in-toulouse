@@ -4,6 +4,7 @@ import type { EventMaster, Organization, Venue } from "@/db/schema";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
 import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
 import { getVenueDisplayAddress } from "@/lib/venues/display";
+import { isPreciseVenueLocation } from "@/lib/venues/location-kind";
 import { siteConfig } from "@/lib/site";
 
 import type { IcalStoredData, NormalizedEvent, NormalizedOrganizer } from "./types";
@@ -98,6 +99,7 @@ export function resolveIcalExportGeo(
 ): IcalExportGeo | undefined {
   if (
     venue &&
+    isPreciseVenueLocation(venue.locationKind ?? "place") &&
     isVenueAddressConfirmed(venue) &&
     venue.latitude != null &&
     venue.longitude != null
@@ -107,10 +109,6 @@ export function resolveIcalExportGeo(
 
   if (icalData?.geo) {
     return icalData.geo;
-  }
-
-  if (venue?.latitude != null && venue?.longitude != null) {
-    return { lat: venue.latitude, lon: venue.longitude };
   }
 
   return undefined;

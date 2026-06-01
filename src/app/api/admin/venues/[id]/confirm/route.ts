@@ -75,6 +75,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         googlePlaceId: place.placeId,
         formattedAddress: place.formattedAddress,
         addressConfirmedAt: new Date(),
+        locationKind: "place",
         ...(parsed.data.category !== undefined
           ? { category: parsed.data.category }
           : {}),

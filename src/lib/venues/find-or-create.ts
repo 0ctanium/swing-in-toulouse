@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { venues } from "@/db/schema";
+import { inferLocationKindFromIcal } from "@/lib/venues/location-kind";
 import { parseIcalLocation, venueSlugFromLocation } from "@/lib/venues/parse-location";
 
 export async function findOrCreateVenue(location: string) {
@@ -31,6 +32,7 @@ export async function findOrCreateVenue(location: string) {
       slug,
       name: parsed.name,
       address: parsed.address,
+      locationKind: inferLocationKindFromIcal(location, parsed),
     })
     .returning();
 

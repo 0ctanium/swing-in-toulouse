@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 
 import { fetchJson, fetchJsonVoid } from "@/lib/api/fetch-json";
 import { adminQueryKeys } from "@/lib/admin/query-keys";
-import type { VenueCategory } from "@/db/schema";
+import type { VenueCategory, VenueLocationKind } from "@/db/schema";
 import type { VenueAssignment } from "@/lib/venues/assignments";
 import type { VenueWriteInput } from "@/lib/venues/schemas";
 
@@ -115,6 +115,76 @@ export function useConfirmVenue() {
   });
 }
 
+type ConfirmVenueAreaInput = {
+  venueId: string;
+  name: string;
+  city: string;
+  address?: string | null;
+  category?: VenueCategory | null;
+  locationKind: Extract<VenueLocationKind, "area" | "none">;
+};
+
+async function confirmVenueArea({
+  venueId,
+  name,
+  city,
+  address,
+  category,
+  locationKind,
+}: ConfirmVenueAreaInput) {
+  return fetchJson(
+    `/api/admin/venues/${venueId}/confirm-area`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        city,
+        address,
+        locationKind,
+        ...(category !== undefined ? { category } : {}),
+      }),
+    },
+    "Enregistrement impossible.",
+  );
+}
+
+async function dismissVenueMergeGroup(venueIds: string[]) {
+  return fetchJson<{ dismissed: number }>(
+    "/api/admin/venues/merge-dismissals",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ venueIds }),
+    },
+    "Impossible d'ignorer ce groupe.",
+  );
+}
+
+export function useDismissVenueMergeGroup() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationKey: [...adminQueryKeys.venues(), "merge-dismiss"],
+    mutationFn: dismissVenueMergeGroup,
+    onSuccess: () => {
+      router.refresh();
+    },
+  });
+}
+
+export function useConfirmVenueArea() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationKey: [...adminQueryKeys.venues(), "confirm-area"],
+    mutationFn: confirmVenueArea,
+    onSuccess: () => {
+      router.refresh();
+    },
+  });
+}
+
 async function createVenue(input: VenueWriteInput) {
   return fetchJson(
     "/api/admin/venues",
@@ -144,6 +214,7 @@ type UpdateVenueBody = {
   address?: string | null;
   city?: string;
   category?: VenueCategory | null;
+  locationKind?: VenueLocationKind;
 };
 
 type UpdateVenueInput = {

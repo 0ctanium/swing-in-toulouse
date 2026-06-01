@@ -8,7 +8,12 @@ import { VenueAliasBadge } from "@/components/admin/venue-alias-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatVenueCategory } from "@/lib/venues/categories";
-import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
+import { VenueLocationKindBadge } from "@/components/admin/venue-location-kind-badge";
+import {
+  isVenueAddressConfirmed,
+  venueNeedsAddressConfirmation,
+} from "@/lib/venues/confirmation";
+import { isPreciseVenueLocation } from "@/lib/venues/location-kind";
 import type { AdminVenueRow } from "@/lib/venues/admin-venue-row";
 
 type CreateVenuesTableColumnsOptions = {
@@ -46,6 +51,7 @@ export function createVenuesTableColumns({
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{venue.name}</span>
               <VenueAliasBadge venue={venue} />
+              <VenueLocationKindBadge locationKind={venue.locationKind} />
             </div>
             <span className="text-muted-foreground text-xs">
               /lieu/{venue.slug}
@@ -93,7 +99,13 @@ export function createVenuesTableColumns({
       header: "Adresse Google",
       cell: ({ row }) => {
         const venue = row.original;
-        const confirmed = isVenueAddressConfirmed(venue);
+        if (!isPreciseVenueLocation(venue.locationKind)) {
+          return (
+            <Badge variant="outline">
+              {venue.locationKind === "area" ? "Zone" : "Sans adresse"}
+            </Badge>
+          );
+        }
 
         if (!googleConfigured) {
           return (
@@ -103,10 +115,12 @@ export function createVenuesTableColumns({
           );
         }
 
-        return confirmed ? (
+        return isVenueAddressConfirmed(venue) ? (
           <Badge variant="outline">Confirmée</Badge>
-        ) : (
+        ) : venueNeedsAddressConfirmation(venue) ? (
           <Badge variant="secondary">À confirmer</Badge>
+        ) : (
+          <Badge variant="outline">Lieu précis</Badge>
         );
       },
     },
@@ -136,12 +150,20 @@ export function createVenuesTableColumns({
             {googleConfigured ? (
               <Button
                 type="button"
-                variant={venue.needsConfirmation ? "outline" : "ghost"}
+                variant={
+                  venue.needsConfirmation || !isPreciseVenueLocation(venue.locationKind)
+                    ? "outline"
+                    : "ghost"
+                }
                 size="sm"
                 onClick={() => onConfirm(venue)}
               >
                 <MapPin data-icon="inline-start" />
-                {venue.needsConfirmation ? "Confirmer" : "Adresse Google"}
+                {venue.needsConfirmation
+                  ? "Confirmer"
+                  : isPreciseVenueLocation(venue.locationKind)
+                    ? "Adresse Google"
+                    : "Modifier le lieu"}
               </Button>
             ) : null}
             <Button

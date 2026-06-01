@@ -10,6 +10,8 @@ import {
   invalidatePublicVenueCache,
 } from "@/lib/cache/invalidate";
 import { venueCategoryValues } from "@/lib/venues/categories";
+import { googleFieldsForLocationKind } from "@/lib/venues/location-kind";
+import { venueLocationKindValues } from "@/lib/venues/location-kind";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -22,6 +24,7 @@ const bodySchema = z.object({
   address: z.string().nullable().optional(),
   city: z.string().min(1).optional(),
   category: venueCategorySchema.optional(),
+  locationKind: z.enum(venueLocationKindValues).optional(),
 });
 
 export async function PUT(request: NextRequest, context: RouteContext) {
@@ -55,6 +58,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       (parsed.data.address?.trim() || null) !== existing.address) ||
     (parsed.data.city !== undefined && parsed.data.city.trim() !== existing.city);
 
+  const nextLocationKind = parsed.data.locationKind ?? existing.locationKind;
+  const locationKindChanged =
+    parsed.data.locationKind !== undefined &&
+    parsed.data.locationKind !== existing.locationKind;
+
   const [updated] = await db
     .update(venues)
     .set({
@@ -66,7 +74,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       ...(parsed.data.category !== undefined
         ? { category: parsed.data.category }
         : {}),
-      ...(clearsConfirmation
+      ...(parsed.data.locationKind !== undefined
+        ? { locationKind: parsed.data.locationKind }
+        : {}),
+      ...(clearsConfirmation && nextLocationKind === "place"
         ? {
             latitude: null,
             longitude: null,
@@ -74,6 +85,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             formattedAddress: null,
             addressConfirmedAt: null,
           }
+        : {}),
+      ...(locationKindChanged
+        ? googleFieldsForLocationKind(nextLocationKind)
         : {}),
     })
     .where(eq(venues.id, id))

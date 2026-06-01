@@ -16,10 +16,11 @@ import { EntitySelect } from "@/components/ui/entity-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateVenue, useUpdateVenue } from "@/lib/admin/use-venues";
-import type { VenueCategory } from "@/db/schema";
+import type { VenueCategory, VenueLocationKind } from "@/db/schema";
 import { generateVenueSlug } from "@/lib/slug";
 import type { AdminVenueRow } from "@/lib/venues/admin-venue-row";
 import { venueCategoryOptions } from "@/lib/venues/categories";
+import { venueLocationKindOptions } from "@/lib/venues/location-kind";
 
 type VenueFormDialogProps = {
   open: boolean;
@@ -34,6 +35,7 @@ function emptyFormState() {
     address: "",
     city: "Toulouse",
     category: "",
+    locationKind: "place",
   };
 }
 
@@ -44,6 +46,7 @@ function formStateFromVenue(venue: AdminVenueRow) {
     address: venue.address ?? "",
     city: venue.city,
     category: venue.category ?? "",
+    locationKind: venue.locationKind,
   };
 }
 
@@ -62,6 +65,7 @@ export function VenueFormDialog({
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("Toulouse");
   const [category, setCategory] = useState("");
+  const [locationKind, setLocationKind] = useState<VenueLocationKind>("place");
 
   const pending = createVenue.isPending || updateVenue.isPending;
   const canSubmit = Boolean(name.trim() && slug.trim() && city.trim());
@@ -78,6 +82,7 @@ export function VenueFormDialog({
     setAddress(nextState.address);
     setCity(nextState.city);
     setCategory(nextState.category);
+    setLocationKind(nextState.locationKind);
   }, [open, venue]);
 
   function handleNameChange(nextName: string) {
@@ -97,6 +102,7 @@ export function VenueFormDialog({
       address: address.trim() || null,
       city: city.trim(),
       category: category ? (category as VenueCategory) : null,
+      locationKind,
     };
 
     try {
@@ -193,6 +199,26 @@ export function VenueFormDialog({
                 label: option.label,
               }))}
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label>Type de lieu</Label>
+            <EntitySelect
+              value={locationKind}
+              onChange={(value) =>
+                setLocationKind((value || "place") as VenueLocationKind)
+              }
+              placeholder="Type de lieu…"
+              disabled={pending}
+              options={venueLocationKindOptions().map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+            />
+            <p className="text-muted-foreground text-xs">
+              Lieu précis : adresse Google. Zone : quartier ou ville sans point
+              GPS. Sans adresse : libellé seul.
+            </p>
           </div>
 
           <DialogFooter>

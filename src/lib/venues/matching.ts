@@ -1,13 +1,20 @@
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { eventOverrides, events, venues, type VenueCategory } from "@/db/schema";
+import {
+  eventOverrides,
+  events,
+  venues,
+  type VenueCategory,
+  type VenueLocationKind,
+} from "@/db/schema";
 import { upsertEventOverride } from "@/lib/events/overrides";
 import {
   applyPermanentVenueAliases,
   clearVenueAlias,
   listVenueRedirects,
   loadVenueCanonicalMap,
+  resolveCanonicalVenueId,
   VenueCanonicalError,
   type VenueRedirectEntry,
 } from "@/lib/venues/canonical";
@@ -20,9 +27,19 @@ import { enrichAdminVenueRow } from "@/lib/venues/admin-venue-row";
 import {
   buildVenueConfirmPageData,
   isVenueAddressConfirmed,
+  venueNeedsAddressConfirmation,
   type VenueConfirmationEntry,
 } from "@/lib/venues/confirmation";
-import { venuesMatchForGrouping } from "@/lib/venues/duplicate-candidates";
+import {
+  explainVenuePairMatch,
+  formatVenuePairMatchReasons,
+  venuesMatchForGrouping,
+  type DuplicateReason,
+} from "@/lib/venues/duplicate-candidates";
+import {
+  isVenuePairDismissed,
+  loadDismissedVenuePairKeys,
+} from "@/lib/venues/merge-dismissals";
 import {
   summarizeDebug,
   venueMatchingLog,
@@ -52,6 +69,7 @@ export type VenueWithStats = {
   canonicalVenueId: string | null;
   canonicalVenueName: string | null;
   category: VenueCategory | null;
+  locationKind: VenueLocationKind;
   aliasCount: number;
   eventCount: number;
   overrideCount: number;
@@ -71,10 +89,21 @@ export type LocationVenueConflict = {
   }>;
 };
 
+export type SimilarVenuePairMatch = {
+  venueIdA: string;
+  venueIdB: string;
+  nameA: string;
+  nameB: string;
+  reasons: DuplicateReason[];
+  distanceMeters: number | null;
+  reasonLabel: string;
+};
+
 export type SimilarVenueGroup = {
   key: string;
   locationKeys: string[];
   venues: VenueWithStats[];
+  pairMatches: SimilarVenuePairMatch[];
 };
 
 export type BulkVenueAssignFilter = {
@@ -152,18 +181,49 @@ export async function listVenuesWithStats(): Promise<VenueWithStats[]> {
       ? (venueNameById.get(venue.canonicalVenueId) ?? null)
       : null,
     category: venue.category,
+    locationKind: venue.locationKind,
     aliasCount: aliasCountByCanonical.get(venue.id) ?? 0,
     eventCount: effectiveCounts.get(venue.id) ?? 0,
     overrideCount: overrideCountByVenue.get(venue.id) ?? 0,
   }));
 }
 
-export function groupSimilarVenues(venueList: VenueWithStats[]): SimilarVenueGroup[] {
+function buildSimilarVenuePairMatches(
+  groupVenues: VenueWithStats[],
+): SimilarVenuePairMatch[] {
+  const matches: SimilarVenuePairMatch[] = [];
+
+  for (let index = 0; index < groupVenues.length; index += 1) {
+    for (let other = index + 1; other < groupVenues.length; other += 1) {
+      const left = groupVenues[index]!;
+      const right = groupVenues[other]!;
+      const explanation = explainVenuePairMatch(left, right);
+
+      matches.push({
+        venueIdA: left.id,
+        venueIdB: right.id,
+        nameA: left.name,
+        nameB: right.name,
+        reasons: explanation.reasons,
+        distanceMeters: explanation.distanceMeters,
+        reasonLabel: `${left.name} ↔ ${right.name} — ${formatVenuePairMatchReasons(explanation)}`,
+      });
+    }
+  }
+
+  return matches;
+}
+
+export async function groupSimilarVenues(
+  venueList: VenueWithStats[],
+): Promise<SimilarVenueGroup[]> {
   const active = venueList.filter((venue) => !venue.canonicalVenueId);
 
   if (active.length < 2) {
     return [];
   }
+
+  const dismissedPairs = await loadDismissedVenuePairKeys();
 
   const parent = new Map<string, string>();
 
@@ -192,8 +252,15 @@ export function groupSimilarVenues(venueList: VenueWithStats[]): SimilarVenueGro
 
   for (let index = 0; index < active.length; index += 1) {
     for (let other = index + 1; other < active.length; other += 1) {
-      if (venuesMatchForGrouping(active[index]!, active[other]!)) {
-        union(active[index]!.id, active[other]!.id);
+      const left = active[index]!;
+      const right = active[other]!;
+
+      if (isVenuePairDismissed(dismissedPairs, left.id, right.id)) {
+        continue;
+      }
+
+      if (venuesMatchForGrouping(left, right)) {
+        union(left.id, right.id);
       }
     }
   }
@@ -226,6 +293,7 @@ export function groupSimilarVenues(venueList: VenueWithStats[]): SimilarVenueGro
           ),
         ].filter((key) => key.length > 0),
         venues: sorted,
+        pairMatches: buildSimilarVenuePairMatches(sorted),
       };
     })
     .sort(
@@ -248,18 +316,15 @@ export async function findLocationVenueConflicts(): Promise<LocationVenueConflic
     )
     .groupBy(events.locationRaw, events.venueId);
 
-  const venueIds = [
-    ...new Set(rows.map((row) => row.venueId).filter(Boolean)),
-  ] as string[];
+  const canonicalMap = await loadVenueCanonicalMap();
 
-  const venueRows =
-    venueIds.length > 0
-      ? await db.query.venues.findMany({
-          where: inArray(venues.id, venueIds),
-        })
-      : [];
+  function rootVenueId(venueId: string | null) {
+    if (!venueId) {
+      return null;
+    }
 
-  const venueNames = new Map(venueRows.map((venue) => [venue.id, venue.name]));
+    return resolveCanonicalVenueId(venueId, canonicalMap);
+  }
 
   const grouped = new Map<
     string,
@@ -280,12 +345,31 @@ export async function findLocationVenueConflicts(): Promise<LocationVenueConflic
       variants: new Map<string | null, number>(),
     };
 
+    const resolvedVenueId = rootVenueId(row.venueId);
     bucket.variants.set(
-      row.venueId,
-      (bucket.variants.get(row.venueId) ?? 0) + row.count,
+      resolvedVenueId,
+      (bucket.variants.get(resolvedVenueId) ?? 0) + row.count,
     );
     grouped.set(key, bucket);
   }
+
+  const canonicalIds = [
+    ...new Set(
+      [...grouped.values()].flatMap((bucket) =>
+        [...bucket.variants.keys()].filter((id): id is string => id != null),
+      ),
+    ),
+  ];
+
+  const venueRows =
+    canonicalIds.length > 0
+      ? await db.query.venues.findMany({
+          where: inArray(venues.id, canonicalIds),
+          columns: { id: true, name: true },
+        })
+      : [];
+
+  const venueNames = new Map(venueRows.map((venue) => [venue.id, venue.name]));
 
   return [...grouped.entries()]
     .filter(([, bucket]) => bucket.variants.size > 1)
@@ -641,14 +725,13 @@ export async function getVenueMatchingOverview() {
     eventCount: effectiveCounts.get(row.aliasId) ?? 0,
   }));
 
-  const similarGroups = groupSimilarVenues(
+  const similarGroups = await groupSimilarVenues(
     venueList.filter((venue) => venue.eventCount > 0 && !venue.canonicalVenueId),
   );
   const confirmationEntries: VenueConfirmationEntry[] = venueList.map(
     (venue) => ({
       ...venue,
-      needsConfirmation:
-        venue.eventCount > 0 && !isVenueAddressConfirmed(venue),
+      needsConfirmation: venueNeedsAddressConfirmation(venue),
     }),
   );
   const pendingConfirmationCount = confirmationEntries.filter(
@@ -713,7 +796,7 @@ export async function getVenueConfirmationOverview() {
   const venueList = await listVenuesWithStats();
   const entries: VenueConfirmationEntry[] = venueList.map((venue) => ({
     ...venue,
-    needsConfirmation: venue.eventCount > 0 && !isVenueAddressConfirmed(venue),
+    needsConfirmation: venueNeedsAddressConfirmation(venue),
   }));
 
   return buildVenueConfirmPageData(entries);

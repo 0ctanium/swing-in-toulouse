@@ -2,6 +2,10 @@ import type { Venue } from "@/db/schema";
 import { getGeoMapsUrl } from "@/lib/events/display";
 
 import { isVenueAddressConfirmed } from "./confirmation";
+import {
+  isPreciseVenueLocation,
+  type VenueLocationKind,
+} from "./location-kind";
 
 type VenueAddressFields = Pick<
   Venue,
@@ -11,6 +15,7 @@ type VenueAddressFields = Pick<
   | "addressConfirmedAt"
   | "latitude"
   | "longitude"
+  | "locationKind"
 >;
 
 type VenueMapsFields = Pick<
@@ -24,7 +29,13 @@ type VenueMapsFields = Pick<
 >;
 
 export function getVenueDisplayAddress(venue: VenueAddressFields) {
-  if (isVenueAddressConfirmed(venue) && venue.formattedAddress?.trim()) {
+  const kind = venue.locationKind ?? "place";
+
+  if (
+    isPreciseVenueLocation(kind) &&
+    isVenueAddressConfirmed(venue) &&
+    venue.formattedAddress?.trim()
+  ) {
     return venue.formattedAddress.trim();
   }
 
@@ -41,10 +52,28 @@ export function getVenueDisplayAddress(venue: VenueAddressFields) {
     return parts.join(", ");
   }
 
+  if (kind === "area" || kind === "none") {
+    return venue.name.trim() || venue.city?.trim() || null;
+  }
+
   return venue.city?.trim() ?? null;
 }
 
-export function getVenueMapsUrl(venue: VenueMapsFields) {
+export function venueShowsPreciseMap(
+  venue: Pick<Venue, "locationKind" | "addressConfirmedAt" | "latitude" | "longitude">,
+) {
+  return (
+    isPreciseVenueLocation(venue.locationKind ?? "place") &&
+    isVenueAddressConfirmed(venue)
+  );
+}
+
+export function getVenueMapsUrl(
+  venue: VenueMapsFields & { locationKind?: VenueLocationKind },
+) {
+  if (!isPreciseVenueLocation(venue.locationKind ?? "place")) {
+    return null;
+  }
   if (venue.googlePlaceId) {
     const params = new URLSearchParams({
       api: "1",

@@ -66,6 +66,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         formattedAddress: true,
         addressConfirmedAt: true,
         canonicalVenueId: true,
+        locationKind: true,
       },
     }),
     computeEffectiveVenueEventCounts(),

@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { sources, syncLogs } from "@/db/schema";
 import { getEventConfirmQueueStats } from "@/lib/events/confirm-queue";
 import { getUpcomingEventsUncached } from "@/lib/events/queries";
-import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
+import { venueNeedsAddressConfirmation } from "@/lib/venues/confirmation";
 import { listVenuesWithStats } from "@/lib/venues/matching";
 
 export type AdminDashboardLastSync = {
@@ -85,9 +85,7 @@ function formatLastSyncDisplay(
 async function getVenuePendingConfirmationCount() {
   const venueList = await listVenuesWithStats();
 
-  return venueList.filter(
-    (venue) => venue.eventCount > 0 && !isVenueAddressConfirmed(venue),
-  ).length;
+  return venueList.filter((venue) => venueNeedsAddressConfirmation(venue)).length;
 }
 
 async function getSourceCounts() {

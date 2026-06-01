@@ -1,5 +1,6 @@
-import type { Venue } from "@/db/schema";
+import type { Venue, VenueLocationKind } from "@/db/schema";
 import type { VenueWithStats } from "@/lib/venues/matching";
+import { isPreciseVenueLocation } from "@/lib/venues/location-kind";
 
 export type VenueConfirmationEntry = VenueWithStats & {
   latitude: number | null;
@@ -22,9 +23,14 @@ export function isVenueAddressConfirmed(
 export function venueNeedsAddressConfirmation(
   venue: Pick<Venue, "addressConfirmedAt" | "latitude" | "longitude"> & {
     eventCount?: number;
+    locationKind?: VenueLocationKind;
   },
 ) {
   if (venue.eventCount === 0) {
+    return false;
+  }
+
+  if (!isPreciseVenueLocation(venue.locationKind ?? "place")) {
     return false;
   }
 
@@ -37,13 +43,20 @@ export function splitVenuesForConfirmation(venues: VenueConfirmationEntry[]) {
     .sort((a, b) => b.eventCount - a.eventCount);
 
   const confirmed = venues
-    .filter((venue) => isVenueAddressConfirmed(venue))
+    .filter(
+      (venue) =>
+        isPreciseVenueLocation(venue.locationKind) &&
+        isVenueAddressConfirmed(venue),
+    )
     .sort((a, b) => b.eventCount - a.eventCount);
 
   const inactive = venues
     .filter(
       (venue) =>
-        venue.eventCount === 0 && !isVenueAddressConfirmed(venue),
+        venue.eventCount === 0 &&
+        (isPreciseVenueLocation(venue.locationKind)
+          ? !isVenueAddressConfirmed(venue)
+          : false),
     )
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
 

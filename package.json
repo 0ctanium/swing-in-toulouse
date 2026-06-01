@@ -11,6 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed-data.ts",
+    "db:backfill-venue-location-kind": "tsx scripts/backfill-venue-location-kind.ts",
     "sync": "tsx scripts/sync-once.ts",
     "qstash:setup": "tsx scripts/setup-qstash-schedule.ts",
     "docker:up": "docker compose up -d",

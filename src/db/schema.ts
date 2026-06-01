@@ -7,6 +7,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -46,6 +47,12 @@ export const venueCategoryEnum = pgEnum("venue_category", [
   "other",
 ]);
 
+export const venueLocationKindEnum = pgEnum("venue_location_kind", [
+  "place",
+  "area",
+  "none",
+]);
+
 export const eventCategoryTagTypeEnum = pgEnum("event_category_tag_type", [
   "danse",
   "evenement",
@@ -72,6 +79,9 @@ export const venues = pgTable(
       { onDelete: "restrict" },
     ),
     category: venueCategoryEnum("category"),
+    locationKind: venueLocationKindEnum("location_kind")
+      .notNull()
+      .default("place"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -83,6 +93,27 @@ export const venues = pgTable(
   (table) => [
     index("venues_slug_idx").on(table.slug),
     index("venues_canonical_venue_id_idx").on(table.canonicalVenueId),
+  ],
+);
+
+/** Admin marked two principal venues as not mergeable (symmetric pair, venue_id_a < venue_id_b). */
+export const venueMergeDismissals = pgTable(
+  "venue_merge_dismissals",
+  {
+    venueIdA: uuid("venue_id_a")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    venueIdB: uuid("venue_id_b")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.venueIdA, table.venueIdB] }),
+    index("venue_merge_dismissals_venue_id_a_idx").on(table.venueIdA),
+    index("venue_merge_dismissals_venue_id_b_idx").on(table.venueIdB),
   ],
 );
 
@@ -349,6 +380,8 @@ export type SourceType = (typeof sourceTypeEnum.enumValues)[number];
 export type Venue = typeof venues.$inferSelect;
 export type NewVenue = typeof venues.$inferInsert;
 export type VenueCategory = (typeof venueCategoryEnum.enumValues)[number];
+export type VenueLocationKind =
+  (typeof venueLocationKindEnum.enumValues)[number];
 export type EventCategoryTag = typeof eventCategoryTags.$inferSelect;
 export type NewEventCategoryTag = typeof eventCategoryTags.$inferInsert;
 export type EventCategoryTagType =
