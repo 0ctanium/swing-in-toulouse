@@ -45,9 +45,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return undefined;
   }
 
-  ScrapExt.installFetchSniffer?.();
+  const source = message.source === "feed" ? "feed" : "events-list";
 
   ScrapExt.log.info("SCRAPE_EVENTS received", {
+    source,
     mode: message.mode,
     pastMaxDate: message.pastMaxDate,
     url: window.location.href,
@@ -56,10 +57,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   void (async () => {
     try {
       const mode = message.mode === "past" ? "past" : "upcoming";
-      const pastMaxDate =
-        mode === "past" ? (message.pastMaxDate ?? null) : null;
+      const maxDate = message.pastMaxDate ?? null;
 
-      if (mode === "past" && !pastMaxDate) {
+      if (source === "events-list" && mode === "past" && !maxDate) {
         sendResponse({
           ok: false,
           error: "Past events require a max date.",
@@ -67,26 +67,31 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return;
       }
 
-      const scrapeResult = await ScrapExt.scrapeGroupEvents(
-        mode,
-        (progress) => {
-          ScrapExt.log.info("Scrape progress", progress);
-          chrome.runtime
-            .sendMessage({
-              type: "SCRAPE_PROGRESS",
-              ...progress,
-            })
-            .catch(() => {
-              // Popup may be closed; ignore.
+      const onProgress = (progress) => {
+        ScrapExt.log.info("Scrape progress", progress);
+        chrome.runtime
+          .sendMessage({
+            type: "SCRAPE_PROGRESS",
+            source,
+            ...progress,
+          })
+          .catch(() => {
+            // Popup may be closed; ignore.
+          });
+      };
+
+      const scrapeResult =
+        source === "feed"
+          ? await ScrapExt.scrapeGroupFeed(onProgress, { maxDate })
+          : await ScrapExt.scrapeGroupEvents(mode, onProgress, {
+              pastMaxDate: maxDate,
             });
-        },
-        { pastMaxDate },
-      );
 
       const events = scrapeResult.events;
       const context = ScrapExt.getGroupContext();
 
       ScrapExt.log.info("Scrape complete", {
+        source,
         eventCount: events.length,
         groupId: context.groupId,
         stopReason: scrapeResult.stopReason,
@@ -101,6 +106,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         events,
         context,
         stopReason: scrapeResult.stopReason,
+        source,
       });
     } catch (error) {
       ScrapExt.log.error("Scrape failed", error);

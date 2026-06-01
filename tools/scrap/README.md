@@ -4,11 +4,12 @@ Chrome extension that exports events from a Facebook **group events page** to an
 
 ## How it works
 
-1. Open a group events page, e.g. `https://www.facebook.com/groups/20393438108/events`
-2. Click the extension icon → **Export to iCal**
-3. The content script clicks **Show more** until the list is fully loaded
-4. Events are parsed from Facebook’s embedded JSON (DOM fallback if needed)
-5. An `.ics` file is downloaded via `chrome.downloads`
+1. Open a group **events list** (`…/groups/ID/events`) or **discussion feed** (`…/groups/ID`)
+2. Click the extension icon → **Sync & export**
+3. **Events list**: clicks **Show more** until the list is loaded
+4. **Discussion feed**: scrolls the feed until no new events appear (or max date / stop)
+5. New events are merged into storage; details are fetched for every saved event that needs them
+6. A full `.ics` of **all saved events** is downloaded
 
 Runs in your normal logged-in Chrome session — no headless browser, no server.
 
@@ -16,17 +17,32 @@ Runs in your normal logged-in Chrome session — no headless browser, no server.
 
 Events are saved in `chrome.storage.local` per Facebook group. Once scraped, an event stays in the store and is **always included** in the next iCal export — even if it no longer appears on the group page.
 
+The popup **Scan from** option only controls where we look for **new** events (events list vs discussion feed). The saved count and export always include **every** stored event for that group.
+
 After each sync the popup shows:
 
-- **New** — first time seen
+- **Scanned on page** — unique events collected from Facebook this run
+- **New in storage** — first time saved for this group
 - **Changed** — title, date, or URL updated since last sync
 - **Unchanged** — seen again with the same data
-- **Total in iCal** — all saved events for the selected mode (upcoming / past)
-- **Kept from earlier syncs** — saved events not found on the page this time
+- **Total saved** — all events in storage (unchanged when switching scan source)
+- **Upcoming** — saved events with a future start time
+- **Not on page this scan** — saved events not found in this scan pass
 
-Storage is per group and per mode flag (`isPast`). Upcoming and past events are stored together but exported separately.
+For **past events list** or **feed** scans, set **Stop when older than** to stop pagination when events before that date appear. The cutoff is saved per group.
 
-For **past events**, set a **max date** before syncing. Pagination stops automatically when Facebook loads events older than that date, and the export only includes events on or after it. The cutoff is saved per group.
+### Discussion feed auto-scroll
+
+The feed scraper scrolls the group timeline to load more posts, then collects event links from the DOM, embedded JSON, and a GraphQL sniffer.
+
+It stops when any of these is true:
+
+1. **End of feed** — five scrolls in a row with no new event IDs *and* the scroll position did not move (avoids stopping while the feed still loads but repeats known events).
+2. **Max date** — an event older than **Stop when older than** appears (optional).
+3. **Scroll limit** — 150 scroll steps (safety cap).
+4. **Stop & save** — you clicked stop in the popup.
+
+Scroll target: prefers `#scrollview`, otherwise the largest scrollable region inside `[role="main"]`, then falls back to other candidates. If one container does not move, the next candidate is tried.
 
 ## Install (unpacked)
 
@@ -37,10 +53,11 @@ For **past events**, set a **max date** before syncing. Pagination stops automat
 
 ## Usage
 
-1. Navigate to `/groups/{id}/events` on Facebook
+1. Navigate to `/groups/{id}` (discussion) or `/groups/{id}/events` on Facebook
 2. Refresh the page if you just installed the extension
-3. Open the popup and export
-4. Upload the downloaded `.ics` in Swing admin (or add it as an iCal source)
+3. Open the popup, choose **Scan from** (auto-matched to the current page when possible)
+4. **Sync & export**
+5. Upload the downloaded `.ics` in Swing admin (or add it as an iCal source)
 
 ## Project layout
 
@@ -49,12 +66,15 @@ tools/scrap/
   manifest.json          MV3 manifest
   popup/                 Export UI
   scripts/
-    content.js           Runs on group events pages
-    background.js        Builds ICS + triggers download
+    content.js           Message routing (list vs feed)
+    background.js        Merge, details, ICS download
+    page-sniffer.js      GraphQL sniffer (MAIN world)
+    page-event-fetch.js  Event page fetch (MAIN world)
   lib/
+    scrape.js            Events list (“Show more”)
+    scrape-feed.js       Discussion feed (scroll)
     json.js              Parse embedded Facebook JSON
-    scrape.js            “Show more” + event extraction
-    ics.js                 iCal builder (Europe/Paris)
+    ics.js               iCal builder (Europe/Paris)
 ```
 
 ## Notes

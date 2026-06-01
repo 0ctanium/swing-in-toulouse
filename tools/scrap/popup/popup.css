@@ -127,6 +127,10 @@ button:disabled {
   gap: 8px;
 }
 
+.stats-grid--sync {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .stats-grid--single {
   grid-template-columns: repeat(2, 1fr);
 }
@@ -164,7 +168,8 @@ button:disabled {
   font-weight: 600;
 }
 
-.mode-hint {
+.mode-hint,
+.source-hint {
   margin: 0 0 8px;
   font-size: 0.75rem;
   color: #9ca3af;

@@ -1,12 +1,15 @@
 const pageStatus = document.getElementById("page-status");
 const storeStatus = document.getElementById("store-status");
+const listModeField = document.getElementById("list-mode-field");
 const pastCutoffField = document.getElementById("past-cutoff-field");
+const pastCutoffHint = document.getElementById("past-cutoff-hint");
 const pastMaxDateInput = document.getElementById("past-max-date");
 const exportButton = document.getElementById("export-btn");
 const stopButton = document.getElementById("stop-btn");
 const progressEl = document.getElementById("progress");
 const resultEl = document.getElementById("result");
 const statsSection = document.getElementById("stats");
+const statScanned = document.getElementById("stat-scanned");
 const statNew = document.getElementById("stat-new");
 const statChanged = document.getElementById("stat-changed");
 const statUnchanged = document.getElementById("stat-unchanged");
@@ -19,6 +22,9 @@ let activeTab = null;
 
 /** @type {string | null} */
 let activeGroupId = null;
+
+/** @type {"events-list" | "feed" | null} */
+let pageKind = null;
 
 /** @type {boolean} */
 let syncInProgress = false;
@@ -49,14 +55,15 @@ function setSyncUi(active) {
  *   new: number;
  *   changed: number;
  *   unchanged: number;
+ *   scannedOnPage?: number;
  *   exportTotal: number;
  *   totalStored?: number;
  *   upcomingCount?: number;
  *   notSeenThisRun: number;
- *   pastMaxDate?: string | null;
  * }} stats
  */
 function showStats(stats) {
+  statScanned.textContent = String(stats.scannedOnPage ?? 0);
   statNew.textContent = String(stats.new);
   statChanged.textContent = String(stats.changed);
   statUnchanged.textContent = String(stats.unchanged);
@@ -81,17 +88,41 @@ function formatStoreStatus(stats) {
   return `${totalStored} events saved (${upcomingCount} upcoming) · last sync ${updatedLabel}`;
 }
 
+function getSelectedSource() {
+  const selected = document.querySelector('input[name="source"]:checked');
+  return selected?.value === "feed" ? "feed" : "events-list";
+}
+
 function getSelectedMode() {
   const selected = document.querySelector('input[name="mode"]:checked');
   return selected?.value === "past" ? "past" : "upcoming";
 }
 
-function isGroupEventsUrl(url) {
-  return /^https:\/\/www\.facebook\.com\/groups\/(\d+)\/events/.test(url ?? "");
+function extractGroupId(url) {
+  return url?.match(/facebook\.com\/groups\/(\d+)/)?.[1] ?? null;
 }
 
-function extractGroupId(url) {
-  return url?.match(/^https:\/\/www\.facebook\.com\/groups\/(\d+)\/events/)?.[1] ?? null;
+/**
+ * @param {string | undefined} url
+ * @returns {"events-list" | "feed" | null}
+ */
+function detectPageKind(url) {
+  const match = url?.match(/facebook\.com\/groups\/(\d+)(\/[^?#]*)?/);
+  if (!match) {
+    return null;
+  }
+
+  const path = match[2] ?? "/";
+
+  if (/\/(members|photos|photo|media|files|about|announcements|reels)(\/|$)/i.test(path)) {
+    return null;
+  }
+
+  if (/\/events(\/|$)/i.test(path)) {
+    return "events-list";
+  }
+
+  return "feed";
 }
 
 function defaultPastMaxDate() {
@@ -103,22 +134,55 @@ function defaultPastMaxDate() {
   return `${year}-${month}-${day}`;
 }
 
-function updatePastCutoffVisibility() {
-  const isPast = getSelectedMode() === "past";
-  pastCutoffField.hidden = !isPast;
-  pastMaxDateInput.required = isPast;
+function updateScanOptionsUi() {
+  const source = getSelectedSource();
+  const isFeed = source === "feed";
+  const isPastList = !isFeed && getSelectedMode() === "past";
 
-  if (isPast && !pastMaxDateInput.value) {
+  listModeField.hidden = isFeed;
+  pastCutoffField.hidden = !(isFeed || isPastList);
+  pastMaxDateInput.required = isPastList;
+
+  if (isFeed) {
+    pastCutoffHint.textContent =
+      "Optional: stop scrolling when events older than this date appear.";
+  } else if (isPastList) {
+    pastCutoffHint.textContent =
+      "Auto-stop when loading past events older than this date.";
+  }
+
+  if ((isFeed || isPastList) && !pastMaxDateInput.value) {
     pastMaxDateInput.value = defaultPastMaxDate();
   }
 }
 
-function getPastMaxDate() {
-  if (getSelectedMode() !== "past") {
-    return null;
+function getScanMaxDate() {
+  const source = getSelectedSource();
+  const isPastList = source === "events-list" && getSelectedMode() === "past";
+
+  if (source === "feed" || isPastList) {
+    return pastMaxDateInput.value || null;
   }
 
-  return pastMaxDateInput.value || null;
+  return null;
+}
+
+function syncSourceWithPage() {
+  if (pageKind === "feed") {
+    const feedInput = document.querySelector('input[name="source"][value="feed"]');
+    if (feedInput) {
+      feedInput.checked = true;
+    }
+  } else if (pageKind === "events-list") {
+    const listInput = document.querySelector(
+      'input[name="source"][value="events-list"]',
+    );
+    if (listInput) {
+      listInput.checked = true;
+    }
+  }
+
+  updateScanOptionsUi();
 }
 
 async function refreshStoreStatus() {
@@ -151,19 +215,28 @@ async function init() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   activeTab = tab ?? null;
   activeGroupId = extractGroupId(tab?.url ?? "");
+  pageKind = detectPageKind(tab?.url);
 
-  ScrapExt.log.info("Popup opened", { tabId: tab?.id, url: tab?.url });
+  ScrapExt.log.info("Popup opened", {
+    tabId: tab?.id,
+    url: tab?.url,
+    pageKind,
+  });
 
-  if (!tab?.id || !isGroupEventsUrl(tab.url)) {
+  if (!tab?.id || !activeGroupId || !pageKind) {
     pageStatus.textContent =
-      "Open a Facebook group events page first (…/groups/ID/events).";
+      "Open a Facebook group discussion or events page (…/groups/ID or …/groups/ID/events).";
     exportButton.disabled = true;
     return;
   }
 
-  pageStatus.textContent = "Ready on the current group events page.";
+  pageStatus.textContent =
+    pageKind === "feed"
+      ? "Ready on the group discussion feed."
+      : "Ready on the group events list.";
+
   exportButton.disabled = false;
-  updatePastCutoffVisibility();
+  syncSourceWithPage();
   await refreshStoreStatus();
 }
 
@@ -174,11 +247,18 @@ async function init() {
  * @param {string | null} pastMaxDate
  * @param {string} [stopNote]
  */
-async function syncAndExport(events, context, mode, pastMaxDate, stopNote = "") {
+async function syncAndExport(
+  events,
+  context,
+  mode,
+  pastMaxDate,
+  stopNote = "",
+  scannedOnPage = events.length,
+) {
   setProgress(
-    events.length > 0
-      ? `Syncing ${events.length} scraped from page…`
-      : "No new events on page — loading saved events…",
+    scannedOnPage > 0
+      ? `Saving ${scannedOnPage} from page to storage…`
+      : "No events on page — refreshing saved events…",
   );
 
   if (!activeTab?.id) {
@@ -215,11 +295,66 @@ async function syncAndExport(events, context, mode, pastMaxDate, stopNote = "") 
   const stoppedNote = syncResult.stats.stoppedEarly
     ? "Stopped early — "
     : stopNote;
+  const scanned =
+    syncResult.stats.scannedOnPage ?? scannedOnPage ?? events.length;
   setResult(
-    `${stoppedNote}Exported ${totalExported} saved events${detailsNote}. Upload the .ics in Swing admin.`,
+    `${stoppedNote}Exported ${totalExported} saved events (${formatSyncSummary(scanned, syncResult.stats)})${detailsNote}. Upload the .ics in Swing admin.`,
     "ok",
   );
   await refreshStoreStatus();
+}
+
+function formatStopReasonLabel(reason, source) {
+  if (reason === "max-date" || reason === "past-max-date") {
+    return "Max date reached";
+  }
+  if (reason === "max-scrolls") {
+    return "Scroll limit reached";
+  }
+  if (reason === "idle" && source === "feed") {
+    return "End of feed";
+  }
+  if (reason === "manual") {
+    return "Stopped manually";
+  }
+  return "Stopped";
+}
+
+function formatStopNote(stopReason, source) {
+  if (!stopReason || (stopReason === "idle" && source !== "feed")) {
+    return "";
+  }
+  const label = formatStopReasonLabel(stopReason, source);
+  if (stopReason === "manual") {
+    return "Stopped early — ";
+  }
+  if (
+    stopReason === "max-date" ||
+    stopReason === "past-max-date" ||
+    stopReason === "max-scrolls" ||
+    (stopReason === "idle" && source === "feed")
+  ) {
+    return `${label} — `;
+  }
+  return "";
+}
+
+function formatScannedProgress(count, newThisScroll) {
+  const base = `${count ?? 0} on page`;
+  if (typeof newThisScroll === "number" && newThisScroll > 0) {
+    return `${base} (+${newThisScroll} new this scroll)`;
+  }
+  return base;
+}
+
+function formatSyncSummary(scannedOnPage, stats) {
+  const parts = [`${scannedOnPage} scanned on page`];
+  parts.push(
+    `${stats.new} new in storage`,
+    `${stats.changed} changed`,
+    `${stats.unchanged} unchanged`,
+  );
+  return parts.join(" · ");
 }
 
 async function exportEvents() {
@@ -227,10 +362,11 @@ async function exportEvents() {
     return;
   }
 
+  const source = getSelectedSource();
   const mode = getSelectedMode();
-  const pastMaxDate = getPastMaxDate();
+  const pastMaxDate = getScanMaxDate();
 
-  if (mode === "past" && !pastMaxDate) {
+  if (source === "events-list" && mode === "past" && !pastMaxDate) {
     setResult("Choose a max date for past events.", "error");
     return;
   }
@@ -238,17 +374,21 @@ async function exportEvents() {
   resultEl.hidden = true;
   hideStats();
   setSyncUi(true);
-  setProgress("Expanding list…");
+  setProgress(
+    source === "feed" ? "Scrolling discussion feed…" : "Expanding list…",
+  );
 
   try {
     ScrapExt.log.info("Starting sync", {
       tabId: activeTab.id,
+      source,
       mode,
       pastMaxDate,
     });
 
     const scrapeResult = await chrome.tabs.sendMessage(activeTab.id, {
       action: "SCRAPE_EVENTS",
+      source,
       mode,
       pastMaxDate,
     });
@@ -257,18 +397,15 @@ async function exportEvents() {
       throw new Error(scrapeResult?.error ?? "Could not scrape this page.");
     }
 
-    const stopNote =
-      scrapeResult.stopReason === "manual"
-        ? "Stopped early — "
-        : scrapeResult.stopReason === "past-max-date"
-          ? "Max date reached — "
-          : "";
+    const stopNote = formatStopNote(scrapeResult.stopReason, source);
+    const scannedOnPage = scrapeResult.events.length;
     await syncAndExport(
       scrapeResult.events,
       scrapeResult.context ?? {},
       mode,
       pastMaxDate,
       stopNote,
+      scannedOnPage,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Export failed.";
@@ -318,13 +455,24 @@ chrome.runtime.onMessage.addListener((message) => {
     return;
   }
 
+  const source = message.source === "feed" ? "feed" : "events-list";
+
+  if (message.phase === "scrolling") {
+    setProgress(
+      `Scrolling feed… ${message.scrolls ?? 0} scrolls · ${formatScannedProgress(message.count, message.newThisScroll)}`,
+    );
+    return;
+  }
+
   if (message.phase === "expanding") {
     setProgress("Clicking “Voir plus”…");
     return;
   }
 
   if (message.phase === "loading") {
-    setProgress(`Loading… (${message.clicks ?? 0} clicks)`);
+    setProgress(
+      `Loading list… (${message.clicks ?? 0} clicks · ${formatScannedProgress(message.count)})`,
+    );
     return;
   }
 
@@ -334,30 +482,34 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 
   if (message.phase === "stopped") {
-    const reason =
-      message.reason === "past-max-date"
-        ? "Max date reached"
-        : "Stopped manually";
-    setProgress(`${reason} · saving… (${message.clicks ?? 0} clicks)`);
+    const reason = formatStopReasonLabel(message.reason, source);
+    const unit = source === "feed" ? message.scrolls : message.clicks;
+    const unitLabel = source === "feed" ? "scrolls" : "clicks";
+    setProgress(
+      `${reason} · ${formatScannedProgress(message.count)} · saving… (${unit ?? 0} ${unitLabel})`,
+    );
     return;
   }
 
   if (message.phase === "done") {
-    const reasonNote =
-      message.stopReason === "past-max-date"
-        ? "Max date reached · "
-        : message.stopReason === "manual"
-          ? "Stopped · "
-          : "";
+    const reasonNote = formatStopNote(message.stopReason, source);
+    const unitLabel = source === "feed" ? "scrolls" : "clicks";
+    const unit = source === "feed" ? message.scrolls : message.clicks;
     setProgress(
-      `${reasonNote}${message.count ?? 0} on page · updating all saved events…`,
+      `${reasonNote}${formatScannedProgress(message.count)} (${unit ?? 0} ${unitLabel}) · saving to storage…`,
     );
   }
 });
 
+for (const input of document.querySelectorAll('input[name="source"]')) {
+  input.addEventListener("change", () => {
+    updateScanOptionsUi();
+  });
+}
+
 for (const input of document.querySelectorAll('input[name="mode"]')) {
   input.addEventListener("change", () => {
-    updatePastCutoffVisibility();
+    updateScanOptionsUi();
   });
 }
 

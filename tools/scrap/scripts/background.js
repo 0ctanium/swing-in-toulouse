@@ -93,6 +93,7 @@ async function ensureContentScriptReady(tabId) {
       "lib/html-parser.js",
       "lib/event-detail.js",
       "lib/scrape.js",
+      "lib/scrape-feed.js",
       "scripts/content.js",
     ],
   });

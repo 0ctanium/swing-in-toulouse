@@ -672,7 +672,12 @@
     mergeCollected();
 
     const clicks = await clickShowMoreUntilDone(
-      onProgress,
+      (progress) => {
+        onProgress?.({
+          ...progress,
+          count: allEvents.length,
+        });
+      },
       mode,
       async () => {
         await waitForMoreEvents(mode, allEvents.length);
@@ -711,6 +716,140 @@
 
     activeScrapeSession = null;
     return { events: allEvents, stopReason };
+  }
+
+  /**
+   * @param {ParentNode} root
+   * @param {{ section?: { label: Element | null; container: Element | null; endLabel: Element | null } | null; defaultIsPast?: boolean }} [options]
+   */
+  function parseEventsFromDomInRoot(root, options = {}) {
+    const section = options.section ?? null;
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    /** @type {Map<string, ScrapFbEvent>} */
+    const byId = new Map();
+    const links = root.querySelectorAll('a[href*="/events/"]');
+
+    for (const link of links) {
+      if (section && !isInsideEventSection(link, section)) {
+        continue;
+      }
+
+      const href = link.href;
+      const match = href.match(/\/events\/(\d+)/);
+      if (!match) {
+        continue;
+      }
+
+      const id = match[1];
+      const card =
+        link.closest('[role="article"]') ??
+        link.closest('[data-pagelet]') ??
+        link.parentElement;
+
+      const title =
+        link.getAttribute("aria-label")?.trim() ||
+        link.textContent?.trim() ||
+        "";
+
+      if (!title || title.length < 2 || /^événement$/i.test(title)) {
+        continue;
+      }
+
+      const dateText = extractDateText(card, title);
+      const parsedStartMs = dateText
+        ? global.ScrapExt.parseEventDateText?.(dateText)
+        : null;
+      const startTimestamp =
+        parsedStartMs !== null && parsedStartMs !== undefined
+          ? Math.floor(parsedStartMs / 1000)
+          : null;
+      const existing = byId.get(id);
+
+      if (existing && existing.name.length >= title.length) {
+        continue;
+      }
+
+      const isPast =
+        options.defaultIsPast ??
+        (startTimestamp !== null ? startTimestamp < nowSec : false);
+
+      byId.set(id, {
+        id,
+        name: title,
+        url: canonicalEventUrl(id),
+        dateText: dateText ?? existing?.dateText ?? null,
+        startTimestamp: existing?.startTimestamp ?? startTimestamp,
+        endTimestamp: existing?.endTimestamp ?? null,
+        isCanceled: existing?.isCanceled ?? false,
+        isPast: existing?.isPast ?? isPast,
+      });
+    }
+
+    return [...byId.values()];
+  }
+
+  /**
+   * @param {string} html
+   */
+  function parseEventsFromAllEmbeddedJson(html) {
+    const blocks = global.ScrapExt.findAllJsonInString(html, "event");
+    /** @type {ScrapFbEvent[]} */
+    const events = [];
+
+    for (const block of blocks) {
+      if (!block?.id || !block?.name || typeof block.name !== "string") {
+        continue;
+      }
+
+      const id = String(block.id);
+      if (!/^\d+$/.test(id)) {
+        continue;
+      }
+
+      const hasSchedule =
+        typeof block.start_timestamp === "number" ||
+        typeof block.day_time_sentence === "string";
+      const hasEventUrl =
+        typeof block.url === "string" && /\/events\//.test(block.url);
+
+      if (!hasSchedule && !hasEventUrl) {
+        continue;
+      }
+
+      events.push(normalizeEventNode(block));
+    }
+
+    return dedupeEvents(events);
+  }
+
+  function collectEventsFromFeed() {
+    const root =
+      document.querySelector('[role="main"]') ??
+      document.querySelector("#scrollview") ??
+      document.body;
+    const html = document.documentElement.innerHTML;
+    const fromDom = parseEventsFromDomInRoot(root, {});
+    const fromJson = parseEventsFromAllEmbeddedJson(html);
+    const fromSniffer = [...sniffedEvents];
+    const merged = dedupeEvents([...fromDom, ...fromJson, ...fromSniffer]);
+
+    global.ScrapExt.log?.info("Collected events from feed", {
+      fromDom: fromDom.length,
+      fromJson: fromJson.length,
+      fromSniffer: fromSniffer.length,
+      merged: merged.length,
+    });
+
+    return merged;
+  }
+
+  function resetSniffedEvents() {
+    sniffedEvents = [];
+  }
+
+  function endScrapeSession() {
+    activeScrapeSession = null;
   }
 
   /**
@@ -768,64 +907,10 @@
    */
   function parseEventsFromDom(mode) {
     const section = findEventSection(mode);
-
-    /** @type {Map<string, ScrapFbEvent>} */
-    const byId = new Map();
-    const links = document.querySelectorAll('a[href*="/events/"]');
-
-    for (const link of links) {
-      if (!isInsideEventSection(link, section)) {
-        continue;
-      }
-
-      const href = link.href;
-      const match = href.match(/\/events\/(\d+)/);
-      if (!match) {
-        continue;
-      }
-
-      const id = match[1];
-      const card =
-        link.closest('[role="article"]') ??
-        link.closest('[data-pagelet]') ??
-        link.parentElement;
-
-      const title =
-        link.getAttribute("aria-label")?.trim() ||
-        link.textContent?.trim() ||
-        "";
-
-      if (!title || title.length < 2) {
-        continue;
-      }
-
-      const dateText = extractDateText(card, title);
-      const parsedStartMs = dateText
-        ? global.ScrapExt.parseEventDateText?.(dateText)
-        : null;
-      const existing = byId.get(id);
-
-      if (existing && existing.name.length >= title.length) {
-        continue;
-      }
-
-      byId.set(id, {
-        id,
-        name: title,
-        url: canonicalEventUrl(id),
-        dateText: dateText ?? existing?.dateText ?? null,
-        startTimestamp:
-          existing?.startTimestamp ??
-          (parsedStartMs !== null && parsedStartMs !== undefined
-            ? Math.floor(parsedStartMs / 1000)
-            : null),
-        endTimestamp: existing?.endTimestamp ?? null,
-        isCanceled: existing?.isCanceled ?? false,
-        isPast: mode === "past",
-      });
-    }
-
-    return [...byId.values()];
+    return parseEventsFromDomInRoot(document, {
+      section,
+      defaultIsPast: mode === "past",
+    });
   }
 
   /**
@@ -901,7 +986,7 @@
    * @returns {{ groupId: string | null; groupName: string | null }}
    */
   function getGroupContext() {
-    const match = window.location.pathname.match(/^\/groups\/(\d+)\/events/);
+    const match = window.location.pathname.match(/^\/groups\/(\d+)/);
     const groupId = match?.[1] ?? null;
 
     const heading =
@@ -919,6 +1004,12 @@
   global.ScrapExt.getGroupContext = getGroupContext;
   global.ScrapExt.installFetchSniffer = installFetchSniffer;
   global.ScrapExt.requestScrapeStop = requestScrapeStop;
+  global.ScrapExt.isScrapeAborted = isScrapeAborted;
+  global.ScrapExt.beginScrapeSession = beginScrapeSession;
+  global.ScrapExt.endScrapeSession = endScrapeSession;
+  global.ScrapExt.resetSniffedEvents = resetSniffedEvents;
+  global.ScrapExt.collectEventsFromFeed = collectEventsFromFeed;
+  global.ScrapExt.dedupeEvents = dedupeEvents;
 })(globalThis);
 
 /**

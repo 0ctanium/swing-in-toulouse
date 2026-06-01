@@ -124,7 +124,7 @@
     }
     store.updatedAt = now;
 
-    if (mode === "past" && pastMaxDate) {
+    if (pastMaxDate) {
       store.pastMaxDate = pastMaxDate;
     }
 
@@ -174,6 +174,7 @@
     return {
       stats: {
         ...buildStoreStats(exportEvents, scrapeStats),
+        scannedOnPage: scrapedEvents.length,
         pastMaxDate: store.pastMaxDate ?? null,
         scrapeMode: mode,
       },
