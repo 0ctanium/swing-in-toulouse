@@ -13,7 +13,11 @@ import {
   useBulkAssignVenues,
   type BulkAssignPayload,
 } from "@/lib/admin/use-venues";
-import { buildVenueAssignments } from "@/lib/venues/assignments";
+import {
+  buildVenueAssignments,
+  isPermanentVenueAlias,
+  togglePermanentVenueAlias,
+} from "@/lib/venues/assignments";
 import type {
   LocationVenueConflict,
   SimilarVenueGroup,
@@ -170,14 +174,13 @@ function SimilarGroupRow({
               venue={venue}
               isPrimary={isPrimary}
               isSource={isSource}
-              permanent={permanentById[venue.id] ?? false}
+              permanent={isPermanentVenueAlias(permanentById, venue.id)}
               disabled={pendingKey !== null}
               onSetPrimary={() => setTargetVenueId(venue.id)}
               onTogglePermanent={() =>
-                setPermanentById((current) => ({
-                  ...current,
-                  [venue.id]: !current[venue.id],
-                }))
+                setPermanentById((current) =>
+                  togglePermanentVenueAlias(current, venue.id),
+                )
               }
             />
           );
@@ -264,14 +267,13 @@ function LocationConflictRow({
                 venue={venue}
                 isPrimary={isPrimary}
                 isSource={isSource}
-                permanent={permanentById[venue.id] ?? false}
+                permanent={isPermanentVenueAlias(permanentById, venue.id)}
                 disabled={pendingKey !== null}
                 onSetPrimary={() => setTargetVenueId(venue.id)}
                 onTogglePermanent={() =>
-                  setPermanentById((current) => ({
-                    ...current,
-                    [venue.id]: !current[venue.id],
-                  }))
+                  setPermanentById((current) =>
+                    togglePermanentVenueAlias(current, venue.id),
+                  )
                 }
               />
             );

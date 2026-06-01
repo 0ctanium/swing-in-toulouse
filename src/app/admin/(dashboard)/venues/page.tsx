@@ -33,7 +33,6 @@ async function AdminVenuesPageContent() {
     similarGroupCount,
     locationConflictCount,
     pendingConfirmationCount,
-    activeQualityIssueCount,
   } = await getAdminVenuesPageData();
 
   return (
@@ -49,7 +48,6 @@ async function AdminVenuesPageContent() {
 
       <VenuesAdminAlerts
         pendingConfirmationCount={pendingConfirmationCount}
-        activeQualityIssueCount={activeQualityIssueCount}
         similarGroupCount={similarGroupCount}
         locationConflictCount={locationConflictCount}
       />

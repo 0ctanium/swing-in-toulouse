@@ -6,13 +6,19 @@ import { toast } from "sonner";
 
 import { GooglePlacesAutocomplete } from "@/components/admin/google-places-autocomplete";
 import { VenueCategorySelect } from "@/components/admin/venue-category-select";
-import { VenueIcalQualityBadge } from "@/components/admin/venue-ical-quality-badge";
+import {
+  splitDuplicateCandidates,
+  VenueDuplicateAlert,
+} from "@/components/admin/venue-duplicate-alert";
 import { Button } from "@/components/ui/button";
-import { useConfirmVenue } from "@/lib/admin/use-venues";
+import { useVenueDuplicateCandidates } from "@/lib/admin/use-venue-duplicates";
+import { useBulkAssignVenues, useConfirmVenue } from "@/lib/admin/use-venues";
 import type { VenueCategory } from "@/db/schema";
 import type { PlaceDetails } from "@/lib/google/places";
+import { useDebouncedValue } from "@/lib/google/use-places";
 import type { AdminVenueRow } from "@/lib/venues/admin-venue-row";
 import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
+import { duplicateSearchFromPlace } from "@/lib/venues/duplicate-candidates";
 
 function initialSearchQuery(venue: AdminVenueRow) {
   if (venue.formattedAddress) {
@@ -61,12 +67,14 @@ export function VenueConfirmRow({
   onSaved,
 }: VenueConfirmRowProps) {
   const confirmVenue = useConfirmVenue();
+  const bulkAssign = useBulkAssignVenues();
   const addressPlaceholder = useMemo(() => initialSearchQuery(venue), [venue]);
   const initialPlace = useMemo(
     () => (mode === "edit" ? venueToPlaceDetails(venue) : null),
     [mode, venue],
   );
   const [venueName, setVenueName] = useState(venue.name);
+  const debouncedVenueName = useDebouncedValue(venueName, 300);
   const [category, setCategory] = useState<VenueCategory | null>(
     venue.category,
   );
@@ -74,7 +82,57 @@ export function VenueConfirmRow({
   const [selectedPlace, setSelectedPlace] = useState<PlaceDetails | null>(
     initialPlace,
   );
-  const pending = confirmVenue.isPending;
+  const pending = confirmVenue.isPending || bulkAssign.isPending;
+
+  const weakDuplicateSearch = useMemo(
+    () => ({
+      name: debouncedVenueName.trim() || venue.name,
+      address: venue.address,
+      city: venue.city,
+      formattedAddress: venue.formattedAddress,
+      googlePlaceId: venue.googlePlaceId,
+      latitude: venue.latitude,
+      longitude: venue.longitude,
+      requireAddressSignal: true,
+      minConfidence: "possible" as const,
+    }),
+    [debouncedVenueName, venue],
+  );
+
+  const strongDuplicateSearch = useMemo(() => {
+    if (!selectedPlace) {
+      return null;
+    }
+
+    return duplicateSearchFromPlace(venue.id, venueName.trim() || venue.name, {
+      placeId: selectedPlace.placeId,
+      formattedAddress: selectedPlace.formattedAddress,
+      address: selectedPlace.address,
+      city: selectedPlace.city,
+      latitude: selectedPlace.latitude,
+      longitude: selectedPlace.longitude,
+    });
+  }, [selectedPlace, venue.id, venue.name, venueName]);
+
+  const weakDuplicates = useVenueDuplicateCandidates(
+    venue.id,
+    mode === "create" ? weakDuplicateSearch : null,
+  );
+  const strongDuplicates = useVenueDuplicateCandidates(
+    venue.id,
+    strongDuplicateSearch,
+  );
+
+  const duplicateCandidates = selectedPlace
+    ? (strongDuplicates.data ?? [])
+    : (weakDuplicates.data ?? []);
+
+  const { strong: strongDuplicateMatches, weak: weakDuplicateMatches } =
+    useMemo(
+      () => splitDuplicateCandidates(duplicateCandidates),
+      [duplicateCandidates],
+    );
+
   const hasNewAddressSelection =
     mode === "edit" &&
     originalPlace != null &&
@@ -84,6 +142,32 @@ export function VenueConfirmRow({
   const googleName = selectedPlace?.name.trim() ?? "";
   const showGoogleNameHint =
     googleName.length > 0 && googleName !== venueName.trim();
+
+  async function setAsAlias(canonicalVenueId: string) {
+    try {
+      const data = await bulkAssign.mutateAsync({
+        payload: {
+          targetVenueId: canonicalVenueId,
+          assignments: [{ sourceVenueId: venue.id, permanent: true }],
+          sourceVenueIds: [venue.id],
+        },
+      });
+
+      const updated = data.updated ?? 0;
+      const aliasesCreated = data.aliasesCreated ?? 0;
+
+      toast.success(
+        updated > 0
+          ? `Alias permanent créé · ${updated} événement${updated === 1 ? "" : "s"} réassigné${updated === 1 ? "" : "s"}`
+          : "Alias permanent créé",
+      );
+      onSaved?.();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Alias impossible.",
+      );
+    }
+  }
 
   async function confirm() {
     const trimmedName = venueName.trim();
@@ -121,8 +205,6 @@ export function VenueConfirmRow({
 
   return (
     <div className="flex flex-col gap-4">
-      <VenueIcalQualityBadge issues={venue.iCalIssues} />
-
       {mode === "create" ? (
         <div className="flex flex-wrap items-start justify-between gap-2">
           <p className="text-muted-foreground text-xs">
@@ -261,6 +343,34 @@ export function VenueConfirmRow({
             {selectedPlace.longitude.toFixed(5)}
           </p>
         </div>
+      ) : null}
+
+      {strongDuplicateMatches.length > 0 ? (
+        <VenueDuplicateAlert
+          title="Un lieu similaire existe déjà"
+          description="Même adresse ou même lieu Google. Vous pouvez créer un alias permanent plutôt que confirmer un doublon."
+          candidates={strongDuplicateMatches}
+          pending={pending}
+          onSetAlias={setAsAlias}
+        />
+      ) : null}
+
+      {weakDuplicateMatches.length > 0 ? (
+        <VenueDuplicateAlert
+          title={
+            selectedPlace
+              ? "Autres correspondances possibles"
+              : "Autres lieux à vérifier"
+          }
+          description={
+            selectedPlace
+              ? "Correspondance moins certaine — vérifiez avant de fusionner."
+              : "Correspondance faible (adresse iCal). Sélectionnez une adresse Google pour affiner."
+          }
+          candidates={weakDuplicateMatches}
+          pending={pending}
+          onSetAlias={setAsAlias}
+        />
       ) : null}
 
       <div className="flex flex-wrap gap-2">

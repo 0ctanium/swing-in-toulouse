@@ -22,7 +22,11 @@ import {
   type BulkAssignPayload,
 } from "@/lib/admin/use-venues";
 import { isVenueAddressConfirmed } from "@/lib/venues/confirmation";
-import { buildVenueAssignments } from "@/lib/venues/assignments";
+import {
+  buildVenueAssignments,
+  isPermanentVenueAlias,
+  togglePermanentVenueAlias,
+} from "@/lib/venues/assignments";
 import type { VenueWithStats } from "@/lib/venues/matching";
 import { cn } from "@/lib/utils";
 
@@ -99,10 +103,9 @@ export function VenueReassignDialog({
   }
 
   function togglePermanent(sourceVenueId: string) {
-    setPermanentBySourceId((current) => ({
-      ...current,
-      [sourceVenueId]: !current[sourceVenueId],
-    }));
+    setPermanentBySourceId((current) =>
+      togglePermanentVenueAlias(current, sourceVenueId),
+    );
   }
 
   async function runBulkAssign(
@@ -260,11 +263,14 @@ export function VenueReassignDialog({
                           <label className="flex items-center gap-2 text-xs">
                             <input
                               type="checkbox"
-                              checked={permanentBySourceId[venue.id] ?? false}
+                              checked={isPermanentVenueAlias(
+                                permanentBySourceId,
+                                venue.id,
+                              )}
                               disabled={pendingKey !== null}
                               onChange={() => togglePermanent(venue.id)}
                             />
-                            Permanent
+                            Alias permanent
                           </label>
                         ) : (
                           <span className="text-muted-foreground text-xs">

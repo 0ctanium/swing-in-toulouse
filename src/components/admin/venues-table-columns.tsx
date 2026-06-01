@@ -5,7 +5,6 @@ import { Eye, MapPin, Pencil } from "lucide-react";
 import Link from "next/link";
 
 import { VenueAliasBadge } from "@/components/admin/venue-alias-badge";
-import { VenueIcalQualityBadge } from "@/components/admin/venue-ical-quality-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatVenueCategory } from "@/lib/venues/categories";
@@ -51,9 +50,6 @@ export function createVenuesTableColumns({
             <span className="text-muted-foreground text-xs">
               /lieu/{venue.slug}
             </span>
-            {venue.iCalIssues.length > 0 ? (
-              <VenueIcalQualityBadge issues={venue.iCalIssues} />
-            ) : null}
           </div>
         );
       },

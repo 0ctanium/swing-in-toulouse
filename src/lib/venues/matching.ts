@@ -16,19 +16,20 @@ import {
   effectiveVenueIdForEvent,
   loadMasterVenueOverrides,
 } from "@/lib/venues/effective-venue";
-import { findVenuesNeedingReview, getVenueIcalIssues } from "@/lib/venues/quality";
 import { enrichAdminVenueRow } from "@/lib/venues/admin-venue-row";
 import {
   buildVenueConfirmPageData,
   isVenueAddressConfirmed,
   type VenueConfirmationEntry,
 } from "@/lib/venues/confirmation";
+import { venuesMatchForGrouping } from "@/lib/venues/duplicate-candidates";
 import {
   summarizeDebug,
   venueMatchingLog,
   type VenueAssignmentDebug,
   type VenueAssignmentEventTrace,
 } from "@/lib/venues/matching-debug";
+import { namesSimilar, normalizeLabel } from "@/lib/venues/normalize";
 
 export class VenueMatchingError extends Error {
   constructor(message: string) {
@@ -94,32 +95,8 @@ export type BulkVenueAssignResult = {
   debug?: VenueAssignmentDebug;
 };
 
-function normalizeLabel(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
 function locationNameKey(locationRaw: string) {
   return normalizeLabel(locationRaw.split(",")[0]?.trim() || locationRaw);
-}
-
-function namesSimilar(a: string, b: string) {
-  const left = normalizeLabel(a);
-  const right = normalizeLabel(b);
-
-  if (!left || !right) {
-    return false;
-  }
-
-  if (left === right) {
-    return true;
-  }
-
-  return left.includes(right) || right.includes(left);
 }
 
 export async function listVenuesWithStats(): Promise<VenueWithStats[]> {
@@ -182,43 +159,80 @@ export async function listVenuesWithStats(): Promise<VenueWithStats[]> {
 }
 
 export function groupSimilarVenues(venueList: VenueWithStats[]): SimilarVenueGroup[] {
-  const assigned = new Set<string>();
-  const groups: SimilarVenueGroup[] = [];
+  const active = venueList.filter((venue) => !venue.canonicalVenueId);
 
-  for (const venue of venueList) {
-    if (assigned.has(venue.id) || venue.canonicalVenueId) {
-      continue;
-    }
-
-    const similar = venueList.filter(
-      (candidate) =>
-        candidate.id !== venue.id &&
-        !candidate.canonicalVenueId &&
-        !assigned.has(candidate.id) &&
-        namesSimilar(candidate.name, venue.name),
-    );
-
-    if (similar.length === 0) {
-      continue;
-    }
-
-    const groupVenues = [venue, ...similar];
-    groupVenues.forEach((item) => assigned.add(item.id));
-
-    groups.push({
-      key: normalizeLabel(venue.name),
-      locationKeys: [
-        ...new Set(groupVenues.map((item) => normalizeLabel(item.name))),
-      ],
-      venues: groupVenues.sort((a, b) => b.eventCount - a.eventCount),
-    });
+  if (active.length < 2) {
+    return [];
   }
 
-  return groups.sort(
-    (a, b) =>
-      b.venues.reduce((sum, item) => sum + item.eventCount, 0) -
-      a.venues.reduce((sum, item) => sum + item.eventCount, 0),
-  );
+  const parent = new Map<string, string>();
+
+  function find(id: string): string {
+    const current = parent.get(id) ?? id;
+    if (current === id) {
+      return id;
+    }
+
+    const root = find(current);
+    parent.set(id, root);
+    return root;
+  }
+
+  function union(aId: string, bId: string) {
+    const rootA = find(aId);
+    const rootB = find(bId);
+    if (rootA !== rootB) {
+      parent.set(rootB, rootA);
+    }
+  }
+
+  for (const venue of active) {
+    parent.set(venue.id, venue.id);
+  }
+
+  for (let index = 0; index < active.length; index += 1) {
+    for (let other = index + 1; other < active.length; other += 1) {
+      if (venuesMatchForGrouping(active[index]!, active[other]!)) {
+        union(active[index]!.id, active[other]!.id);
+      }
+    }
+  }
+
+  const grouped = new Map<string, VenueWithStats[]>();
+
+  for (const venue of active) {
+    const root = find(venue.id);
+    const bucket = grouped.get(root) ?? [];
+    bucket.push(venue);
+    grouped.set(root, bucket);
+  }
+
+  return [...grouped.values()]
+    .filter((group) => group.length > 1)
+    .map((groupVenues) => {
+      const sorted = [...groupVenues].sort(
+        (a, b) => b.eventCount - a.eventCount,
+      );
+      const primary = sorted[0]!;
+
+      return {
+        key: normalizeLabel(primary.name),
+        locationKeys: [
+          ...new Set(
+            sorted.flatMap((item) => [
+              normalizeLabel(item.name),
+              normalizeLabel(item.formattedAddress ?? item.address ?? ""),
+            ]),
+          ),
+        ].filter((key) => key.length > 0),
+        venues: sorted,
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.venues.reduce((sum, item) => sum + item.eventCount, 0) -
+        a.venues.reduce((sum, item) => sum + item.eventCount, 0),
+    );
 }
 
 export async function findLocationVenueConflicts(): Promise<LocationVenueConflict[]> {
@@ -322,7 +336,7 @@ function resolveSourceVenueIds(filter: BulkVenueAssignFilter) {
 function permanentSourceVenueIds(filter: BulkVenueAssignFilter) {
   if (filter.assignments?.length) {
     return filter.assignments
-      .filter((assignment) => assignment.permanent)
+      .filter((assignment) => assignment.permanent !== false)
       .map((assignment) => assignment.sourceVenueId);
   }
 
@@ -630,13 +644,11 @@ export async function getVenueMatchingOverview() {
   const similarGroups = groupSimilarVenues(
     venueList.filter((venue) => venue.eventCount > 0 && !venue.canonicalVenueId),
   );
-  const venuesNeedingReview = findVenuesNeedingReview(venueList);
   const confirmationEntries: VenueConfirmationEntry[] = venueList.map(
     (venue) => ({
       ...venue,
       needsConfirmation:
         venue.eventCount > 0 && !isVenueAddressConfirmed(venue),
-      iCalIssues: getVenueIcalIssues(venue),
     }),
   );
   const pendingConfirmationCount = confirmationEntries.filter(
@@ -657,7 +669,6 @@ export async function getVenueMatchingOverview() {
       })),
     })),
     locationConflictCount: locationConflicts.length,
-    venuesNeedingReviewCount: venuesNeedingReview.length,
     pendingConfirmationCount,
   });
 
@@ -667,9 +678,6 @@ export async function getVenueMatchingOverview() {
     locationConflicts,
     venueRedirects,
     pendingConfirmationCount,
-    activeQualityIssueCount: venuesNeedingReview.filter(
-      (venue) => venue.eventCount > 0,
-    ).length,
   };
 }
 
@@ -688,7 +696,6 @@ export async function getAdminVenuesPageData() {
       overview.similarGroups.length > 0 ||
       overview.locationConflicts.length > 0,
     pendingConfirmationCount: overview.pendingConfirmationCount,
-    activeQualityIssueCount: overview.activeQualityIssueCount,
   };
 }
 
@@ -707,7 +714,6 @@ export async function getVenueConfirmationOverview() {
   const entries: VenueConfirmationEntry[] = venueList.map((venue) => ({
     ...venue,
     needsConfirmation: venue.eventCount > 0 && !isVenueAddressConfirmed(venue),
-    iCalIssues: getVenueIcalIssues(venue),
   }));
 
   return buildVenueConfirmPageData(entries);

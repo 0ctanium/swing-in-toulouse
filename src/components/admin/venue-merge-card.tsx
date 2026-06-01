@@ -110,7 +110,7 @@ export function VenueMergeCard({
               disabled={disabled}
               onChange={onTogglePermanent}
             />
-            Toujours rediriger (alias permanent)
+            Alias permanent (décocher pour ne réassigner que les événements)
           </label>
         ) : null}
       </div>

@@ -1,7 +1,5 @@
 import type { Venue } from "@/db/schema";
-import type { VenueQualityIssue } from "@/lib/venues/parse-location";
 import type { VenueWithStats } from "@/lib/venues/matching";
-import { countActiveVenuesWithIcalIssues } from "@/lib/venues/quality";
 
 export type VenueConfirmationEntry = VenueWithStats & {
   latitude: number | null;
@@ -9,7 +7,6 @@ export type VenueConfirmationEntry = VenueWithStats & {
   formattedAddress: string | null;
   addressConfirmedAt: Date | null;
   needsConfirmation: boolean;
-  iCalIssues: VenueQualityIssue[];
 };
 
 export function isVenueAddressConfirmed(
@@ -57,7 +54,6 @@ export type VenueConfirmPageData = {
   pending: VenueConfirmationEntry[];
   confirmed: VenueConfirmationEntry[];
   inactive: VenueConfirmationEntry[];
-  activeQualityIssueCount: number;
   pendingCount: number;
 };
 
@@ -70,7 +66,6 @@ export function buildVenueConfirmPageData(
     pending,
     confirmed,
     inactive,
-    activeQualityIssueCount: countActiveVenuesWithIcalIssues(venues),
     pendingCount: pending.length,
   };
 }
