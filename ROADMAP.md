@@ -7,7 +7,7 @@
 - [x] Detect similar venues by comparing similar addresses (and not only name)
 - [x] Dismiss merge suggestions for distinct venues (pair dismissals on merge page)
 - [ ] Allow to automatically attribute org when and event has the same venue has the org address. Or at least suggest it in the event confirmation
-- [ ] Update the scrapper to find events from group discussions.
+- [X] Update the scrapper to find events from group discussions.
 - [ ] Allow to hide event in the override form. If already possible, improve UI for it
 - [ ] Fix OG images text overflow
 - [ ] Change popover cards to have all links redirect to the matching entity card rather than the meta line to prevent users going on the venue from the event card, even if he clicked on the venue link.
@@ -95,5 +95,6 @@
 - [x] Navbar links to community and schools sections on the homepage
 - [x] Multi-variant homepage heroes with PostHog A/B testing (server-evaluated flags)
 - [x] SEO hub pages, breadcrumbs, and structured data
+- [x] Public danse SEO pages (`/danse`) with admin content, stylized hero titles, and event listings
 - [x] Dynamic Open Graph images for events, organizers, and venues
 - [x] Public pages for organizers (`/organisateur/[slug]`) and venues (`/lieu/[slug]`)
