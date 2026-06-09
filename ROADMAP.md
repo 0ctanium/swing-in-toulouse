@@ -12,8 +12,6 @@
 - [ ] Fix OG images text overflow
 - [ ] Change popover cards to have all links redirect to the matching entity card rather than the meta line to prevent users going on the venue from the event card, even if he clicked on the venue link.
 - [ ] Investigate why for TRAC, related events are not shown.
-- [ ] Generate SEO pages for each "danse tag"
-    The danse tag will have the ability to add a description now and SEO elements for some hero presenting the dance. And after, showing events for said danse.
 
 ## Completed
 
@@ -97,5 +95,6 @@
 - [x] Navbar links to community and schools sections on the homepage
 - [x] Multi-variant homepage heroes with PostHog A/B testing (server-evaluated flags)
 - [x] SEO hub pages, breadcrumbs, and structured data
+- [x] Public danse SEO pages (`/danse`) with admin content, stylized hero titles, and event listings
 - [x] Dynamic Open Graph images for events, organizers, and venues
 - [x] Public pages for organizers (`/organisateur/[slug]`) and venues (`/lieu/[slug]`)
