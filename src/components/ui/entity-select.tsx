@@ -49,7 +49,7 @@ export function EntitySelect({
   options,
   placeholder = "Choisir…",
   allowEmpty = false,
-  emptyLabel = "— Aucun —",
+  emptyLabel = "- Aucun -",
   disabled = false,
   triggerClassName,
   contentClassName,

@@ -11,7 +11,7 @@ export type CommunityResourceCategory = {
   links: CommunityLink[];
 };
 
-/** Groupes WhatsApp par style — URLs modifiables ici. */
+/** Groupes WhatsApp par style - URLs modifiables ici. */
 export const whatsappGroups: CommunityLink[] = [
   {
     id: "whatsapp-lindy",
@@ -39,7 +39,7 @@ export const whatsappGroups: CommunityLink[] = [
   },
 ];
 
-/** Groupes Facebook — libellés à ajuster si besoin. */
+/** Groupes Facebook - libellés à ajuster si besoin. */
 export const facebookGroups: CommunityLink[] = [
   {
     id: "facebook-lindy-hop-and-swing-toulouse",

@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 
 import { EventList } from "@/components/events/event-list";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
-import { breadcrumbJsonLd, itemListJsonLd, JsonLd } from "@/components/seo/json-ld";
+import {
+  breadcrumbJsonLd,
+  itemListJsonLd,
+  JsonLd,
+} from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
 import {
   buildArchiveMonthPath,
@@ -46,9 +50,9 @@ export async function generateMetadata({
   return publicMetadata({
     title:
       page > 1
-        ? `Événements de ${monthLabel} — page ${page}`
+        ? `Événements de ${monthLabel} - page ${page}`
         : `Événements de ${monthLabel}`,
-    description: `Archive des événements swing à Toulouse — ${monthLabel}.`,
+    description: `Archive des événements swing à Toulouse - ${monthLabel}.`,
     path,
     pagination: {
       ...(page > 1 && {
@@ -99,31 +103,31 @@ export default async function EventArchivePage({
           <h1 className="font-heading text-3xl font-semibold capitalize tracking-tight">
             {monthLabel}
           </h1>
-        <p className="text-muted-foreground mt-2">
-          {pagination.totalItems} événement
-          {pagination.totalItems > 1 ? "s" : ""} archivé
-          {pagination.totalItems > 1 ? "s" : ""}.
-        </p>
-      </div>
+          <p className="text-muted-foreground mt-2">
+            {pagination.totalItems} événement
+            {pagination.totalItems > 1 ? "s" : ""} archivé
+            {pagination.totalItems > 1 ? "s" : ""}.
+          </p>
+        </div>
 
-      <EventList
-        events={pagination.items}
-        emptyMessage="Aucun événement archivé pour ce mois."
-      />
+        <EventList
+          events={pagination.items}
+          emptyMessage="Aucun événement archivé pour ce mois."
+        />
 
-      <PaginationNav
-        page={pagination.page}
-        totalPages={pagination.totalPages}
-        previousHref={
-          pagination.page > 1
-            ? buildPaginatedPath(basePath, pagination.page - 1)
-            : undefined
-        }
-        nextHref={
-          pagination.page < pagination.totalPages
-            ? buildPaginatedPath(basePath, pagination.page + 1)
-            : undefined
-        }
+        <PaginationNav
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          previousHref={
+            pagination.page > 1
+              ? buildPaginatedPath(basePath, pagination.page - 1)
+              : undefined
+          }
+          nextHref={
+            pagination.page < pagination.totalPages
+              ? buildPaginatedPath(basePath, pagination.page + 1)
+              : undefined
+          }
         />
       </div>
     </>

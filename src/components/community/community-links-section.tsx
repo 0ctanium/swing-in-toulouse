@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { ArrowUpRight, Globe } from "lucide-react";
 
-import { FacebookIcon, WhatsappIcon } from "@/components/community/community-icons";
+import {
+  FacebookIcon,
+  WhatsappIcon,
+} from "@/components/community/community-icons";
 import {
   externalResourceCategories,
   facebookGroups,
@@ -111,10 +114,7 @@ function WhatsappTree({ links }: { links: CommunityLink[] }) {
                 aria-hidden
               />
               {!isLast ? (
-                <span
-                  className="bg-border mt-1 w-px flex-1"
-                  aria-hidden
-                />
+                <span className="bg-border mt-1 w-px flex-1" aria-hidden />
               ) : null}
             </div>
             <div
@@ -231,7 +231,7 @@ export function CommunityLinksSection() {
       </div>
 
       <p className="text-muted-foreground text-center text-xs">
-        Liens externes — vous quittez Swing In Toulouse.
+        Liens externes, vous quittez Swing In Toulouse.
       </p>
     </section>
   );

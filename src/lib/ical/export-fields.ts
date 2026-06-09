@@ -7,7 +7,11 @@ import { getVenueDisplayAddress } from "@/lib/venues/display";
 import { isPreciseVenueLocation } from "@/lib/venues/location-kind";
 import { siteConfig } from "@/lib/site";
 
-import type { IcalStoredData, NormalizedEvent, NormalizedOrganizer } from "./types";
+import type {
+  IcalStoredData,
+  NormalizedEvent,
+  NormalizedOrganizer,
+} from "./types";
 
 export type IcalExportGeo = {
   lat: number;
@@ -61,7 +65,7 @@ export function resolveIcalExportLocation(
       const name = venue.name.trim();
 
       if (name && !address.toLowerCase().includes(name.toLowerCase())) {
-        return `${name} — ${address}`;
+        return `${name} - ${address}`;
       }
 
       return address;
@@ -129,7 +133,9 @@ export function resolveIcalExportOrganizer(
   return undefined;
 }
 
-export function resolveIcalExportUrl(event: Pick<EventMaster, "url" | "sourceUrl">) {
+export function resolveIcalExportUrl(
+  event: Pick<EventMaster, "url" | "sourceUrl">,
+) {
   return event.url?.trim() || event.sourceUrl?.trim() || undefined;
 }
 
@@ -164,7 +170,8 @@ export function buildNormalizedEvent(
   const venue = event.venue;
   const location = resolveIcalExportLocation(venue, event.locationRaw);
   const geo = resolveIcalExportGeo(venue, event.icalData);
-  const includeRecurrenceRule = options?.includeRecurrenceRule ?? !options?.recurrenceId;
+  const includeRecurrenceRule =
+    options?.includeRecurrenceRule ?? !options?.recurrenceId;
 
   return {
     uid: event.uid,
@@ -174,7 +181,11 @@ export function buildNormalizedEvent(
     endAt: event.endAt ?? undefined,
     isAllDay: event.isAllDay,
     location,
-    structuredLocation: resolveIcalStructuredLocation(venue, event.locationRaw, geo),
+    structuredLocation: resolveIcalStructuredLocation(
+      venue,
+      event.locationRaw,
+      geo,
+    ),
     geo,
     url: resolveIcalExportUrl(event),
     sourceUrl: event.sourceUrl ?? undefined,

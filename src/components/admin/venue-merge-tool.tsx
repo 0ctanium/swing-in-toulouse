@@ -40,10 +40,7 @@ export function VenueMergeTool({
   const dismissMergeGroup = useDismissVenueMergeGroup();
   const [pendingKey, setPendingKey] = useState<string | null>(null);
 
-  async function runBulkAssign(
-    payload: BulkAssignPayload,
-    pendingId: string,
-  ) {
+  async function runBulkAssign(payload: BulkAssignPayload, pendingId: string) {
     setPendingKey(pendingId);
 
     try {
@@ -116,7 +113,7 @@ export function VenueMergeTool({
           <CardContent className="flex flex-col gap-4">
             <p className="text-muted-foreground text-sm">
               Ces lieux semblent identiques. Définissez le principal sur une
-              carte — les autres seront fusionnés vers lui.
+              carte - les autres seront fusionnés vers lui.
             </p>
             {similarGroups.map((group) => (
               <SimilarGroupRow
@@ -148,9 +145,9 @@ export function VenueMergeTool({
               Typiquement : variantes de nom à la sync qui ont créé plusieurs
               fiches principales pour le même libellé. Les alias déjà en place
               sont ignorés (leurs événements sont rattachés au lieu principal).
-              Choisissez le principal : réassignation des événements encore
-              liés à une autre fiche, avec alias permanent par défaut. Complète
-              « Lieux similaires », qui compare les fiches entre elles.
+              Choisissez le principal : réassignation des événements encore liés
+              à une autre fiche, avec alias permanent par défaut. Complète «
+              Lieux similaires », qui compare les fiches entre elles.
             </p>
             {locationConflicts.map((conflict) => (
               <LocationConflictRow

@@ -8,19 +8,13 @@ import {
   filterMastersForExport,
   hasActiveAgendaFilters,
 } from "@/lib/events/agenda-filters";
-import {
-  getEventsForExport,
-  resolveEventBySlug,
-} from "@/lib/events/queries";
+import { getEventsForExport, resolveEventBySlug } from "@/lib/events/queries";
 import {
   getDefaultFromDate,
   isMasterRelevantForExport,
 } from "@/lib/ical/recurrence";
 import { buildNormalizedEventsForExport } from "@/lib/ical/export-events";
-import {
-  hasActiveIcalPayload,
-  type IcalPayload,
-} from "@/lib/ical/payload";
+import { hasActiveIcalPayload, type IcalPayload } from "@/lib/ical/payload";
 import { serializeCalendar } from "@/lib/ical/serializer";
 import { loadOverridesForEvents } from "@/lib/events/overrides";
 import { loadVenueCanonicalMap } from "@/lib/venues/canonical";
@@ -156,7 +150,7 @@ async function buildFeedMeta(filters: IcalPayload, events: EventMaster[]) {
   const summary = parts.join(" · ");
 
   return {
-    name: `${siteConfig.name} — ${summary}`,
+    name: `${siteConfig.name} - ${summary}`,
     description: `Agenda swing filtré (${summary})`,
     filename: "swing-toulouse-filtre.ics",
   };
@@ -164,7 +158,9 @@ async function buildFeedMeta(filters: IcalPayload, events: EventMaster[]) {
 
 export async function buildIcalFeedResponse(filters: IcalPayload) {
   const events = await getFilteredEventsForExport(filters);
-  const overrides = await loadOverridesForEvents(events.map((event) => event.id));
+  const overrides = await loadOverridesForEvents(
+    events.map((event) => event.id),
+  );
   const normalized = await buildNormalizedEventsForExport(events, overrides);
   const meta = await buildFeedMeta(filters, events);
 

@@ -42,7 +42,7 @@ function formatLastSyncDisplay(
 ): AdminDashboardLastSyncDisplay {
   if (!lastSync) {
     return {
-      value: "—",
+      value: "-",
       detail: "Aucune synchronisation enregistrée",
       variant: "muted",
     };
@@ -85,7 +85,8 @@ function formatLastSyncDisplay(
 async function getVenuePendingConfirmationCount() {
   const venueList = await listVenuesWithStats();
 
-  return venueList.filter((venue) => venueNeedsAddressConfirmation(venue)).length;
+  return venueList.filter((venue) => venueNeedsAddressConfirmation(venue))
+    .length;
 }
 
 async function getSourceCounts() {
@@ -144,9 +145,7 @@ async function getRecentFailedSyncCount() {
   const [row] = await db
     .select({ value: count() })
     .from(syncLogs)
-    .where(
-      and(gte(syncLogs.createdAt, since), ne(syncLogs.status, "success")),
-    );
+    .where(and(gte(syncLogs.createdAt, since), ne(syncLogs.status, "success")));
 
   return Number(row?.value ?? 0);
 }

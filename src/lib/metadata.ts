@@ -73,7 +73,7 @@ export function adminMetadata({
     title,
     description:
       description ??
-      `Administration de ${siteConfig.name} — gestion des événements, lieux et sources.`,
+      `Administration de ${siteConfig.name} - gestion des événements, lieux et sources.`,
     robots: adminRobots,
   };
 }

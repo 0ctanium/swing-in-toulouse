@@ -15,7 +15,9 @@ function SchoolRow({ organizer }: { organizer: OrganizerListItem }) {
   return (
     <li>
       <OrganizationPreviewPopover organizer={organizer}>
-        <span className="min-w-0 flex-1 text-sm font-medium">{organizer.name}</span>
+        <span className="min-w-0 flex-1 text-sm font-medium">
+          {organizer.name}
+        </span>
         <Info className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
       </OrganizationPreviewPopover>
     </li>
@@ -59,7 +61,7 @@ export function OrganizationsByDanceGrid({
           Écoles par discipline
         </h2>
         <p className="text-muted-foreground mt-2 text-sm">
-          Écoles toulousaines par style de danse — Lindy Hop, Blues, Balboa,
+          Écoles toulousaines par style de danse : Lindy Hop, Blues, Balboa,
           West Coast Swing et rock & boogie.
         </p>
         <div

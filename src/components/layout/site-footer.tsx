@@ -10,7 +10,7 @@ export function SiteFooter() {
     <footer className="mt-auto border-t">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground">
         <p>
-          {siteConfig.name} — {siteConfig.description}
+          {siteConfig.name} - {siteConfig.description}
         </p>
         <p>
           Abonnez-vous au calendrier :{" "}

@@ -37,7 +37,7 @@ export function VenueSelect({
   value,
   onChange,
   placeholder = "Choisir un lieu…",
-  emptyLabel = "— Aucun —",
+  emptyLabel = "- Aucun -",
   disabled = false,
   excludeIds = [],
   allowEmpty = true,

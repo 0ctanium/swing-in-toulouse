@@ -39,7 +39,7 @@ export async function generateMetadata({
   return publicMetadata({
     title: venue.name,
     description: displayAddress
-      ? `Événements swing à ${venue.name} — ${displayAddress}.`
+      ? `Événements swing à ${venue.name} - ${displayAddress}.`
       : `Événements swing à ${venue.name}, ${venue.city}.`,
     path: `/lieu/${canonicalSlug}`,
   });

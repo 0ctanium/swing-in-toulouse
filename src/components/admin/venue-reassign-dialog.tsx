@@ -182,8 +182,8 @@ export function VenueReassignDialog({
         <DialogHeader>
           <DialogTitle>Réassignation manuelle</DialogTitle>
           <DialogDescription>
-            Cochez les lieux à fusionner, définissez le principal, puis appliquez
-            la correction sur les événements concernés.
+            Cochez les lieux à fusionner, définissez le principal, puis
+            appliquez la correction sur les événements concernés.
           </DialogDescription>
         </DialogHeader>
 
@@ -274,7 +274,7 @@ export function VenueReassignDialog({
                           </label>
                         ) : (
                           <span className="text-muted-foreground text-xs">
-                            —
+                            -
                           </span>
                         )}
                       </td>

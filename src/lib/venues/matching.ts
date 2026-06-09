@@ -163,7 +163,9 @@ export async function listVenuesWithStats(): Promise<VenueWithStats[]> {
     }
   }
 
-  const venueNameById = new Map(venueRows.map((venue) => [venue.id, venue.name]));
+  const venueNameById = new Map(
+    venueRows.map((venue) => [venue.id, venue.name]),
+  );
 
   return venueRows.map((venue) => ({
     id: venue.id,
@@ -206,7 +208,7 @@ function buildSimilarVenuePairMatches(
         nameB: right.name,
         reasons: explanation.reasons,
         distanceMeters: explanation.distanceMeters,
-        reasonLabel: `${left.name} ↔ ${right.name} — ${formatVenuePairMatchReasons(explanation)}`,
+        reasonLabel: `${left.name} ↔ ${right.name} - ${formatVenuePairMatchReasons(explanation)}`,
       });
     }
   }
@@ -303,7 +305,9 @@ export async function groupSimilarVenues(
     );
 }
 
-export async function findLocationVenueConflicts(): Promise<LocationVenueConflict[]> {
+export async function findLocationVenueConflicts(): Promise<
+  LocationVenueConflict[]
+> {
   const rows = await db
     .select({
       locationRaw: events.locationRaw,
@@ -311,9 +315,7 @@ export async function findLocationVenueConflicts(): Promise<LocationVenueConflic
       count: sql<number>`count(*)::int`,
     })
     .from(events)
-    .where(
-      and(isNotNull(events.locationRaw), isNull(events.canonicalEventId)),
-    )
+    .where(and(isNotNull(events.locationRaw), isNull(events.canonicalEventId)))
     .groupBy(events.locationRaw, events.venueId);
 
   const canonicalMap = await loadVenueCanonicalMap();
@@ -489,8 +491,8 @@ export async function findEventsForVenueAssignment(
 
       const matchesSourceVenue = Boolean(
         sourceVenueIds?.length &&
-          effective &&
-          sourceVenueIds.includes(effective),
+        effective &&
+        sourceVenueIds.includes(effective),
       );
 
       const matchesLocation =
@@ -537,7 +539,9 @@ export async function findEventsForVenueAssignment(
         excludedAlreadyAtTarget += 1;
 
         if (filter.debug) {
-          const existing = sampleTraces.find((trace) => trace.eventId === row.id);
+          const existing = sampleTraces.find(
+            (trace) => trace.eventId === row.id,
+          );
           if (existing) {
             existing.included = false;
             existing.excludedReason = "already_at_target";
@@ -625,7 +629,11 @@ export async function bulkAssignVenue(
   );
 
   venueMatchingLog("bulkAssignVenue start", {
-    target: { id: targetVenue.id, name: targetVenue.name, slug: targetVenue.slug },
+    target: {
+      id: targetVenue.id,
+      name: targetVenue.name,
+      slug: targetVenue.slug,
+    },
     sourceVenueIds,
     permanentSourceIds,
     locationKey: filter.locationKey,
@@ -674,13 +682,19 @@ export async function bulkAssignVenue(
       patch: { venueId: filter.targetVenueId },
     });
     updated += 1;
-    venueMatchingLog("override upserted", { eventId, targetVenueId: filter.targetVenueId });
+    venueMatchingLog("override upserted", {
+      eventId,
+      targetVenueId: filter.targetVenueId,
+    });
   }
 
   let aliasesCreated = 0;
   if (permanentSourceIds.length > 0) {
     try {
-      await applyPermanentVenueAliases(filter.targetVenueId, permanentSourceIds);
+      await applyPermanentVenueAliases(
+        filter.targetVenueId,
+        permanentSourceIds,
+      );
       aliasesCreated = permanentSourceIds.length;
     } catch (error) {
       if (error instanceof VenueCanonicalError) {
@@ -726,7 +740,9 @@ export async function getVenueMatchingOverview() {
   }));
 
   const similarGroups = await groupSimilarVenues(
-    venueList.filter((venue) => venue.eventCount > 0 && !venue.canonicalVenueId),
+    venueList.filter(
+      (venue) => venue.eventCount > 0 && !venue.canonicalVenueId,
+    ),
   );
   const confirmationEntries: VenueConfirmationEntry[] = venueList.map(
     (venue) => ({

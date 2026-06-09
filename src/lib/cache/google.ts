@@ -1,9 +1,9 @@
 import { cacheLife } from "next/cache";
 
-/** ~30 days — Google Places / Static Maps are costly; traffic must not drive API usage. */
+/** ~30 days - Google Places / Static Maps are costly; traffic must not drive API usage. */
 export const GOOGLE_MAPS_CACHE_SECONDS = 60 * 60 * 24 * 30;
 
-/** ~90 days — hard expiration for cached Google payloads. */
+/** ~90 days - hard expiration for cached Google payloads. */
 export const GOOGLE_MAPS_CACHE_EXPIRE_SECONDS = 60 * 60 * 24 * 90;
 
 /**

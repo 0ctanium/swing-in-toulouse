@@ -52,7 +52,7 @@ function mapAttributions(
   }));
 }
 
-/** Uncached Places API fetch — use {@link getPlaceDisplayData} in application code. */
+/** Uncached Places API fetch - use {@link getPlaceDisplayData} in application code. */
 export async function fetchPlaceDisplayDataUncached(
   placeId: string,
 ): Promise<PlaceDisplayData | null> {
@@ -62,7 +62,9 @@ export async function fetchPlaceDisplayDataUncached(
 
   assertGoogleConfigured();
 
-  const resourceName = placeId.startsWith("places/") ? placeId : `places/${placeId}`;
+  const resourceName = placeId.startsWith("places/")
+    ? placeId
+    : `places/${placeId}`;
   const response = await fetch(
     `https://places.googleapis.com/v1/${resourceName}?languageCode=fr`,
     {

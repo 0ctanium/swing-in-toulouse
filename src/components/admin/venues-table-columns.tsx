@@ -78,7 +78,7 @@ export function createVenuesTableColumns({
         return label ? (
           <Badge variant="secondary">{label}</Badge>
         ) : (
-          <span className="text-muted-foreground text-sm">—</span>
+          <span className="text-muted-foreground text-sm">-</span>
         );
       },
     },
@@ -151,7 +151,8 @@ export function createVenuesTableColumns({
               <Button
                 type="button"
                 variant={
-                  venue.needsConfirmation || !isPreciseVenueLocation(venue.locationKind)
+                  venue.needsConfirmation ||
+                  !isPreciseVenueLocation(venue.locationKind)
                     ? "outline"
                     : "ghost"
                 }

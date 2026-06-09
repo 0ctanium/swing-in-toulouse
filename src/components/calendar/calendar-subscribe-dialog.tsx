@@ -8,6 +8,7 @@ import {
 } from "@/lib/calendar-subscribe-handle";
 import type { IcalPayload } from "@/lib/ical/payload";
 import { DialogTrigger } from "../ui/dialog";
+import { useRender } from "@base-ui/react";
 
 type CalendarSubscribeDialogProps = {
   payload: IcalPayload;

@@ -13,7 +13,7 @@ import { adminMetadata } from "@/lib/metadata";
 export const metadata: Metadata = adminMetadata({
   title: "Événements",
   description:
-    "Liste des événements synchronisés depuis iCal — corrections et modération.",
+    "Liste des événements synchronisés depuis iCal - corrections et modération.",
 });
 
 type AdminEventsPageProps = {

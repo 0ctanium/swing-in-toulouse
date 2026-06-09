@@ -31,7 +31,7 @@ export async function generateMetadata({
   const { totalPages } = paginateItems(events, page, EVENTS_HUB_PAGE_SIZE);
 
   return publicMetadata({
-    title: page > 1 ? `Événements — page ${page}` : "Événements",
+    title: page > 1 ? `Événements page ${page}` : "Événements",
     description:
       "Liste des prochains événements swing à Toulouse : soirées, cours, stages et festivals.",
     path,
@@ -65,8 +65,8 @@ export default async function EventsIndexPage({
           Événements
         </h1>
         <p className="text-muted-foreground mt-2">
-          Prochains événements swing à Toulouse. Pour la vue calendrier, consultez
-          l&apos;{" "}
+          Prochains événements swing à Toulouse. Pour la vue calendrier,
+          consultez l&apos;{" "}
           <Link href="/agenda" className="text-foreground underline">
             agenda
           </Link>
