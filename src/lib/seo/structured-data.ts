@@ -162,6 +162,7 @@ export function siteWebSiteJsonLd() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: siteConfig.name,
+    alternateName: [siteConfig.icalDomain],
     url: absoluteUrl("/"),
     description: siteConfig.description,
     inLanguage: siteConfig.locale,

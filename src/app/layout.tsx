@@ -8,6 +8,8 @@ import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AdminModeBanner } from "@/components/admin/admin-mode-banner";
 import { SiteHeader } from "@/components/layout/site-header";
+import { JsonLd } from "@/components/seo/json-ld";
+import { siteWebSiteJsonLd } from "@/lib/seo/structured-data";
 import { siteConfig } from "@/lib/site";
 
 import "./globals.css";
@@ -63,6 +65,7 @@ export default function RootLayout({
         className="flex min-h-full flex-col antialiased"
         suppressHydrationWarning
       >
+        <JsonLd data={siteWebSiteJsonLd()} />
         <SpeedInsights />
         <ThemeProvider>
           <Providers>
