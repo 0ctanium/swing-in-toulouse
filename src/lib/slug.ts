@@ -28,3 +28,9 @@ export function generateOrganizationSlug(name: string) {
 export function generateSourceSlug(name: string) {
   return slugifyText(name);
 }
+
+export function generateCategoryTagSlug(name: string) {
+  return slugifyText(name);
+}
+
+export const categoryTagSlugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

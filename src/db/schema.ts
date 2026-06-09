@@ -279,12 +279,28 @@ export const eventCategoryTags = pgTable(
   {
     name: text("name").primaryKey(),
     tagType: eventCategoryTagTypeEnum("tag_type").notNull().default("autre"),
+    slug: text("slug"),
+    subtitle: text("subtitle"),
+    description: text("description"),
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
+    heroTitleBefore: text("hero_title_before"),
+    heroTitleEmphasis: text("hero_title_emphasis"),
+    heroTitleAfter: text("hero_title_after"),
+    isPublished: boolean("is_published").notNull().default(false),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (table) => [index("event_category_tags_type_idx").on(table.tagType)],
+  (table) => [
+    index("event_category_tags_type_idx").on(table.tagType),
+    uniqueIndex("event_category_tags_slug_unique_idx").on(table.slug),
+    index("event_category_tags_published_idx").on(
+      table.isPublished,
+      table.tagType,
+    ),
+  ],
 );
 
 export const syncLogs = pgTable(

@@ -8,6 +8,7 @@ import { CACHE_TAGS } from "@/lib/cache/tags";
 import { SITEMAP_REVALIDATE } from "@/lib/cache/revalidate";
 import { buildArchiveMonthPath } from "@/lib/events/hub";
 import { listEventArchiveMonthsUncached } from "@/lib/events/queries";
+import { listPublishedDanceTagsUncached } from "@/lib/event-category-tags/dance-pages";
 import { siteConfig } from "@/lib/site";
 
 async function getSitemapData() {
@@ -16,7 +17,7 @@ async function getSitemapData() {
     stale: SITEMAP_REVALIDATE,
     revalidate: SITEMAP_REVALIDATE,
   });
-  cacheTag(CACHE_TAGS.events, CACHE_TAGS.organizers, CACHE_TAGS.venues);
+  cacheTag(CACHE_TAGS.events, CACHE_TAGS.organizers, CACHE_TAGS.venues, CACHE_TAGS.categoryTags);
 
   return Promise.all([
     db
@@ -30,11 +31,12 @@ async function getSitemapData() {
       .select({ slug: venues.slug, updatedAt: venues.updatedAt })
       .from(venues)
       .where(isNull(venues.canonicalVenueId)),
+    listPublishedDanceTagsUncached(),
   ]);
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [[allEvents, allOrganizations, allVenues], archiveMonths] =
+  const [[allEvents, allOrganizations, allVenues, publishedDances], archiveMonths] =
     await Promise.all([getSitemapData(), listEventArchiveMonthsUncached()]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -64,6 +66,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${siteConfig.url}/lieux`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${siteConfig.url}/danse`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,
@@ -107,6 +115,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: venue.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.6,
+    })),
+    ...publishedDances.map((dance) => ({
+      url: `${siteConfig.url}/danse/${dance.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
     })),
   ];
 }

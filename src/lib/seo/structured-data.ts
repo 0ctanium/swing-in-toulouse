@@ -142,6 +142,21 @@ export function archiveBreadcrumbs(year: number, month: number, monthLabel: stri
   ];
 }
 
+export function danceIndexBreadcrumbs() {
+  return [
+    { label: "Accueil", href: "/" },
+    { label: "Danses" },
+  ];
+}
+
+export function danceBreadcrumbs(tag: { name: string; slug: string }) {
+  return [
+    { label: "Accueil", href: "/" },
+    { label: "Danses", href: "/danse" },
+    { label: tag.name },
+  ];
+}
+
 export function siteWebSiteJsonLd() {
   return {
     "@context": "https://schema.org",

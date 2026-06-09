@@ -186,6 +186,7 @@ async function resolveEventBySlugUncached(
 type UpcomingEventsOptions = {
   organizationSlug?: string;
   venueSlug?: string;
+  categoryName?: string;
   includeCancelled?: boolean;
   from?: Date;
   to?: Date;
@@ -196,6 +197,7 @@ type UpcomingEventsOptions = {
 type UpcomingEventsCacheKey = {
   organizationSlug?: string;
   venueSlug?: string;
+  categoryName?: string;
   includeCancelled?: boolean;
   fromIso?: string;
   toIso?: string;
@@ -209,6 +211,7 @@ function toUpcomingEventsCacheKey(
   return {
     organizationSlug: options?.organizationSlug,
     venueSlug: options?.venueSlug,
+    categoryName: options?.categoryName,
     includeCancelled: options?.includeCancelled,
     fromIso: options?.from?.toISOString(),
     toIso: options?.to?.toISOString(),
@@ -273,7 +276,15 @@ export async function getUpcomingEventsUncached(options?: UpcomingEventsOptions)
     occurrences = await filterOccurrencesForVenue(occurrences, venueId);
   }
 
-  return filterOccurrences(occurrences, window, options?.limit);
+  let filtered = filterOccurrences(occurrences, window, options?.limit);
+
+  if (options?.categoryName) {
+    filtered = filtered.filter((occurrence) =>
+      occurrence.categories?.includes(options.categoryName!),
+    );
+  }
+
+  return filtered;
 }
 
 async function getEventBySlugUncached(slug: string) {
@@ -430,6 +441,7 @@ async function getUpcomingEventsCached(key: UpcomingEventsCacheKey) {
   return getUpcomingEventsUncached({
     organizationSlug: key.organizationSlug,
     venueSlug: key.venueSlug,
+    categoryName: key.categoryName,
     includeCancelled: key.includeCancelled,
     from,
     to,

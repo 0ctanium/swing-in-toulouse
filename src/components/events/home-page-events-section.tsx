@@ -3,8 +3,8 @@ import { addDays } from "date-fns";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { CompactPlanningView } from "@/components/events/compact-planning-view";
-import { SwingDancesSection } from "@/components/home/swing-dances-section";
 import { CommunityLinksSection } from "@/components/community/community-links-section";
+import { SwingDancesSection } from "@/components/home/swing-dances-section";
 import { OrganizationsByDance } from "@/components/organizations/organizations-by-dance";
 import { CACHE_TAGS } from "@/lib/cache/tags";
 import { PUBLIC_PAGE_REVALIDATE } from "@/lib/cache/revalidate";
@@ -20,7 +20,7 @@ export async function HomePageEventsSection() {
     stale: PUBLIC_PAGE_REVALIDATE,
     revalidate: PUBLIC_PAGE_REVALIDATE,
   });
-  cacheTag(CACHE_TAGS.events, CACHE_TAGS.organizers);
+  cacheTag(CACHE_TAGS.events, CACHE_TAGS.organizers, CACHE_TAGS.categoryTags);
 
   const from = getDefaultFromDate();
   const [events, organizers] = await Promise.all([
@@ -40,7 +40,7 @@ export async function HomePageEventsSection() {
               Prochains événements
             </h2>
             <p className="text-muted-foreground text-sm">
-              Lindy Hop, Blues, Balboa, West Coast Swing, rock & boogie — les 14
+              Lindy Hop, Blues, Balboa, West Coast Swing, rock & boogie les 14
               prochains jours
             </p>
           </div>
@@ -51,7 +51,7 @@ export async function HomePageEventsSection() {
         <CompactPlanningView events={events} />
       </section>
 
-      {/* <SwingDancesSection /> */}
+      <SwingDancesSection />
 
       <CommunityLinksSection />
 

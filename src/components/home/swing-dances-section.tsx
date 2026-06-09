@@ -1,28 +1,15 @@
-import { swingDancesContent } from "@/lib/content/swing-dances";
+import Link from "next/link";
 
-function DanceCard({
-  title,
-  era,
-  description,
-}: {
-  title: string;
-  era: string;
-  description: string;
-}) {
-  return (
-    <article className="bg-card text-card-foreground flex flex-col gap-2 rounded-xl border p-4 shadow-sm">
-      <h3 className="font-heading text-lg font-semibold">{title}</h3>
-      <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-        {era}
-      </p>
-      <p className="text-muted-foreground text-sm leading-relaxed">
-        {description}
-      </p>
-    </article>
-  );
-}
+import { DanceCard } from "@/components/dances/dance-card";
+import { listPublishedDanceTags } from "@/lib/event-category-tags/dance-pages";
 
-export function SwingDancesSection() {
+export async function SwingDancesSection() {
+  const dances = await listPublishedDanceTags();
+
+  if (dances.length === 0) {
+    return null;
+  }
+
   return (
     <section
       id="danses"
@@ -42,19 +29,17 @@ export function SwingDancesSection() {
           aria-hidden
         />
         <p className="text-muted-foreground mt-4 text-sm leading-relaxed md:text-base">
-          De Harlem aux ballrooms californiens, la grande famille des danses
-          swing rayonne sur les pistes toulousaines.
+          Explorez chaque style et ses prochains événements, ou consultez{" "}
+          <Link href="/danse" className="text-foreground underline">
+            toutes les pages danse
+          </Link>
+          .
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {swingDancesContent.map(({ dance, era, description }) => (
-          <DanceCard
-            key={dance}
-            title={dance}
-            era={era}
-            description={description}
-          />
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {dances.map((dance) => (
+          <DanceCard key={dance.slug} tag={dance} />
         ))}
       </div>
     </section>

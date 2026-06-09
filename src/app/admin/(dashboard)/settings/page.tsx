@@ -40,7 +40,8 @@ async function AdminSettingsPageContent({
         <p className="text-muted-foreground max-w-2xl">
           Les tags proviennent des catégories iCal des événements et des
           sources. Vous ne modifiez pas le nom du tag ici, seulement son type
-          pour regrouper les listes de catégories (agenda, admin, etc.).
+          pour regrouper les listes de catégories (agenda, admin, etc.). Pour
+          les tags Danse, configurez aussi la page publique /danse/[slug].
         </p>
       </div>
 

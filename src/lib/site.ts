@@ -39,6 +39,14 @@ export function venueUrl(slug: string) {
   return absoluteUrl(`/lieu/${slug}`);
 }
 
+export function dancesIndexUrl() {
+  return absoluteUrl("/danse");
+}
+
+export function danceTagUrl(slug: string) {
+  return absoluteUrl(`/danse/${slug}`);
+}
+
 export function icalFeedUrl(filters: IcalPayload = emptyIcalPayload()) {
   return absoluteUrl(buildIcalFeedPath(filters));
 }

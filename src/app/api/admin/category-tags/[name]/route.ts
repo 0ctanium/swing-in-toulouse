@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { assertAdminApi } from "@/lib/admin/auth";
 import { invalidateCategoryTagMetadataCache } from "@/lib/cache/invalidate";
-import { upsertCategoryTagMetadata } from "@/lib/event-category-tags/admin";
-import { eventCategoryTagMetadataSchema } from "@/lib/event-category-tags/schemas";
+import { updateCategoryTag } from "@/lib/event-category-tags/admin";
+import { updateCategoryTagSchema } from "@/lib/event-category-tags/schemas";
 
 type RouteContext = {
   params: Promise<{ name: string }>;
@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   const { name: encodedName } = await context.params;
   const name = decodeURIComponent(encodedName);
-  const parsed = eventCategoryTagMetadataSchema.safeParse(await request.json());
+  const parsed = updateCategoryTagSchema.safeParse(await request.json());
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -26,8 +26,15 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     );
   }
 
+  if (Object.keys(parsed.data).length === 0) {
+    return NextResponse.json(
+      { error: "Aucune modification fournie." },
+      { status: 400 },
+    );
+  }
+
   try {
-    const tag = await upsertCategoryTagMetadata(name, parsed.data.tagType);
+    const tag = await updateCategoryTag(name, parsed.data);
     invalidateCategoryTagMetadataCache();
 
     return NextResponse.json({ tag });

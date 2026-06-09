@@ -1,10 +1,14 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { eventCategoryTags, type EventCategoryTagType } from "@/db/schema";
+import {
+  eventCategoryTags,
+  type EventCategoryTag,
+  type EventCategoryTagType,
+} from "@/db/schema";
 import { collectDistinctEventCategoryTagNames } from "@/lib/event-category-tags/collect";
-import { loadEventCategoryTagMetadataMap } from "@/lib/event-category-tags/metadata";
 import { DEFAULT_EVENT_CATEGORY_TAG_TYPE } from "@/lib/event-category-tags/tag-types";
+import type { UpdateCategoryTagInput } from "@/lib/event-category-tags/schemas";
 
 export const ADMIN_CATEGORY_TAGS_PAGE_SIZE = 20;
 
@@ -12,6 +16,15 @@ export type AdminCategoryTagRow = {
   name: string;
   tagType: EventCategoryTagType;
   hasMetadata: boolean;
+  slug: string | null;
+  subtitle: string | null;
+  description: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  heroTitleBefore: string | null;
+  heroTitleEmphasis: string | null;
+  heroTitleAfter: string | null;
+  isPublished: boolean;
 };
 
 export type AdminCategoryTagsListResult = {
@@ -31,6 +44,11 @@ function matchesSearch(name: string, search: string) {
   return name.toLocaleLowerCase("fr").includes(search.toLocaleLowerCase("fr"));
 }
 
+async function loadCategoryTagRowsByName() {
+  const rows = await db.query.eventCategoryTags.findMany();
+  return new Map(rows.map((row) => [row.name, row]));
+}
+
 export async function listAdminCategoryTags(options: {
   page?: number;
   pageSize?: number;
@@ -40,18 +58,31 @@ export async function listAdminCategoryTags(options: {
   const page = Math.max(1, options.page ?? 1);
   const search = options.search?.trim() ?? "";
 
-  const [allNames, metadata] = await Promise.all([
+  const [allNames, tagRowsByName] = await Promise.all([
     collectDistinctEventCategoryTagNames(),
-    loadEventCategoryTagMetadataMap(),
+    loadCategoryTagRowsByName(),
   ]);
 
   const filtered = allNames.filter((name) => matchesSearch(name, search));
 
-  const rows: AdminCategoryTagRow[] = filtered.map((name) => ({
-    name,
-    tagType: metadata[name] ?? DEFAULT_EVENT_CATEGORY_TAG_TYPE,
-    hasMetadata: name in metadata,
-  }));
+  const rows: AdminCategoryTagRow[] = filtered.map((name) => {
+    const metadata = tagRowsByName.get(name);
+
+    return {
+      name,
+      tagType: metadata?.tagType ?? DEFAULT_EVENT_CATEGORY_TAG_TYPE,
+      hasMetadata: metadata !== undefined,
+      slug: metadata?.slug ?? null,
+      subtitle: metadata?.subtitle ?? null,
+      description: metadata?.description ?? null,
+      seoTitle: metadata?.seoTitle ?? null,
+      seoDescription: metadata?.seoDescription ?? null,
+      heroTitleBefore: metadata?.heroTitleBefore ?? null,
+      heroTitleEmphasis: metadata?.heroTitleEmphasis ?? null,
+      heroTitleAfter: metadata?.heroTitleAfter ?? null,
+      isPublished: metadata?.isPublished ?? false,
+    };
+  });
 
   const total = rows.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -81,12 +112,111 @@ export async function upsertCategoryTagMetadata(
     throw new Error("Nom de tag invalide.");
   }
 
+  const existing = await db.query.eventCategoryTags.findFirst({
+    where: eq(eventCategoryTags.name, trimmed),
+  });
+
+  const effectiveTagType = tagType;
+  const isPublished =
+    effectiveTagType === "danse" ? (existing?.isPublished ?? false) : false;
+
   const [row] = await db
     .insert(eventCategoryTags)
-    .values({ name: trimmed, tagType })
+    .values({
+      name: trimmed,
+      tagType: effectiveTagType,
+      isPublished,
+    })
     .onConflictDoUpdate({
       target: eventCategoryTags.name,
-      set: { tagType, updatedAt: sql`now()` },
+      set: {
+        tagType: effectiveTagType,
+        isPublished,
+        updatedAt: sql`now()`,
+      },
+    })
+    .returning();
+
+  return row;
+}
+
+function resolveUpdateFields(
+  existing: EventCategoryTag | undefined,
+  input: UpdateCategoryTagInput,
+) {
+  const tagType = input.tagType ?? existing?.tagType ?? DEFAULT_EVENT_CATEGORY_TAG_TYPE;
+  const slug = input.slug !== undefined ? input.slug : (existing?.slug ?? null);
+  const isPublished =
+    tagType === "danse"
+      ? (input.isPublished ?? existing?.isPublished ?? false)
+      : false;
+
+  if (isPublished && !slug) {
+    throw new Error("Un slug est requis pour publier la page.");
+  }
+
+  if (tagType !== "danse" && input.isPublished) {
+    throw new Error("Seuls les tags de type Danse peuvent être publiés.");
+  }
+
+  return {
+    tagType,
+    slug,
+    subtitle:
+      input.subtitle !== undefined
+        ? input.subtitle
+        : (existing?.subtitle ?? null),
+    description:
+      input.description !== undefined
+        ? input.description
+        : (existing?.description ?? null),
+    seoTitle:
+      input.seoTitle !== undefined ? input.seoTitle : (existing?.seoTitle ?? null),
+    seoDescription:
+      input.seoDescription !== undefined
+        ? input.seoDescription
+        : (existing?.seoDescription ?? null),
+    heroTitleBefore:
+      input.heroTitleBefore !== undefined
+        ? input.heroTitleBefore
+        : (existing?.heroTitleBefore ?? null),
+    heroTitleEmphasis:
+      input.heroTitleEmphasis !== undefined
+        ? input.heroTitleEmphasis
+        : (existing?.heroTitleEmphasis ?? null),
+    heroTitleAfter:
+      input.heroTitleAfter !== undefined
+        ? input.heroTitleAfter
+        : (existing?.heroTitleAfter ?? null),
+    isPublished,
+  };
+}
+
+export async function updateCategoryTag(name: string, input: UpdateCategoryTagInput) {
+  const trimmed = name.trim();
+
+  if (!trimmed) {
+    throw new Error("Nom de tag invalide.");
+  }
+
+  const existing = await db.query.eventCategoryTags.findFirst({
+    where: eq(eventCategoryTags.name, trimmed),
+  });
+
+  const fields = resolveUpdateFields(existing, input);
+
+  const [row] = await db
+    .insert(eventCategoryTags)
+    .values({
+      name: trimmed,
+      ...fields,
+    })
+    .onConflictDoUpdate({
+      target: eventCategoryTags.name,
+      set: {
+        ...fields,
+        updatedAt: sql`now()`,
+      },
     })
     .returning();
 

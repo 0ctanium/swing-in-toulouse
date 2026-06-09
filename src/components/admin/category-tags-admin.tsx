@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
+import { CategoryTagPageDialog } from "@/components/admin/category-tag-page-dialog";
 import { CategoryTagTypeSelect } from "@/components/admin/category-tag-type-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { AdminCategoryTagsListResult } from "@/lib/event-category-tags/admin";
+
 type CategoryTagsAdminProps = {
   data: AdminCategoryTagsListResult;
 };
@@ -24,6 +26,8 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [searchInput, setSearchInput] = useState(data.search);
+  const [pageDialogRow, setPageDialogRow] =
+    useState<AdminCategoryTagsListResult["rows"][number] | null>(null);
 
   useEffect(() => {
     setSearchInput(data.search);
@@ -111,13 +115,14 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
             <TableRow>
               <TableHead>Tag</TableHead>
               <TableHead className="w-48">Type</TableHead>
+              <TableHead className="w-40">Page danse</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={2}
+                  colSpan={3}
                   className="text-muted-foreground h-24 text-center"
                 >
                   Aucun tag trouvé.
@@ -133,6 +138,21 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
                       value={row.tagType}
                       disabled={isPending}
                     />
+                  </TableCell>
+                  <TableCell>
+                    {row.tagType === "danse" ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => setPageDialogRow(row)}
+                      >
+                        {row.isPublished ? "Publiée" : "Configurer"}
+                      </Button>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -167,6 +187,19 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
             </Button>
           </div>
         </div>
+      ) : null}
+
+      {pageDialogRow ? (
+        <CategoryTagPageDialog
+          key={pageDialogRow.name}
+          row={pageDialogRow}
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setPageDialogRow(null);
+            }
+          }}
+        />
       ) : null}
     </div>
   );
