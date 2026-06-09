@@ -231,7 +231,7 @@ export function CommunityLinksSection() {
       </div>
 
       <p className="text-muted-foreground text-center text-xs">
-        Liens externes, vous quittez Swing In Toulouse.
+        Liens externes, vous quittez Swingin Toulouse.
       </p>
     </section>
   );
