@@ -1,11 +1,24 @@
 import { addDays } from "date-fns";
 import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+} from "drizzle-orm";
 
 import { db } from "@/db";
 import { CACHE_TAGS } from "@/lib/cache/tags";
-import { PUBLIC_PAGE_REVALIDATE, SITEMAP_REVALIDATE } from "@/lib/cache/revalidate";
+import {
+  PUBLIC_PAGE_REVALIDATE,
+  SITEMAP_REVALIDATE,
+} from "@/lib/cache/revalidate";
 import { events, organizations, venues } from "@/db/schema";
 import { expandEventsWithOverrides } from "@/lib/events/expand-with-overrides";
 import {
@@ -42,11 +55,27 @@ async function fetchMasterEvents(options?: {
   organizationSlug?: string;
   venueSlug?: string;
   includeCancelled?: boolean;
+  from?: Date;
+  to?: Date;
 }) {
   const filters = [];
 
   if (!options?.includeCancelled) {
     filters.push(eq(events.status, "published"));
+  }
+
+  if (options?.from || options?.to) {
+    const dateFilters = [];
+
+    if (options?.from) {
+      dateFilters.push(gte(events.startAt, options.from));
+    }
+
+    if (options?.to) {
+      dateFilters.push(lte(events.startAt, options.to));
+    }
+
+    filters.push(or(isNotNull(events.recurrenceRule), and(...dateFilters)));
   }
 
   filters.push(isNull(events.canonicalEventId));
@@ -102,8 +131,8 @@ function filterOccurrences(
 
     return Boolean(
       occurrence.endAt &&
-        occurrence.endAt >= window.from &&
-        occurrence.startAt <= window.to,
+      occurrence.endAt >= window.from &&
+      occurrence.startAt <= window.to,
     );
   });
 
@@ -231,9 +260,9 @@ function resolveUpcomingEventsWindow(key: UpcomingEventsCacheKey) {
   return { from, to };
 }
 
-export async function getUpcomingEventsUncached(options?: UpcomingEventsOptions): Promise<
-  EventOccurrence[]
-> {
+export async function getUpcomingEventsUncached(
+  options?: UpcomingEventsOptions,
+): Promise<EventOccurrence[]> {
   const from = options?.from ?? getDefaultFromDate();
   const window: ExpansionWindow = {
     from,
@@ -255,6 +284,8 @@ export async function getUpcomingEventsUncached(options?: UpcomingEventsOptions)
     organizationSlug: options?.organizationSlug,
     venueSlug: options?.venueSlug,
     includeCancelled: options?.includeCancelled,
+    from: from,
+    to: options?.to,
   });
 
   let occurrences = await expandEventsWithOverrides(masters, window);
@@ -382,7 +413,10 @@ async function getEventsForExportUncached(options?: EventsForExportCacheKey) {
         masterOverride.patch.organizationId !== undefined
           ? masterOverride.patch.organizationId
             ? await db.query.organizations.findFirst({
-                where: eq(organizations.id, masterOverride.patch.organizationId),
+                where: eq(
+                  organizations.id,
+                  masterOverride.patch.organizationId,
+                ),
               })
             : null
           : master.organization;
@@ -584,7 +618,9 @@ async function listEventsInMonthCached(year: number, month: number) {
 
 export const listEventsInMonth = cache(listEventsInMonthCached);
 
-export async function listEventArchiveMonthsUncached(): Promise<ArchiveMonth[]> {
+export async function listEventArchiveMonthsUncached(): Promise<
+  ArchiveMonth[]
+> {
   const now = getDefaultFromDate();
   const from = getArchiveLookbackStart(now);
   const to = getLastCompleteArchiveMonthEnd(now);
@@ -740,7 +776,9 @@ export async function getAdminEventOccurrences(eventId: string) {
 
   return {
     event,
-    occurrences: occurrences.filter((occurrence) => occurrence.startAt >= window.from),
+    occurrences: occurrences.filter(
+      (occurrence) => occurrence.startAt >= window.from,
+    ),
   };
 }
 

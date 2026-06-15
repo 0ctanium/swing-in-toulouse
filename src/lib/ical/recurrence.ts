@@ -42,7 +42,7 @@ export function getDefaultExpansionWindow(
   from = getDefaultFromDate(),
 ): ExpansionWindow {
   return {
-    from: subMonths(from, 1),
+    from,
     to: addMonths(from, EXPANSION_MONTHS),
   };
 }

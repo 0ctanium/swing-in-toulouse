@@ -21,7 +21,6 @@ Or wrap the function under test in a script:
 ```ts
 // scripts/bench-query.ts (create temporarily)
 import "@/load-env";
-import { closeDb } from "@/db";
 import { getUpcomingEventsUncached } from "@/lib/events/queries";
 
 async function main() {
@@ -31,7 +30,6 @@ async function main() {
     to: new Date("2026-06-30"),
   });
   console.log({ count: rows.length, ms: performance.now() - t0 });
-  await closeDb();
 }
 main();
 ```

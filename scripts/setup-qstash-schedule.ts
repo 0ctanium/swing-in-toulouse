@@ -1,6 +1,5 @@
 import "@/load-env";
 
-import { closeDb } from "@/db";
 import { getCronSyncUrl } from "@/env";
 import { ensureHourlySyncSchedule } from "@/lib/qstash";
 
@@ -16,11 +15,9 @@ async function main() {
 
 main()
   .then(async () => {
-    await closeDb();
     process.exit(0);
   })
   .catch(async (error) => {
     console.error(error);
-    await closeDb();
     process.exit(1);
   });

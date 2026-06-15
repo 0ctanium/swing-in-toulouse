@@ -2,7 +2,7 @@ import "@/load-env";
 
 import { eq } from "drizzle-orm";
 
-import { closeDb, db } from "@/db";
+import { db } from "@/db";
 import { organizations, sources } from "@/db/schema";
 import type { OrganizationCategory } from "@/db/schema";
 import type { OrganizationDance } from "@/lib/organizations/dances";
@@ -222,11 +222,9 @@ async function main() {
 
 main()
   .then(async () => {
-    await closeDb();
     process.exit(0);
   })
   .catch(async (error) => {
     console.error(error);
-    await closeDb();
     process.exit(1);
   });

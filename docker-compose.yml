@@ -1,21 +1,26 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-    restart: unless-stopped
+  db:
+    image: neondatabase/neon_local:latest
     ports:
       - "5432:5432"
-    environment:
-      POSTGRES_USER: swing
-      POSTGRES_PASSWORD: swing
-      POSTGRES_DB: swing_in_toulouse
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U swing -d swing_in_toulouse"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
+    env_file:
+      - .env.local
+  # postgres:
+  #   image: postgres:17-alpine
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     POSTGRES_USER: swing
+  #     POSTGRES_PASSWORD: swing
+  #     POSTGRES_DB: swing_in_toulouse
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U swing -d swing_in_toulouse"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
   qstash:
     image: public.ecr.aws/upstash/qstash:latest
     restart: unless-stopped
@@ -26,5 +31,5 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-volumes:
-  postgres_data:
+# volumes:
+#   postgres_data:

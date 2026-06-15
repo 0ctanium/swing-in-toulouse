@@ -1,6 +1,5 @@
 import "@/load-env";
 
-import { closeDb } from "@/db";
 import { syncAllSources } from "@/lib/ical/sync";
 
 async function main() {
@@ -23,11 +22,9 @@ async function main() {
 
 main()
   .then(async () => {
-    await closeDb();
     process.exit(0);
   })
   .catch(async (error) => {
     console.error(error);
-    await closeDb();
     process.exit(1);
   });

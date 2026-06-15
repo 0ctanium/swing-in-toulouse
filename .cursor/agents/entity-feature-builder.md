@@ -76,7 +76,7 @@ Work through every layer that the feature touches:
 
 ### 7. Seed script (`scripts/seed-data.ts`)
 
-- Import `@/load-env`; use `closeDb()` in finally/catch.
+- Import `@/load-env`;
 - Upsert by slug with `.onConflictDoUpdate({ target: [table.slug], set: { ... } })`.
 - Slugs from `generateOrganizationSlug` / `generateSourceSlug`.
 - Resolve FKs by slug lookup before insert.

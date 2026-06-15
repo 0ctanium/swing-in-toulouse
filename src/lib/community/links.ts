@@ -76,6 +76,12 @@ export const externalResourceCategories: CommunityResourceCategory[] = [
         href: "https://www.swingplanit.com/",
         description: "Agenda des festivals dans le monde",
       },
+      {
+        id: "socialswing",
+        label: "Social Swing",
+        href: "https://www.socialswing.blog",
+        description: "Communauté et agenda swing mondial",
+      },
     ],
   },
   {

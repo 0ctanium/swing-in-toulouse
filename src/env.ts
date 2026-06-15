@@ -9,6 +9,10 @@ export const env = createEnv({
       .enum(["development", "test", "production"])
       .default("development"),
     DATABASE_URL: z.string().url(),
+    DATABASE_DRIVER: z
+      .enum(["node-postgres", "neon-http"])
+      .default("node-postgres"),
+    NEON_LOCAL: z.coerce.boolean().default(false),
     CRON_SYNC_URL: z.string().url().optional(),
     QSTASH_URL: z.string().url().optional(),
     QSTASH_TOKEN: z.string().optional(),
@@ -24,6 +28,8 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     DATABASE_URL: process.env.DATABASE_URL,
+    DATABASE_DRIVER: process.env.DATABASE_DRIVER,
+    NEON_LOCAL: process.env.NEON_LOCAL,
     CRON_SYNC_URL: process.env.CRON_SYNC_URL,
     QSTASH_URL: process.env.QSTASH_URL,
     QSTASH_TOKEN: process.env.QSTASH_TOKEN,
@@ -45,8 +51,8 @@ export function getCronSyncUrl() {
 export function isQStashConfigured() {
   return Boolean(
     env.QSTASH_TOKEN &&
-      env.QSTASH_CURRENT_SIGNING_KEY &&
-      env.QSTASH_NEXT_SIGNING_KEY,
+    env.QSTASH_CURRENT_SIGNING_KEY &&
+    env.QSTASH_NEXT_SIGNING_KEY,
   );
 }
 
