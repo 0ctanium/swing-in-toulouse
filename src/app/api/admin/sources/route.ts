@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { sources } from "@/db/schema";
-import { assertAdminApi } from "@/lib/admin/auth";
+import {
+  requireOrgScopedApi,
+} from "@/lib/admin/api-auth";
 import { invalidateAllPublicCache } from "@/lib/cache/invalidate";
+import { resolveWritableOrganizationId } from "@/lib/admin/data-scope";
 import { generateSourceSlug } from "@/lib/slug";
 import {
   getOrganizationById,
@@ -21,26 +23,26 @@ import { sourceSyncResponse } from "@/lib/sources/sync-api";
 
 export const maxDuration = 60;
 
-export async function GET(request: NextRequest) {
-  const authError = await assertAdminApi(request);
-  if (authError) {
-    return authError;
+export async function GET() {
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
-  const sourcesList = await listAdminSources();
+  const sourcesList = await listAdminSources(auth.dataScope);
   return NextResponse.json({ sources: sourcesList });
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await assertAdminApi(request);
-  if (authError) {
-    return authError;
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const contentType = request.headers.get("content-type") ?? "";
 
   if (contentType.includes("multipart/form-data")) {
-    return handleCreateFileSource(request);
+    return handleCreateFileSource(request, auth.dataScope);
   }
 
   const parsed = sourceWriteSchema.safeParse(await request.json());
@@ -52,7 +54,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const organizationId = parsed.data.organizationId ?? null;
+  const organizationId = resolveWritableOrganizationId(
+    auth.dataScope,
+    parsed.data.organizationId,
+  );
 
   if (organizationId) {
     const organization = await getOrganizationById(organizationId);
@@ -91,7 +96,10 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ source: created }, { status: 201 });
 }
 
-async function handleCreateFileSource(request: NextRequest) {
+async function handleCreateFileSource(
+  request: NextRequest,
+  dataScope: Parameters<typeof resolveWritableOrganizationId>[0],
+) {
   const formData = await request.formData();
   const file = formData.get("file");
 
@@ -102,15 +110,17 @@ async function handleCreateFileSource(request: NextRequest) {
     );
   }
 
+  const fields = parseSourceFormFields(formData);
+  fields.organizationId = resolveWritableOrganizationId(
+    dataScope,
+    fields.organizationId,
+  );
+
   try {
-    const result = await createIcalFileSource(parseSourceFormFields(formData), file);
+    const result = await createIcalFileSource(fields, file);
     invalidateAllPublicCache();
 
-    return sourceSyncResponse(
-      result.source,
-      result.sync,
-      201,
-    );
+    return sourceSyncResponse(result.source, result.sync, 201);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Création impossible.";

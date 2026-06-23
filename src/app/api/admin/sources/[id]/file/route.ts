@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
 
-import { assertAdminApi } from "@/lib/admin/auth";
+import {
+  requireOrgScopedApi,
+  requireSourceInScope,
+} from "@/lib/admin/api-auth";
 import { replaceIcalFileSource } from "@/lib/sources/file-source";
 import { sourceSyncResponse } from "@/lib/sources/sync-api";
 
@@ -11,12 +14,17 @@ type RouteContext = {
 };
 
 export async function PUT(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
-  if (authError) {
-    return authError;
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const { id } = await context.params;
+  const scopeError = await requireSourceInScope(id, auth.dataScope);
+  if ("error" in scopeError) {
+    return scopeError.error;
+  }
+
   const formData = await request.formData();
   const file = formData.get("file");
 

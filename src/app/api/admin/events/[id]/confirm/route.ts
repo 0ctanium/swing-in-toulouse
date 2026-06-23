@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { assertAdminApi } from "@/lib/admin/auth";
+import {
+  requireEventInScope,
+  requireOrgScopedApi,
+} from "@/lib/admin/api-auth";
 import { invalidatePublicEventCache } from "@/lib/cache/invalidate";
 import { confirmEvent } from "@/lib/events/confirm-event";
 import { eventOverridePatchSchema } from "@/lib/events/overrides.types";
@@ -15,12 +18,17 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
-  if (authError) {
-    return authError;
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const { id } = await context.params;
+  const scopeError = await requireEventInScope(id, auth.dataScope);
+  if ("error" in scopeError) {
+    return scopeError.error;
+  }
+
   const rawBody = await request.json().catch(() => ({}));
   const body = bodySchema.safeParse(rawBody);
 

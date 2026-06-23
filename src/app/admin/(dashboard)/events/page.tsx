@@ -9,6 +9,7 @@ import {
   listAdminEventsTable,
 } from "@/lib/events/admin-events-table";
 import { adminMetadata } from "@/lib/metadata";
+import { requireAdminDataScope } from "@/lib/admin/access";
 
 export const metadata: Metadata = adminMetadata({
   title: "Événements",
@@ -30,12 +31,13 @@ function AdminEventsPageSkeleton() {
 }
 
 async function AdminEventsPageContent({ searchParams }: AdminEventsPageProps) {
+  const dataScope = await requireAdminDataScope();
   const resolvedSearchParams = await searchParams;
   const query = parseAdminEventsSearchParams(resolvedSearchParams);
 
   const [eventsTable, filterOptions] = await Promise.all([
-    listAdminEventsTable(query),
-    getAdminEventsFilterOptions(),
+    listAdminEventsTable(query, dataScope),
+    getAdminEventsFilterOptions(dataScope),
   ]);
 
   return (

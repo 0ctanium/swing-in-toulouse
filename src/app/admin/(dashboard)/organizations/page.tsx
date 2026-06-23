@@ -9,7 +9,7 @@ import { venues } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
 import { listAdminOrganizations } from "@/lib/organizations/admin";
 import { toVenueSelectOption } from "@/lib/venues/select-options";
-import { assertRole, checkRole } from "@/lib/admin/roles";
+import { assertPlatformAdmin } from "@/lib/admin/roles";
 
 export const metadata: Metadata = adminMetadata({
   title: "Organisateurs",
@@ -27,7 +27,7 @@ function AdminOrganizationsPageSkeleton() {
 }
 
 async function AdminOrganizationsPageContent() {
-  await assertRole("admin");
+  await assertPlatformAdmin();
 
   const [organizations, venueRows] = await Promise.all([
     listAdminOrganizations(),

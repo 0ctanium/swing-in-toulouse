@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { asc, isNull } from "drizzle-orm";
+import { asc, eq, isNull } from "drizzle-orm";
 
 import { SourcesAdmin } from "@/components/admin/sources-admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { db } from "@/db";
 import { organizations, venues } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
+import { requireAdminDataScope } from "@/lib/admin/access";
 import { listAdminSources } from "@/lib/sources/admin";
 import { toVenueSelectOption } from "@/lib/venues/select-options";
 
@@ -26,9 +27,15 @@ function AdminSourcesPageSkeleton() {
 }
 
 async function AdminSourcesPageContent() {
+  const dataScope = await requireAdminDataScope();
+
   const [sourceRows, organizationRows, venueRows] = await Promise.all([
-    listAdminSources(),
+    listAdminSources(dataScope),
     db.query.organizations.findMany({
+      where:
+        dataScope.mode === "org"
+          ? eq(organizations.id, dataScope.organizationId)
+          : undefined,
       orderBy: asc(organizations.name),
       columns: {
         id: true,

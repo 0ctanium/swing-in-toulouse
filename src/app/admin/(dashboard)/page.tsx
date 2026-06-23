@@ -3,7 +3,9 @@ import { Suspense } from "react";
 
 import { AdminDashboardLinks } from "@/components/admin/admin-dashboard-links";
 import { AdminDashboardStats } from "@/components/admin/admin-dashboard-stats";
+import { AdminOrgSelectionPrompt } from "@/components/admin/admin-org-selection-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getAdminDataScopeOrNull } from "@/lib/admin/access";
 import { adminMetadata } from "@/lib/metadata";
 import { getAdminDashboardStats } from "@/lib/admin/dashboard-stats";
 import { Protect } from "@/components/admin-protect";
@@ -27,7 +29,23 @@ function AdminHomePageSkeleton() {
 }
 
 async function AdminHomePageContent() {
-  const stats = await getAdminDashboardStats();
+  const dataScope = await getAdminDataScopeOrNull();
+
+  if (!dataScope) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-heading text-3xl font-semibold">Administration</h1>
+          <p className="text-muted-foreground max-w-2xl">
+            Sélectionnez une organisation pour gérer son planning.
+          </p>
+        </div>
+        <AdminOrgSelectionPrompt />
+      </div>
+    );
+  }
+
+  const stats = await getAdminDashboardStats(dataScope);
 
   return (
     <div className="flex flex-col gap-6">

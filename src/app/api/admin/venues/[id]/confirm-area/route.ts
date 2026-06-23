@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { db } from "@/db";
 import { venues } from "@/db/schema";
-import { assertAdminApi } from "@/lib/admin/auth";
+import { assertPlatformAdminApi } from "@/lib/admin/auth";
 import {
   invalidateGoogleCachesForVenue,
   invalidatePublicVenueCache,
@@ -31,7 +31,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }

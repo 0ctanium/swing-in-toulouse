@@ -2,14 +2,7 @@ import { endOfDay, startOfDay } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import {
-  buildAdminMetaForOccurrences,
-  type AdminEventMeta,
-} from "@/lib/events/admin-meta";
-import { getUpcomingEvents } from "@/lib/events/queries";
-import { loadOverridesForEvents } from "@/lib/events/overrides";
-import { serializeOccurrence } from "@/lib/events/serialize";
-import { isAdminAuthenticated } from "@/lib/admin/auth";
+import { loadPublicEventsForRange } from "@/lib/events/public-events-loader";
 
 const querySchema = z.object({
   from: z.coerce.date(),
@@ -40,27 +33,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const events = await getUpcomingEvents({
-    from: startOfDay(from),
-    to: endOfDay(to),
+  const events = await loadPublicEventsForRange(
+    startOfDay(from),
+    endOfDay(to),
     limit,
-  });
+  );
 
-  const isAdmin = await isAdminAuthenticated();
-  let adminMetaByOccurrenceId: Map<string, AdminEventMeta> | null = null;
-
-  if (isAdmin && events.length > 0) {
-    const masterIds = [...new Set(events.map((event) => event.masterEventId))];
-    const overrides = await loadOverridesForEvents(masterIds);
-    adminMetaByOccurrenceId = buildAdminMetaForOccurrences(events, overrides);
-  }
-
-  return NextResponse.json({
-    events: events.map((event) => ({
-      ...serializeOccurrence(event),
-      ...(adminMetaByOccurrenceId
-        ? { admin: adminMetaByOccurrenceId.get(event.id) }
-        : {}),
-    })),
-  });
+  return NextResponse.json({ events });
 }

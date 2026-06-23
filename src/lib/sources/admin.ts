@@ -58,9 +58,15 @@ export async function getSourceById(sourceId: string) {
   });
 }
 
-export async function listAdminSources(): Promise<AdminSourceRow[]> {
+export async function listAdminSources(
+  scope: AdminDataScope,
+): Promise<AdminSourceRow[]> {
   const [sourceRows, eventCountRows] = await Promise.all([
     db.query.sources.findMany({
+      where:
+        scope.mode === "org"
+          ? eq(sources.organizationId, scope.organizationId)
+          : undefined,
       orderBy: asc(sources.name),
       with: {
         organization: {

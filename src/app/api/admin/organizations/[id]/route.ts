@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { organizations } from "@/db/schema";
-import { assertAdminApi } from "@/lib/admin/auth";
+import { assertPlatformAdminApi } from "@/lib/admin/auth";
 import { invalidatePublicOrganizerCache } from "@/lib/cache/invalidate";
 import {
   getSelectableVenueById,
@@ -21,7 +21,7 @@ type RouteContext = {
 };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }
@@ -106,7 +106,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }

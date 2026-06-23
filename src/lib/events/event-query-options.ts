@@ -1,4 +1,5 @@
 import { fetchJson } from "@/lib/api/fetch-json";
+import type { EventsQueryEditKey } from "@/lib/admin/events-query-edit-key.types";
 import { eventsQueryKeys } from "@/lib/admin/query-keys";
 import type { AgendaFilterOptions } from "@/lib/events/agenda-filter-options";
 import {
@@ -25,7 +26,7 @@ export async function fetchEventsForRange(
 
   const data = await fetchJson<{ events: SerializableEventOccurrence[] }>(
     `/api/events?${params.toString()}`,
-    undefined,
+    { credentials: "same-origin" },
     "Impossible de charger les événements.",
   );
 
@@ -35,26 +36,44 @@ export async function fetchEventsForRange(
 async function fetchAgendaFilterOptions(): Promise<AgendaFilterOptions> {
   return fetchJson<AgendaFilterOptions>(
     "/api/events/filters",
-    undefined,
+    { credentials: "same-origin" },
     "Impossible de charger les filtres.",
   );
 }
 
-export function eventsRangeQueryKey(from: Date, to: Date, limit?: number) {
-  return eventsQueryKeys.range(from.toISOString(), to.toISOString(), limit);
+export function eventsRangeQueryKey(
+  from: Date,
+  to: Date,
+  limit: number | undefined,
+  editKey: Exclude<EventsQueryEditKey, "loading">,
+) {
+  return eventsQueryKeys.range(
+    from.toISOString(),
+    to.toISOString(),
+    limit,
+    editKey,
+  );
 }
 
-export function eventsRangeQueryOptions(from: Date, to: Date, limit?: number) {
+export function eventsRangeQueryOptions(
+  from: Date,
+  to: Date,
+  limit: number | undefined,
+  editKey: Exclude<EventsQueryEditKey, "loading">,
+) {
   return {
-    queryKey: eventsRangeQueryKey(from, to, limit),
+    queryKey: eventsRangeQueryKey(from, to, limit, editKey),
     queryFn: () => fetchEventsForRange(from, to, limit),
   };
 }
 
-export function planningEventsQueryOptions(limit = PLANNING_EVENTS_LIMIT) {
+export function planningEventsQueryOptions(
+  limit: number | undefined,
+  editKey: Exclude<EventsQueryEditKey, "loading">,
+) {
   const { from, to } = getPlanningRange();
 
-  return eventsRangeQueryOptions(from, to, limit);
+  return eventsRangeQueryOptions(from, to, limit, editKey);
 }
 
 export function agendaFilterOptionsQueryOptions() {

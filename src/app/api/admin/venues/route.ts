@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/db";
 import { venues } from "@/db/schema";
-import { assertAdminApi } from "@/lib/admin/auth";
+import { assertPlatformAdminApi } from "@/lib/admin/auth";
 import { invalidatePublicVenueCache } from "@/lib/cache/invalidate";
 import { generateVenueSlug } from "@/lib/slug";
 import { resolveUniqueVenueSlug } from "@/lib/venues/admin";
@@ -11,7 +11,7 @@ import { getVenueMatchingOverview } from "@/lib/venues/matching";
 import { venueWriteSchema } from "@/lib/venues/schemas";
 
 export async function GET() {
-  const authError = await assertAdminApi();
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }
@@ -26,7 +26,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await assertAdminApi(request);
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }

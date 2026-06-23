@@ -6,6 +6,7 @@ import { VenuesAdminAlerts } from "@/components/admin/venues-admin-alerts";
 import { VenuesGoogleMapsAlert } from "@/components/admin/venues-google-maps-alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isGoogleMapsConfigured } from "@/env";
+import { assertPlatformAdminPage } from "@/lib/admin/access";
 import { adminMetadata } from "@/lib/metadata";
 import { getAdminVenuesPageData } from "@/lib/venues/matching";
 
@@ -25,6 +26,7 @@ function AdminVenuesPageSkeleton() {
 }
 
 async function AdminVenuesPageContent() {
+  await assertPlatformAdminPage();
   const googleConfigured = isGoogleMapsConfigured();
   const {
     venues,

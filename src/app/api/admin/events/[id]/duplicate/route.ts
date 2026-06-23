@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { assertAdminApi } from "@/lib/admin/auth";
+import {
+  requireEventInScope,
+  requireOrgScopedApi,
+} from "@/lib/admin/api-auth";
 import { invalidatePublicEventCache } from "@/lib/cache/invalidate";
 import {
   DuplicateLinkError,
@@ -20,12 +23,17 @@ const linkBodySchema = z.object({
 });
 
 export async function GET(_request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi();
-  if (authError) {
-    return authError;
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const { id } = await context.params;
+  const scopeError = await requireEventInScope(id, auth.dataScope);
+  if ("error" in scopeError) {
+    return scopeError.error;
+  }
+
   const info = await getDuplicateLinkInfo(id);
 
   if (!info) {
@@ -46,12 +54,17 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
-  if (authError) {
-    return authError;
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const { id } = await context.params;
+  const scopeError = await requireEventInScope(id, auth.dataScope);
+  if ("error" in scopeError) {
+    return scopeError.error;
+  }
+
   const body = linkBodySchema.safeParse(await request.json());
 
   if (!body.success) {
@@ -59,6 +72,14 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       { error: "Corps de requête invalide.", details: body.error.flatten() },
       { status: 400 },
     );
+  }
+
+  const canonicalScopeError = await requireEventInScope(
+    body.data.canonicalEventId,
+    auth.dataScope,
+  );
+  if ("error" in canonicalScopeError) {
+    return canonicalScopeError.error;
   }
 
   try {
@@ -76,12 +97,16 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi();
-  if (authError) {
-    return authError;
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const { id } = await context.params;
+  const scopeError = await requireEventInScope(id, auth.dataScope);
+  if ("error" in scopeError) {
+    return scopeError.error;
+  }
 
   try {
     await unlinkDuplicateEvent(id);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { assertAdminApi } from "@/lib/admin/auth";
+import { assertPlatformAdminApi } from "@/lib/admin/auth";
 import { invalidateCategoryTagMetadataCache } from "@/lib/cache/invalidate";
 import { updateCategoryTag } from "@/lib/event-category-tags/admin";
 import { updateCategoryTagSchema } from "@/lib/event-category-tags/schemas";
@@ -10,7 +10,7 @@ type RouteContext = {
 };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }

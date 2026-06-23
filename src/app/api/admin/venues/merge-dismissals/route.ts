@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { assertAdminApi } from "@/lib/admin/auth";
+import { assertPlatformAdminApi } from "@/lib/admin/auth";
 import { dismissVenueMergePairs } from "@/lib/venues/merge-dismissals";
 
 const bodySchema = z.object({
@@ -9,7 +9,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const authError = await assertAdminApi(request);
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }

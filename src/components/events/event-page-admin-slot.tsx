@@ -1,5 +1,5 @@
 import { AdminEventActions } from "@/components/admin/admin-event-actions";
-import { isAdminAuthenticated } from "@/lib/admin/auth";
+import { canEditEvent } from "@/lib/admin/auth";
 import { getEventWithOverrides } from "@/lib/events/overrides";
 
 export async function EventPageAdminSlot({
@@ -7,9 +7,7 @@ export async function EventPageAdminSlot({
 }: {
   masterEventId: string;
 }) {
-  const isAdmin = await isAdminAuthenticated();
-
-  if (!isAdmin) {
+  if (!(await canEditEvent(masterEventId))) {
     return null;
   }
 

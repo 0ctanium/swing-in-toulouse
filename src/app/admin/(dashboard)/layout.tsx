@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { AdminSubNav } from "@/components/admin/admin-sub-nav";
 import { EventsPendingAlert } from "@/components/admin/events-pending-alert";
 import { isAuthenticated } from "@/lib/admin/auth";
-import { getEventConfirmQueueStats } from "@/lib/events/confirm-queue";
+import { getAdminPendingEventsCount } from "@/lib/admin/pending-events";
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import { Protect } from "@/components/admin-protect";
 
@@ -28,7 +28,7 @@ async function AdminDashboardLayoutInner({
     redirect("/admin/login?redirect_url=/admin");
   }
 
-  const { pendingCount } = await getEventConfirmQueueStats();
+  const pendingCount = await getAdminPendingEventsCount();
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 -mt-4">
@@ -40,7 +40,7 @@ async function AdminDashboardLayoutInner({
           Administration
         </Link>
         <div className="flex items-center gap-2">
-          <Protect fallback={<OrganizationSwitcher hidePersonal />}>
+          <Protect fallback={<OrganizationSwitcher hidePersonal />} ignoreOrg>
             <OrganizationSwitcher />
           </Protect>
           <UserButton />

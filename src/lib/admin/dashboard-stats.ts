@@ -1,10 +1,11 @@
 import { formatDistanceToNow, subHours } from "date-fns";
 import { fr } from "date-fns/locale";
-import { and, count, desc, gte, ne } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, ne } from "drizzle-orm";
 import { cookies } from "next/headers";
 
 import { db } from "@/db";
-import { sources, syncLogs } from "@/db/schema";
+import { organizations, sources, syncLogs } from "@/db/schema";
+import type { AdminDataScope } from "@/lib/admin/data-scope";
 import { getEventConfirmQueueStats } from "@/lib/events/confirm-queue";
 import { getUpcomingEventsUncached } from "@/lib/events/queries";
 import { venueNeedsAddressConfirmation } from "@/lib/venues/confirmation";
@@ -27,6 +28,7 @@ export type AdminDashboardLastSyncDisplay = {
 };
 
 export type AdminDashboardStats = {
+  showPlatformStats: boolean;
   pendingEvents: number;
   pendingVenues: number;
   upcomingEventCount: number;
@@ -89,13 +91,18 @@ async function getVenuePendingConfirmationCount() {
     .length;
 }
 
-async function getSourceCounts() {
+async function getSourceCounts(scope: AdminDataScope) {
   const rows = await db
     .select({
       isActive: sources.isActive,
       value: count(),
     })
     .from(sources)
+    .where(
+      scope.mode === "org"
+        ? eq(sources.organizationId, scope.organizationId)
+        : undefined,
+    )
     .groupBy(sources.isActive);
 
   let activeSources = 0;
@@ -114,8 +121,30 @@ async function getSourceCounts() {
   return { activeSources, inactiveSources };
 }
 
-async function getLastSyncLog(): Promise<AdminDashboardLastSync | null> {
+async function getScopedSourceIds(scope: AdminDataScope) {
+  if (scope.mode === "all") {
+    return null;
+  }
+
+  const rows = await db.query.sources.findMany({
+    where: eq(sources.organizationId, scope.organizationId),
+    columns: { id: true },
+  });
+
+  return rows.map((row) => row.id);
+}
+
+async function getLastSyncLog(
+  scope: AdminDataScope,
+): Promise<AdminDashboardLastSync | null> {
+  const sourceIds = await getScopedSourceIds(scope);
+
+  if (sourceIds?.length === 0) {
+    return null;
+  }
+
   const row = await db.query.syncLogs.findFirst({
+    where: sourceIds ? inArray(syncLogs.sourceId, sourceIds) : undefined,
     orderBy: desc(syncLogs.createdAt),
     with: {
       source: {
@@ -139,13 +168,24 @@ async function getLastSyncLog(): Promise<AdminDashboardLastSync | null> {
   };
 }
 
-async function getRecentFailedSyncCount() {
+async function getRecentFailedSyncCount(scope: AdminDataScope) {
   const since = subHours(new Date(), 24);
+  const sourceIds = await getScopedSourceIds(scope);
+
+  if (sourceIds?.length === 0) {
+    return 0;
+  }
 
   const [row] = await db
     .select({ value: count() })
     .from(syncLogs)
-    .where(and(gte(syncLogs.createdAt, since), ne(syncLogs.status, "success")));
+    .where(
+      and(
+        gte(syncLogs.createdAt, since),
+        ne(syncLogs.status, "success"),
+        sourceIds ? inArray(syncLogs.sourceId, sourceIds) : undefined,
+      ),
+    );
 
   return Number(row?.value ?? 0);
 }
@@ -164,9 +204,29 @@ function countActiveOrganizers(
   return organizerIds.size;
 }
 
-export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
+async function getScopedUpcomingEvents(scope: AdminDataScope) {
+  if (scope.mode === "all") {
+    return getUpcomingEventsUncached();
+  }
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, scope.organizationId),
+    columns: { slug: true },
+  });
+
+  if (!organization) {
+    return [];
+  }
+
+  return getUpcomingEventsUncached({ organizationSlug: organization.slug });
+}
+
+export async function getAdminDashboardStats(
+  scope: AdminDataScope,
+): Promise<AdminDashboardStats> {
   await cookies();
 
+  const showPlatformStats = scope.mode === "all";
   const [
     { pendingCount: pendingEvents },
     pendingVenues,
@@ -175,21 +235,24 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     lastSync,
     recentFailedSyncs,
   ] = await Promise.all([
-    getEventConfirmQueueStats(),
-    getVenuePendingConfirmationCount(),
-    getUpcomingEventsUncached(),
-    getSourceCounts(),
-    getLastSyncLog(),
-    getRecentFailedSyncCount(),
+    getEventConfirmQueueStats(scope),
+    showPlatformStats ? getVenuePendingConfirmationCount() : Promise.resolve(0),
+    getScopedUpcomingEvents(scope),
+    getSourceCounts(scope),
+    getLastSyncLog(scope),
+    getRecentFailedSyncCount(scope),
   ]);
 
   return {
+    showPlatformStats,
     pendingEvents,
     pendingVenues,
     upcomingEventCount: upcomingEvents.length,
     activeSources: sourceCounts.activeSources,
     inactiveSources: sourceCounts.inactiveSources,
-    activeOrganizers: countActiveOrganizers(upcomingEvents),
+    activeOrganizers: showPlatformStats
+      ? countActiveOrganizers(upcomingEvents)
+      : 1,
     lastSyncDisplay: formatLastSyncDisplay(lastSync),
     recentFailedSyncs,
   };

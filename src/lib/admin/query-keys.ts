@@ -13,8 +13,8 @@ export const adminQueryKeys = {
 
 export const eventsQueryKeys = {
   all: ["events"] as const,
-  range: (from: string, to: string, limit?: number) =>
-    [...eventsQueryKeys.all, from, to, limit] as const,
+  range: (from: string, to: string, limit: number | undefined, editKey: string) =>
+    [...eventsQueryKeys.all, from, to, limit, editKey] as const,
 };
 
 export const placesQueryKeys = {

@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { VenueMergeTool } from "@/components/admin/venue-merge-tool";
 import { Skeleton } from "@/components/ui/skeleton";
+import { assertPlatformAdminPage } from "@/lib/admin/access";
 import { adminMetadata } from "@/lib/metadata";
 import { getVenueMergePageData } from "@/lib/venues/matching";
 
@@ -24,6 +25,8 @@ function AdminVenuesMergePageSkeleton() {
 }
 
 async function AdminVenuesMergePageContent() {
+  await assertPlatformAdminPage();
+
   const { venues, similarGroups, locationConflicts } =
     await getVenueMergePageData();
 

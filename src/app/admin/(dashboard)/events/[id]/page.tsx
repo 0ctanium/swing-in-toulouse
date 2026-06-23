@@ -25,6 +25,8 @@ import { toVenueSelectOption } from "@/lib/venues/select-options";
 import { formatEventDate } from "@/lib/events/format";
 import type { EventMaster } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
+import { requireAdminDataScope } from "@/lib/admin/access";
+import { assertEventInDataScope } from "@/lib/admin/auth";
 
 type AdminEventPageProps = {
   params: Promise<{ id: string }>;
@@ -48,6 +50,7 @@ function AdminEventPageSkeleton() {
 
 async function AdminEventPageContent({ params }: AdminEventPageProps) {
   const { id } = await params;
+  const dataScope = await requireAdminDataScope();
   const [eventData, occurrencesData, organizations, venues, duplicateInfo] =
     await Promise.all([
       getEventWithOverrides(id),
@@ -60,6 +63,17 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
   if (!eventData || !occurrencesData || !duplicateInfo) {
     notFound();
   }
+
+  if (!(await assertEventInDataScope(id, dataScope))) {
+    notFound();
+  }
+
+  const scopedOrganizations =
+    dataScope.mode === "org"
+      ? organizations.filter(
+          (organization) => organization.id === dataScope.organizationId,
+        )
+      : organizations;
 
   const { synced, masterOverride } = eventData;
   const occurrenceOverrides = new Map(
@@ -176,7 +190,7 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
           sourceUrl: synced.sourceUrl,
         }}
         currentPatch={masterOverride?.patch ?? {}}
-        organizations={organizations}
+        organizations={scopedOrganizations}
         venues={venues.map(toVenueSelectOption)}
       />
 
@@ -184,7 +198,7 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
         <OccurrenceOverridePanel
           eventId={synced.id}
           occurrences={occurrenceItems}
-          organizations={organizations}
+          organizations={scopedOrganizations}
           venues={venues.map(toVenueSelectOption)}
         />
       ) : null}

@@ -10,6 +10,7 @@ import {
 import { listOrganizers, listVenues } from "@/lib/events/queries";
 import { toVenueSelectOption } from "@/lib/venues/select-options";
 import { adminMetadata } from "@/lib/metadata";
+import { requireAdminDataScope } from "@/lib/admin/access";
 
 export const metadata: Metadata = adminMetadata({
   title: "Confirmer les événements",
@@ -27,12 +28,27 @@ function AdminEventsConfirmPageSkeleton() {
 }
 
 async function AdminEventsConfirmPageContent() {
+  const dataScope = await requireAdminDataScope();
+
   const [items, stats, organizations, venues] = await Promise.all([
-    getEventConfirmQueue(),
-    getEventConfirmQueueStats(),
+    getEventConfirmQueue(dataScope),
+    getEventConfirmQueueStats(dataScope),
     listOrganizers(),
     listVenues(),
   ]);
+
+  const organizationOptions =
+    dataScope.mode === "org"
+      ? organizations
+          .filter((organization) => organization.id === dataScope.organizationId)
+          .map((organization) => ({
+            id: organization.id,
+            name: organization.name,
+          }))
+      : organizations.map((organization) => ({
+          id: organization.id,
+          name: organization.name,
+        }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,10 +65,7 @@ async function AdminEventsConfirmPageContent() {
 
       <EventConfirmQueue
         initialItems={items}
-        organizations={organizations.map((organization) => ({
-          id: organization.id,
-          name: organization.name,
-        }))}
+        organizations={organizationOptions}
         venues={venues.map(toVenueSelectOption)}
         confirmedCount={stats.confirmedCount}
       />

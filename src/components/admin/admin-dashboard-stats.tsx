@@ -68,7 +68,7 @@ function StatCard({
 function buildStatCards(stats: AdminDashboardStats): StatCardProps[] {
   const lastSync = stats.lastSyncDisplay;
 
-  return [
+  const cards: StatCardProps[] = [
     {
       label: "Événements à confirmer",
       value: stats.pendingEvents,
@@ -80,28 +80,10 @@ function buildStatCards(stats: AdminDashboardStats): StatCardProps[] {
       variant: stats.pendingEvents > 0 ? "warning" : "default",
     },
     {
-      label: "Lieux à confirmer",
-      value: stats.pendingVenues,
-      detail:
-        stats.pendingVenues > 0
-          ? "Adresses Google à valider"
-          : "Tous les lieux actifs sont confirmés",
-      href: adminVenuesPendingFilterHref(),
-      variant: stats.pendingVenues > 0 ? "warning" : "default",
-      protect: true,
-    },
-    {
       label: "Événements à venir",
       value: stats.upcomingEventCount,
       detail: "Occurrences publiées sur les 12 prochains mois",
       href: "/admin/events",
-    },
-    {
-      label: "Organisateurs actifs",
-      value: stats.activeOrganizers,
-      detail: "Avec au moins un événement à venir",
-      href: "/admin/organizations",
-      protect: true,
     },
     {
       label: "Sources iCal actives",
@@ -130,6 +112,29 @@ function buildStatCards(stats: AdminDashboardStats): StatCardProps[] {
       variant: stats.recentFailedSyncs > 0 ? "warning" : "default",
     },
   ];
+
+  if (stats.showPlatformStats) {
+    cards.splice(1, 0, {
+      label: "Lieux à confirmer",
+      value: stats.pendingVenues,
+      detail:
+        stats.pendingVenues > 0
+          ? "Adresses Google à valider"
+          : "Tous les lieux actifs sont confirmés",
+      href: adminVenuesPendingFilterHref(),
+      variant: stats.pendingVenues > 0 ? "warning" : "default",
+      protect: true,
+    });
+    cards.splice(4, 0, {
+      label: "Organisateurs actifs",
+      value: stats.activeOrganizers,
+      detail: "Avec au moins un événement à venir",
+      href: "/admin/organizations",
+      protect: true,
+    });
+  }
+
+  return cards;
 }
 
 export function AdminDashboardStats({ stats }: { stats: AdminDashboardStats }) {

@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 import { db } from "@/db";
 import { organizations } from "@/db/schema";
-import { assertAdminApi } from "@/lib/admin/auth";
+import { eq } from "drizzle-orm";
+import { assertPlatformAdminApi } from "@/lib/admin/auth";
 import { invalidatePublicOrganizerCache } from "@/lib/cache/invalidate";
+import {
+  createClerkOrganizationForDbOrg,
+  getClerkClient,
+} from "@/lib/organizations/clerk-sync";
 import {
   getSelectableVenueById,
   listAdminOrganizations,
@@ -18,7 +24,7 @@ import { normalizeOrganizationDances } from "@/lib/organizations/dances";
 import { normalizeOrganizationSocialLinks } from "@/lib/organizations/social-links";
 
 export async function GET(request: NextRequest) {
-  const authError = await assertAdminApi(request);
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }
@@ -28,7 +34,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await assertAdminApi(request);
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }
@@ -77,7 +83,39 @@ export async function POST(request: NextRequest) {
     })
     .returning();
 
-  invalidatePublicOrganizerCache();
+  const { userId } = await auth();
 
-  return NextResponse.json({ organization: created }, { status: 201 });
+  if (!userId) {
+    await db.delete(organizations).where(eq(organizations.id, created.id));
+    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+  }
+
+  try {
+    const clerk = getClerkClient();
+    const clerkOrganization = await createClerkOrganizationForDbOrg(clerk, {
+      id: created.id,
+      name: created.name,
+      slug: created.slug,
+      createdBy: userId,
+    });
+
+    const [linked] = await db
+      .update(organizations)
+      .set({ clerkOrganizationId: clerkOrganization.id })
+      .where(eq(organizations.id, created.id))
+      .returning();
+
+    invalidatePublicOrganizerCache();
+
+    return NextResponse.json({ organization: linked }, { status: 201 });
+  } catch (error) {
+    await db.delete(organizations).where(eq(organizations.id, created.id));
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Création de l'organisation Clerk impossible.";
+
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

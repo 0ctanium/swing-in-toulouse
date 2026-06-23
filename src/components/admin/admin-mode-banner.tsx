@@ -3,40 +3,53 @@
 import Link from "next/link";
 import { Settings2 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { OrganizationSwitcher, useAuth } from "@clerk/nextjs";
 
 import { cn } from "@/lib/utils";
-import { Show, UserButton } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
+import { Protect } from "../admin-protect";
 
 export function AdminModeBanner({ className }: { className?: string }) {
   const pathname = usePathname();
   const isAdminPage = pathname.startsWith("/admin");
+  const { isLoaded, userId, orgId, sessionClaims } = useAuth();
 
-  if (isAdminPage) return null;
+  if (isAdminPage || !isLoaded || !userId) {
+    return null;
+  }
+
+  const hasInlineEditAccess =
+    Boolean(orgId) || sessionClaims?.metadata?.role === "admin";
+
+  if (!hasInlineEditAccess) {
+    return null;
+  }
 
   return (
-    <Show when="signed-in">
-      <div
-        className={cn(
-          "border-b border-amber-500/30 bg-amber-500/10 text-amber-950 dark:text-amber-100",
-          className,
-        )}
-      >
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2 text-sm">
-          <div className="inline-flex items-center gap-2">
-            <Settings2 className="size-4 shrink-0" />
-            <span>Mode admin actif — corrections visibles sur le site.</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/admin"
-              className="rounded-md px-2 py-1 font-medium hover:bg-amber-500/15"
-            >
-              Admin
-            </Link>
-            <UserButton />
-          </div>
+    <div
+      className={cn(
+        "border-b border-amber-500/30 bg-amber-500/10 text-amber-950 dark:text-amber-100",
+        className,
+      )}
+    >
+      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2 text-sm">
+        <div className="inline-flex items-center gap-2">
+          <Settings2 className="size-4 shrink-0" />
+          <span>Mode admin actif — corrections visibles sur le site.</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin"
+            className="rounded-md px-2 py-1 font-medium hover:bg-amber-500/15"
+          >
+            Admin
+          </Link>
+          <Protect fallback={<OrganizationSwitcher hidePersonal />} ignoreOrg>
+            <OrganizationSwitcher />
+          </Protect>
+          <UserButton />
         </div>
       </div>
-    </Show>
+    </div>
   );
 }

@@ -1,22 +1,32 @@
-import { Roles } from "@/types/global";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
-export const checkRole = async (role: Roles) => {
-  const { sessionClaims } = await auth();
-  return sessionClaims?.metadata.role === role;
-};
+import {
+  assertPlatformAdminPage,
+  getAdminAccessScope,
+} from "@/lib/admin/access";
 
-export const assertRole = async (role: Roles) => {
-  const { sessionClaims } = await auth();
+/** Platform admin in personal space (no active org). */
+export async function isPlatformAdmin() {
+  const scope = await getAdminAccessScope();
+  return scope?.isPlatformAdmin ?? false;
+}
 
-  if (!sessionClaims) {
+/** @deprecated Use isPlatformAdmin() — org context overrides the admin role. */
+export const checkRole = async (_role: "admin") => isPlatformAdmin();
+
+export async function assertPlatformAdmin() {
+  await assertPlatformAdminPage();
+}
+
+/** @deprecated Use assertPlatformAdmin() */
+export const assertRole = async (_role: "admin") => {
+  const scope = await getAdminAccessScope();
+
+  if (!scope?.userId) {
     redirect("/admin/login");
   }
 
-  const isAdmin = sessionClaims.metadata.role === role;
-
-  if (!isAdmin) {
+  if (!scope.isPlatformAdmin) {
     redirect("/admin");
   }
 };

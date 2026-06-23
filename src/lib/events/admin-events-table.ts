@@ -1,7 +1,8 @@
-import { isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { events } from "@/db/schema";
+import type { AdminDataScope } from "@/lib/admin/data-scope";
 import { isEventConfirmed } from "@/lib/events/confirmation";
 import {
   NONE_FILTER_VALUE,
@@ -229,9 +230,15 @@ function matchesFilters(row: AdminEventTableRow, query: AdminEventsQuery) {
   return true;
 }
 
-async function loadMasterEvents() {
+async function loadMasterEvents(scope: AdminDataScope) {
   return db.query.events.findMany({
-    where: isNull(events.canonicalEventId),
+    where:
+      scope.mode === "org"
+        ? and(
+            isNull(events.canonicalEventId),
+            eq(events.organizationId, scope.organizationId),
+          )
+        : isNull(events.canonicalEventId),
     with: {
       source: true,
       organization: true,
@@ -241,17 +248,21 @@ async function loadMasterEvents() {
   });
 }
 
-async function loadMergedMasterEvents(): Promise<AdminEventRow[]> {
-  const rows = (await loadMasterEvents()) as AdminEventRow[];
+async function loadMergedMasterEvents(
+  scope: AdminDataScope,
+): Promise<AdminEventRow[]> {
+  const rows = (await loadMasterEvents(scope)) as AdminEventRow[];
   const merged = await mergeMastersWithMasterOverrides(
     rows as unknown as EventMaster[],
   );
   return merged as unknown as AdminEventRow[];
 }
 
-export async function getAdminEventsFilterOptions(): Promise<AdminEventsFilterOptions> {
+export async function getAdminEventsFilterOptions(
+  scope: AdminDataScope,
+): Promise<AdminEventsFilterOptions> {
   const [rows, tagMetadata] = await Promise.all([
-    loadMergedMasterEvents(),
+    loadMergedMasterEvents(scope),
     loadEventCategoryTagMetadataMap(),
   ]);
 
@@ -321,12 +332,13 @@ export async function getAdminEventsFilterOptions(): Promise<AdminEventsFilterOp
 
 export async function listAdminEventsTable(
   query: AdminEventsQuery,
+  scope: AdminDataScope,
   options?: { pageSize?: number },
 ): Promise<AdminEventsTableResult> {
   const pageSize = options?.pageSize ?? ADMIN_EVENTS_PAGE_SIZE;
   const page = Math.max(1, query.page);
 
-  const rows = await loadMergedMasterEvents();
+  const rows = await loadMergedMasterEvents(scope);
   const recurringMasters = rows.filter((row) =>
     row.recurrenceRule,
   ) as unknown as EventMaster[];

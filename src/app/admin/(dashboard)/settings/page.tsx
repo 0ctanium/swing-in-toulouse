@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { listAdminCategoryTags } from "@/lib/event-category-tags/admin";
 import { parseAdminCategoryTagsSearchParams } from "@/lib/event-category-tags/params";
 import { adminMetadata } from "@/lib/metadata";
-import { assertRole } from "@/lib/admin/roles";
+import { assertPlatformAdmin } from "@/lib/admin/roles";
 
 export const metadata: Metadata = adminMetadata({
   title: "Réglages",
@@ -30,7 +30,7 @@ function AdminSettingsPageSkeleton() {
 async function AdminSettingsPageContent({
   searchParams,
 }: AdminSettingsPageProps) {
-  await assertRole("admin");
+  await assertPlatformAdmin();
 
   const resolvedSearchParams = await searchParams;
   const query = parseAdminCategoryTagsSearchParams(resolvedSearchParams);

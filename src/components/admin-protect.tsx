@@ -1,23 +1,21 @@
 "use client";
+
 import { useAuth } from "@clerk/nextjs";
 
 export type ProtectProps = React.PropsWithChildren<{
   fallback?: React.ReactNode;
-
-  /**
-   * Indicates whether pending sessions are considered as signed out or not.
-   *
-   * @default true
-   */
   treatPendingAsSignedOut?: boolean;
+  ignoreOrg?: boolean;
 }>;
 
+/** Platform admin in personal space only — hidden when an org is active. */
 export function Protect({
   children,
   fallback,
   treatPendingAsSignedOut = true,
+  ignoreOrg = false,
 }: ProtectProps) {
-  const { isLoaded, userId, sessionClaims } = useAuth({
+  const { isLoaded, userId, orgId, sessionClaims } = useAuth({
     treatPendingAsSignedOut,
   });
 
@@ -25,16 +23,25 @@ export function Protect({
     return null;
   }
 
-  const authorized = children;
   const unauthorized = fallback ?? null;
 
   if (!userId) {
     return unauthorized;
   }
 
-  if (sessionClaims.metadata.role !== "admin") {
-    return unauthorized;
+  if (ignoreOrg) {
+    const isPlatformAdmin = sessionClaims?.metadata?.role === "admin";
+
+    if (!isPlatformAdmin) {
+      return unauthorized;
+    }
+  } else {
+    const isPlatformAdmin = sessionClaims?.metadata?.role === "admin" && !orgId;
+
+    if (!isPlatformAdmin) {
+      return unauthorized;
+    }
   }
 
-  return authorized;
+  return children;
 }

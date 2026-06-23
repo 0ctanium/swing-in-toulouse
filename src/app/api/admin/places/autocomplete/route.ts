@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { assertAdminApi } from "@/lib/admin/auth";
+import { assertPlatformAdminApi } from "@/lib/admin/auth";
 import {
   autocompletePlaces,
   GooglePlacesError,
@@ -13,7 +13,7 @@ const querySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const authError = await assertAdminApi();
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }

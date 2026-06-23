@@ -3,7 +3,11 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { sources } from "@/db/schema";
-import { assertAdminApi } from "@/lib/admin/auth";
+import {
+  requireOrgScopedApi,
+  requireSourceInScope,
+} from "@/lib/admin/api-auth";
+import { resolveWritableOrganizationId } from "@/lib/admin/data-scope";
 import { invalidateAllPublicCache } from "@/lib/cache/invalidate";
 import { deleteIcalBlob } from "@/lib/sources/blob";
 import {
@@ -20,12 +24,17 @@ type RouteContext = {
 };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
-  if (authError) {
-    return authError;
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const { id } = await context.params;
+  const scopeError = await requireSourceInScope(id, auth.dataScope);
+  if ("error" in scopeError) {
+    return scopeError.error;
+  }
+
   const parsed = sourcePatchSchema.safeParse(await request.json());
 
   if (!parsed.success) {
@@ -50,8 +59,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     );
   }
 
-  if (parsed.data.organizationId) {
-    const organization = await getOrganizationById(parsed.data.organizationId);
+  const organizationId =
+    parsed.data.organizationId !== undefined
+      ? resolveWritableOrganizationId(
+          auth.dataScope,
+          parsed.data.organizationId,
+        )
+      : undefined;
+
+  if (organizationId) {
+    const organization = await getOrganizationById(organizationId);
 
     if (!organization) {
       return NextResponse.json(
@@ -81,9 +98,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       ...(parsed.data.url !== undefined && existing.type === "ical"
         ? { url: parsed.data.url.trim() }
         : {}),
-      ...(parsed.data.organizationId !== undefined
-        ? { organizationId: parsed.data.organizationId }
-        : {}),
+      ...(organizationId !== undefined ? { organizationId } : {}),
       ...(parsed.data.defaultLocationRaw !== undefined
         ? {
             defaultLocationRaw:
@@ -103,13 +118,17 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return NextResponse.json({ source: updated });
 }
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
-  if (authError) {
-    return authError;
+export async function DELETE(_request: NextRequest, context: RouteContext) {
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const { id } = await context.params;
+  const scopeError = await requireSourceInScope(id, auth.dataScope);
+  if ("error" in scopeError) {
+    return scopeError.error;
+  }
 
   const existing = await db.query.sources.findFirst({
     where: eq(sources.id, id),

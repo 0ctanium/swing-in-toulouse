@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { assertAdminApi } from "@/lib/admin/auth";
+import {
+  requireEventInScope,
+  requireOrgScopedApi,
+} from "@/lib/admin/api-auth";
 import { invalidatePublicEventCache } from "@/lib/cache/invalidate";
 import {
   deleteEventOverride,
@@ -14,12 +17,17 @@ type RouteContext = {
 };
 
 export async function GET(_request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi();
-  if (authError) {
-    return authError;
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const { id } = await context.params;
+  const scopeError = await requireEventInScope(id, auth.dataScope);
+  if ("error" in scopeError) {
+    return scopeError.error;
+  }
+
   const event = await getEventWithOverrides(id);
 
   if (!event) {
@@ -30,12 +38,17 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
-  if (authError) {
-    return authError;
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const { id } = await context.params;
+  const scopeError = await requireEventInScope(id, auth.dataScope);
+  if ("error" in scopeError) {
+    return scopeError.error;
+  }
+
   const body = (await request.json()) as {
     patch?: unknown;
     occurrenceStartAt?: string | null;
@@ -66,12 +79,17 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi(request);
-  if (authError) {
-    return authError;
+  const auth = await requireOrgScopedApi();
+  if ("error" in auth) {
+    return auth.error;
   }
 
   const { id } = await context.params;
+  const scopeError = await requireEventInScope(id, auth.dataScope);
+  if ("error" in scopeError) {
+    return scopeError.error;
+  }
+
   const occurrenceStartAtRaw = request.nextUrl.searchParams.get(
     "occurrenceStartAt",
   );

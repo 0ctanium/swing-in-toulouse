@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { assertAdminApi } from "@/lib/admin/auth";
+import { assertPlatformAdminApi } from "@/lib/admin/auth";
 import { invalidatePublicVenueCache } from "@/lib/cache/invalidate";
 import {
   clearVenueAlias,
@@ -12,7 +12,7 @@ type RouteContext = {
 };
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const authError = await assertAdminApi();
+  const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
   }
