@@ -1,18 +1,24 @@
 "use client";
 
-import { useAdminLogout } from "@/lib/admin/use-auth";
+import { useClerk } from "@clerk/nextjs";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 
 export function AdminLogoutButton() {
-  const logout = useAdminLogout();
+  const { signOut } = useClerk();
+  const [isPending, setIsPending] = useState(false);
 
   return (
     <Button
       variant="outline"
-      onClick={() => logout.mutate()}
-      disabled={logout.isPending}
+      onClick={() => {
+        setIsPending(true);
+        void signOut({ redirectUrl: "/admin/login" });
+      }}
+      disabled={isPending}
     >
-      {logout.isPending ? "Déconnexion…" : "Déconnexion"}
+      {isPending ? "Déconnexion…" : "Déconnexion"}
     </Button>
   );
 }

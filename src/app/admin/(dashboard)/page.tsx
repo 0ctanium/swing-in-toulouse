@@ -6,6 +6,7 @@ import { AdminDashboardStats } from "@/components/admin/admin-dashboard-stats";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminMetadata } from "@/lib/metadata";
 import { getAdminDashboardStats } from "@/lib/admin/dashboard-stats";
+import { Protect } from "@/components/admin-protect";
 
 export const metadata: Metadata = adminMetadata({
   title: "Administration",
@@ -37,7 +38,9 @@ async function AdminHomePageContent() {
         </p>
       </div>
       <AdminDashboardStats stats={stats} />
-      <AdminDashboardLinks />
+      <Protect>
+        <AdminDashboardLinks />
+      </Protect>
     </div>
   );
 }

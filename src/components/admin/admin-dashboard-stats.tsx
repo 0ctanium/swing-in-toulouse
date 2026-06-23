@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AdminDashboardStats } from "@/lib/admin/dashboard-stats";
 import { adminVenuesPendingFilterHref } from "@/lib/venues/admin-venues-params";
 import { cn } from "@/lib/utils";
+import { Protect } from "../admin-protect";
 
 type StatCardProps = {
   label: string;
@@ -11,10 +12,18 @@ type StatCardProps = {
   detail?: string;
   href?: string;
   variant?: "default" | "warning" | "muted";
+  protect?: boolean;
 };
 
-function StatCard({ label, value, detail, href, variant = "default" }: StatCardProps) {
-  const content = (
+function StatCard({
+  label,
+  value,
+  detail,
+  href,
+  variant = "default",
+  protect = false,
+}: StatCardProps) {
+  let content = (
     <>
       <p
         className={cn(
@@ -33,21 +42,27 @@ function StatCard({ label, value, detail, href, variant = "default" }: StatCardP
   );
 
   if (!href) {
-    return (
+    content = (
       <div className="flex flex-col gap-1 rounded-xl bg-muted/30 p-4 ring-1 ring-foreground/10">
         {content}
       </div>
     );
+  } else {
+    content = (
+      <Link
+        href={href}
+        className="hover:bg-muted/40 focus-visible:ring-ring flex flex-col gap-1 rounded-xl bg-muted/30 p-4 ring-1 ring-foreground/10 outline-none transition-colors focus-visible:ring-2"
+      >
+        {content}
+      </Link>
+    );
   }
 
-  return (
-    <Link
-      href={href}
-      className="hover:bg-muted/40 focus-visible:ring-ring flex flex-col gap-1 rounded-xl bg-muted/30 p-4 ring-1 ring-foreground/10 outline-none transition-colors focus-visible:ring-2"
-    >
-      {content}
-    </Link>
-  );
+  if (protect) {
+    content = <Protect>{content}</Protect>;
+  }
+
+  return content;
 }
 
 function buildStatCards(stats: AdminDashboardStats): StatCardProps[] {
@@ -73,6 +88,7 @@ function buildStatCards(stats: AdminDashboardStats): StatCardProps[] {
           : "Tous les lieux actifs sont confirmés",
       href: adminVenuesPendingFilterHref(),
       variant: stats.pendingVenues > 0 ? "warning" : "default",
+      protect: true,
     },
     {
       label: "Événements à venir",
@@ -85,6 +101,7 @@ function buildStatCards(stats: AdminDashboardStats): StatCardProps[] {
       value: stats.activeOrganizers,
       detail: "Avec au moins un événement à venir",
       href: "/admin/organizations",
+      protect: true,
     },
     {
       label: "Sources iCal actives",

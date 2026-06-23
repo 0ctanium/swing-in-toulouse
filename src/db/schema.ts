@@ -132,6 +132,7 @@ export const organizations = pgTable(
     dances: text("dances").array().$type<OrganizationDance[]>(),
     socialLinks: jsonb("social_links").$type<OrganizationSocialLinks>(),
     isActive: boolean("is_active").notNull().default(true),
+    clerkOrganizationId: text("clerk_organization_id").unique(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -144,6 +145,9 @@ export const organizations = pgTable(
     index("organizations_slug_idx").on(table.slug),
     index("organizations_active_idx").on(table.isActive),
     index("organizations_venue_id_idx").on(table.venueId),
+    index("organizations_clerk_organization_id_idx").on(
+      table.clerkOrganizationId,
+    ),
   ],
 );
 

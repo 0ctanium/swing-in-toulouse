@@ -2,12 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
-import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { AdminSubNav } from "@/components/admin/admin-sub-nav";
 import { EventsPendingAlert } from "@/components/admin/events-pending-alert";
-import { isAdminConfigured } from "@/env";
-import { isAdminAuthenticated } from "@/lib/admin/auth";
+import { isAuthenticated } from "@/lib/admin/auth";
 import { getEventConfirmQueueStats } from "@/lib/events/confirm-queue";
+import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
+import { Protect } from "@/components/admin-protect";
 
 function AdminDashboardShell({ children }: { children?: React.ReactNode }) {
   return (
@@ -22,22 +22,10 @@ async function AdminDashboardLayoutInner({
 }: {
   children: React.ReactNode;
 }) {
-  if (!isAdminConfigured()) {
-    return (
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 py-10">
-        <h1 className="font-heading text-2xl font-semibold">Administration</h1>
-        <p className="text-muted-foreground">
-          Définissez <code>ADMIN_SECRET</code> dans votre fichier{" "}
-          <code>.env.local</code> pour activer l&apos;interface admin.
-        </p>
-      </div>
-    );
-  }
-
-  const authenticated = await isAdminAuthenticated();
+  const authenticated = await isAuthenticated();
 
   if (!authenticated) {
-    redirect("/admin/login");
+    redirect("/admin/login?redirect_url=/admin");
   }
 
   const { pendingCount } = await getEventConfirmQueueStats();
@@ -51,7 +39,12 @@ async function AdminDashboardLayoutInner({
         >
           Administration
         </Link>
-        <AdminLogoutButton />
+        <div className="flex items-center gap-2">
+          <Protect fallback={<OrganizationSwitcher hidePersonal />}>
+            <OrganizationSwitcher />
+          </Protect>
+          <UserButton />
+        </div>
       </div>
       <AdminSubNav />
       <EventsPendingAlert pendingCount={pendingCount} />

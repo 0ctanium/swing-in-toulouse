@@ -4,18 +4,37 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
+import { Protect } from "../admin-protect";
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  prefix: string;
+  protect?: boolean;
+}
+
+const navItems: NavItem[] = [
   { href: "/admin/events", label: "Événements", prefix: "/admin/events" },
-  { href: "/admin/venues", label: "Lieux", prefix: "/admin/venues" },
+  {
+    href: "/admin/venues",
+    label: "Lieux",
+    prefix: "/admin/venues",
+    protect: true,
+  },
   {
     href: "/admin/organizations",
     label: "Organisateurs",
     prefix: "/admin/organizations",
+    protect: true,
   },
   { href: "/admin/sources", label: "Sources", prefix: "/admin/sources" },
-  { href: "/admin/settings", label: "Réglages", prefix: "/admin/settings" },
-] as const;
+  {
+    href: "/admin/settings",
+    label: "Réglages",
+    prefix: "/admin/settings",
+    protect: true,
+  },
+];
 
 export function AdminSubNav() {
   const pathname = usePathname();
@@ -29,7 +48,7 @@ export function AdminSubNav() {
         const isActive =
           pathname === item.href || pathname.startsWith(`${item.prefix}/`);
 
-        return (
+        const link = (
           <Link
             key={item.href}
             href={item.href}
@@ -44,6 +63,12 @@ export function AdminSubNav() {
             {item.label}
           </Link>
         );
+
+        if (item.protect) {
+          return <Protect key={item.href}>{link}</Protect>;
+        }
+
+        return link;
       })}
     </nav>
   );

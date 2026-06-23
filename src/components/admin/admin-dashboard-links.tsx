@@ -1,4 +1,12 @@
-import { ArrowUpRight, BarChart3, Cloud, Database, Search } from "lucide-react";
+import {
+  ArrowUpRight,
+  BarChart3,
+  Cloud,
+  Database,
+  Search,
+  User,
+  Users,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +21,7 @@ const linkIcons: Record<string, LucideIcon> = {
   "Google Search Console": Search,
   Neon: Database,
   Vercel: Cloud,
+  Clerk: Users,
 };
 
 function AdminDashboardLinkCard({ link }: { link: AdminDashboardLink }) {

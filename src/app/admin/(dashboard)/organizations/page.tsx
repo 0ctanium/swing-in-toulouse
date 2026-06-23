@@ -9,6 +9,7 @@ import { venues } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
 import { listAdminOrganizations } from "@/lib/organizations/admin";
 import { toVenueSelectOption } from "@/lib/venues/select-options";
+import { assertRole, checkRole } from "@/lib/admin/roles";
 
 export const metadata: Metadata = adminMetadata({
   title: "Organisateurs",
@@ -26,6 +27,8 @@ function AdminOrganizationsPageSkeleton() {
 }
 
 async function AdminOrganizationsPageContent() {
+  await assertRole("admin");
+
   const [organizations, venueRows] = await Promise.all([
     listAdminOrganizations(),
     db.query.venues.findMany({
@@ -46,10 +49,7 @@ async function AdminOrganizationsPageContent() {
         </p>
       </div>
 
-      <OrganizationsAdmin
-        organizations={organizations}
-        venues={venueOptions}
-      />
+      <OrganizationsAdmin organizations={organizations} venues={venueOptions} />
     </div>
   );
 }

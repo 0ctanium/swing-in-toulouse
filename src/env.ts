@@ -14,16 +14,17 @@ export const env = createEnv({
       .default("node-postgres"),
     NEON_LOCAL: z.coerce.boolean().default(false),
     CRON_SYNC_URL: z.string().url().optional(),
-    QSTASH_URL: z.string().url().optional(),
-    QSTASH_TOKEN: z.string().optional(),
-    QSTASH_CURRENT_SIGNING_KEY: z.string().optional(),
-    QSTASH_NEXT_SIGNING_KEY: z.string().optional(),
-    ADMIN_SECRET: z.string().min(16).optional(),
+    QSTASH_URL: z.string().url(),
+    QSTASH_TOKEN: z.string(),
+    QSTASH_CURRENT_SIGNING_KEY: z.string(),
+    QSTASH_NEXT_SIGNING_KEY: z.string(),
     GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
     BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
+    CLERK_SECRET_KEY: z.string().min(1),
   },
   client: {
     NEXT_PUBLIC_SITE_URL: z.string().url(),
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
@@ -35,10 +36,12 @@ export const env = createEnv({
     QSTASH_TOKEN: process.env.QSTASH_TOKEN,
     QSTASH_CURRENT_SIGNING_KEY: process.env.QSTASH_CURRENT_SIGNING_KEY,
     QSTASH_NEXT_SIGNING_KEY: process.env.QSTASH_NEXT_SIGNING_KEY,
-    ADMIN_SECRET: process.env.ADMIN_SECRET,
     GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   emptyStringAsUndefined: true,
@@ -56,14 +59,6 @@ export function isQStashConfigured() {
   );
 }
 
-export function isAdminConfigured() {
-  return Boolean(env.ADMIN_SECRET);
-}
-
 export function isGoogleMapsConfigured() {
   return Boolean(env.GOOGLE_MAPS_API_KEY);
-}
-
-export function isBlobStorageConfigured() {
-  return Boolean(env.BLOB_READ_WRITE_TOKEN);
 }

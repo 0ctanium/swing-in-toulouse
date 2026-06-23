@@ -16,6 +16,11 @@ export const adminDashboardLinks: AdminDashboardLink[] = [
     href: "https://search.google.com/search-console?resource_id=sc-domain%3Aswing-toulouse.fr",
   },
   {
+    label: "Clerk",
+    description: "Gestion des utilisateurs et des permissions",
+    href: "https://dashboard.clerk.com/apps/app_3FUDe25DdYqWhDHc3PjG3ZDAmpU/instances/ins_3FUDdyuXx4OWhkJx5hPkEle86C9",
+  },
+  {
     label: "Neon",
     description: "Base de données PostgreSQL",
     href: "https://console.neon.tech/app/projects/nameless-bar-14735498?database=neondb&branchId=br-aged-river-alitoxt5",

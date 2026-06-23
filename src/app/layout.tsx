@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { AdminAwareChrome } from "@/components/layout/admin-aware-chrome";
+import { AppClerkProvider } from "@/components/clerk-provider";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -67,9 +67,9 @@ export default function RootLayout({
       >
         <JsonLd data={siteWebSiteJsonLd()} />
         <SpeedInsights />
-        <ThemeProvider>
-          <Providers>
-            <AdminAwareChrome>
+        <AppClerkProvider>
+          <ThemeProvider>
+            <Providers>
               <AdminModeBanner />
               <SiteHeader />
               <main
@@ -78,10 +78,10 @@ export default function RootLayout({
               >
                 {children}
               </main>
-            </AdminAwareChrome>
-          </Providers>
-          <SiteFooter />
-        </ThemeProvider>
+            </Providers>
+            <SiteFooter />
+          </ThemeProvider>
+        </AppClerkProvider>
       </body>
     </html>
   );

@@ -19,7 +19,6 @@ import {
   siteNavLinkClassName,
   siteNavMobileLinkClassName,
 } from "@/lib/site-nav";
-import { cn } from "@/lib/utils";
 
 export function SiteHeaderNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
