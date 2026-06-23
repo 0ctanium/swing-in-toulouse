@@ -64,7 +64,7 @@ describe("venueShowsPreciseMap", () => {
 
     expect(
       venueShowsPreciseMap({
-        locationKind: "online",
+        locationKind: "none",
         addressConfirmedAt: new Date(),
         latitude: 43.6,
         longitude: 1.44,
@@ -97,7 +97,7 @@ describe("getVenueMapsUrl", () => {
         longitude: null,
         formattedAddress: null,
         address: null,
-        locationKind: "online",
+        locationKind: "none",
       }),
     ).toBeNull();
   });

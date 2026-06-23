@@ -8,11 +8,11 @@ import {
 describe("hasIcalDataChanges", () => {
   it("ignores volatile iCal fields", () => {
     const existing = {
-      summary: "Soirée swing",
+      transparency: "OPAQUE" as const,
       dtstamp: "2026-01-01T00:00:00Z",
     };
     const next = {
-      summary: "Soirée swing",
+      transparency: "OPAQUE" as const,
       dtstamp: "2026-02-01T00:00:00Z",
     };
 
@@ -22,8 +22,8 @@ describe("hasIcalDataChanges", () => {
   it("detects meaningful field changes", () => {
     expect(
       hasIcalDataChanges(
-        { summary: "Soirée swing" },
-        { summary: "Bal swing" },
+        { transparency: "OPAQUE" },
+        { transparency: "TRANSPARENT" },
       ),
     ).toBe(true);
   });

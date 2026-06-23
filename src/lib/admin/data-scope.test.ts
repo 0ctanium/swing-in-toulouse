@@ -46,13 +46,16 @@ describe("resolveAdminDataScope", () => {
 
 describe("isOrgScoped", () => {
   it("narrows org-scoped data scopes", () => {
-    const scope = resolveAdminDataScope(orgMemberScope());
+    const resolved = resolveAdminDataScope(orgMemberScope());
 
-    expect(isOrgScoped(scope)).toBe(true);
+    expect(resolved).toEqual({ mode: "org", organizationId: "org_db_1" });
 
-    if (isOrgScoped(scope)) {
-      expect(scope.organizationId).toBe("org_db_1");
+    if (resolved.mode !== "org") {
+      throw new Error("expected org-scoped data scope");
     }
+
+    expect(isOrgScoped(resolved)).toBe(true);
+    expect(resolved.organizationId).toBe("org_db_1");
   });
 
   it("rejects platform-wide scope", () => {

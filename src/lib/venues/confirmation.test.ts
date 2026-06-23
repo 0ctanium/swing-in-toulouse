@@ -12,7 +12,7 @@ function makeVenue(
     id: string;
     name: string;
     eventCount: number;
-    locationKind: "place" | "area" | "online";
+    locationKind: "place" | "area" | "none";
     addressConfirmedAt: Date | null;
     latitude: number | null;
     longitude: number | null;
@@ -34,6 +34,7 @@ function makeVenue(
     category: null,
     locationKind: overrides.locationKind ?? "place",
     aliasCount: 0,
+    overrideCount: 0,
     eventCount: overrides.eventCount ?? 1,
     needsConfirmation: false,
   };
@@ -74,7 +75,7 @@ describe("venueNeedsAddressConfirmation", () => {
     expect(
       venueNeedsAddressConfirmation({
         eventCount: 3,
-        locationKind: "online",
+        locationKind: "none",
         addressConfirmedAt: null,
         latitude: null,
         longitude: null,

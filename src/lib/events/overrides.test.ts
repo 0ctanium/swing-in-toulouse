@@ -5,6 +5,7 @@ import {
   applyMasterOverride,
   applyOccurrenceOverride,
   buildOverrideIndex,
+  type OccurrenceLike,
   type StoredEventOverride,
 } from "@/lib/events/overrides";
 
@@ -120,7 +121,7 @@ describe("applyOccurrenceOverride", () => {
         organizations: new Map([[organization.id, organization]]),
         venues: new Map([[venue.id, venue]]),
       },
-    );
+    ) as OccurrenceLike;
 
     expect(result.title).toBe("Occurrence spéciale");
     expect(result.isHidden).toBe(true);

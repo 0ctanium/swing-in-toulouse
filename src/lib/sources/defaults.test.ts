@@ -60,7 +60,7 @@ describe("resolveSyncedLocationForUpsert", () => {
     expect(
       resolveSyncedLocationForUpsert(
         source,
-        { location: null },
+        {},
         { sourceId: "other-source", locationRaw: "Existing venue" },
       ),
     ).toBe("Existing venue");
