@@ -4,7 +4,7 @@ const TEST_BASE_URL = "http://localhost:3000";
 
 export function createTestRequest(
   path: string,
-  init: RequestInit = {},
+  init: ConstructorParameters<typeof NextRequest>[1] = {},
 ): NextRequest {
   return new NextRequest(new URL(path, TEST_BASE_URL), init);
 }

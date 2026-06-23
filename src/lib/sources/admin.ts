@@ -1,5 +1,6 @@
 import { and, asc, count, eq, isNull, ne } from "drizzle-orm";
 
+import { type AdminDataScope } from "@/lib/admin/data-scope";
 import { db } from "@/db";
 import { events, organizations, sources, type SourceType } from "@/db/schema";
 
