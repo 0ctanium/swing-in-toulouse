@@ -14,6 +14,10 @@ function llmsLink(title: string, path: string, description: string) {
   return `- [${title}](${absoluteUrl(path)}): ${description}`;
 }
 
+function urlPattern(path: string) {
+  return `${siteConfig.url}${path}`;
+}
+
 export function formatLlmsTxtContent(dances: PublishedDanceTag[]) {
   const lines = [
     `# ${siteConfig.name}`,
@@ -87,17 +91,22 @@ export function formatLlmsTxtContent(dances: PublishedDanceTag[]) {
       `/api/ical/${GLOBAL_ICAL_PAYLOAD}.ics`,
       "Abonnement calendrier de tous les événements à venir (alias court : /agenda.ics).",
     ),
+    llmsLink(
+      "Flux Atom",
+      "/feed.xml",
+      "Flux Atom des 50 prochains événements à venir (syndication et lecteurs RSS).",
+    ),
     "",
     "## Modèles d'URL",
     "",
     "Chaque entité publique a une page dédiée avec métadonnées schema.org :",
     "",
-    `- Événement : ${absoluteUrl("/evenement/{slug}")}`,
-    `- Organisateur : ${absoluteUrl("/organisateur/{slug}")}`,
-    `- Lieu : ${absoluteUrl("/lieu/{slug}")}`,
-    `- Archive mensuelle : ${absoluteUrl("/evenements/{année}/{mois}")}`,
-    `- Abonnement iCal par organisateur : ${absoluteUrl("/organisateur/{slug}.ics")}`,
-    `- Abonnement iCal par événement : ${absoluteUrl("/evenement/{slug}.ics")}`,
+    `- Événement : ${urlPattern("/evenement/{slug}")}`,
+    `- Organisateur : ${urlPattern("/organisateur/{slug}")}`,
+    `- Lieu : ${urlPattern("/lieu/{slug}")}`,
+    `- Archive mensuelle : ${urlPattern("/evenements/{year}/{month}")}`,
+    `- Abonnement iCal par organisateur : ${urlPattern("/organisateur/{slug}.ics")}`,
+    `- Abonnement iCal par événement : ${urlPattern("/evenement/{slug}.ics")}`,
     "",
     `Langue : ${siteConfig.locale}. Fuseau horaire : ${siteConfig.timezone}.`,
   ];

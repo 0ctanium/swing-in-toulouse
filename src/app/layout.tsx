@@ -32,6 +32,16 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   metadataBase: new URL(siteConfig.url),
+  alternates: {
+    types: {
+      "application/atom+xml": [
+        {
+          url: "/feed.xml",
+          title: "Événements à venir",
+        },
+      ],
+    },
+  },
   openGraph: {
     type: "website",
     locale: siteConfig.locale,

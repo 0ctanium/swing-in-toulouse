@@ -26,6 +26,10 @@ describe("formatLlmsTxtContent", () => {
     );
     expect(content).toContain("## Données machine-lisibles");
     expect(content).toContain("/api/events");
+    expect(content).toContain(
+      "Événement : http://localhost:3000/evenement/{slug}",
+    );
+    expect(content).not.toContain("%7B");
     expect(content).not.toContain("](/");
     expect(content).toContain("Langue : fr-FR");
   });
