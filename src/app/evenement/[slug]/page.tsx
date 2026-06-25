@@ -7,6 +7,9 @@ import {
 } from "@/components/events/event-page-content";
 import { getEventBySlug } from "@/lib/events/queries";
 import { publicMetadata } from "@/lib/metadata";
+import { generateEventStaticParams } from "@/lib/static-params";
+
+export { generateEventStaticParams as generateStaticParams };
 
 type EventPageProps = {
   params: Promise<{ slug: string }>;

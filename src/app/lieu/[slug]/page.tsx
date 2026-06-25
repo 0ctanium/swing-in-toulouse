@@ -7,6 +7,9 @@ import {
 } from "@/components/venues/venue-page-content";
 import { getVenueBySlug, resolveVenueBySlug } from "@/lib/events/queries";
 import { publicMetadata } from "@/lib/metadata";
+import { generateVenueStaticParams } from "@/lib/static-params";
+
+export { generateVenueStaticParams as generateStaticParams };
 import { getVenueDisplayAddress } from "@/lib/venues/display";
 
 type VenuePageProps = {

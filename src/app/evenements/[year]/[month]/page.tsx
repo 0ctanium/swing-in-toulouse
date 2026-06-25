@@ -22,6 +22,9 @@ import { listEventsInMonth } from "@/lib/events/queries";
 import { archiveBreadcrumbs } from "@/lib/seo/structured-data";
 import { absoluteUrl, eventUrl } from "@/lib/site";
 import { publicMetadata } from "@/lib/metadata";
+import { generateArchiveMonthStaticParams } from "@/lib/static-params";
+
+export { generateArchiveMonthStaticParams as generateStaticParams };
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 

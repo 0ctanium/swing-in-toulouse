@@ -11,6 +11,9 @@ import {
   getPublishedDanceTagBySlug,
 } from "@/lib/event-category-tags/dance-pages";
 import { publicMetadata } from "@/lib/metadata";
+import { generateDanceStaticParams } from "@/lib/static-params";
+
+export { generateDanceStaticParams as generateStaticParams };
 
 type DancePageProps = {
   params: Promise<{ slug: string }>;

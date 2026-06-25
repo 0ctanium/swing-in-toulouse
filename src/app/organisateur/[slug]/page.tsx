@@ -7,6 +7,9 @@ import {
 } from "@/components/organizations/organizer-page-content";
 import { getOrganizerBySlug } from "@/lib/events/queries";
 import { publicMetadata } from "@/lib/metadata";
+import { generateOrganizerStaticParams } from "@/lib/static-params";
+
+export { generateOrganizerStaticParams as generateStaticParams };
 import { formatOrganizationCategory } from "@/lib/organizations/categories";
 import { getVenueDisplayAddress } from "@/lib/venues/display";
 
