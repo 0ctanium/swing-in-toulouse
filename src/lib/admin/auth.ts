@@ -17,7 +17,7 @@ import { isPlatformAdmin } from "@/lib/admin/roles";
 
 export async function isAuthenticated() {
   const scope = await getAdminAccessScope();
-  return scope?.userId !== null;
+  return scope && scope.userId !== null;
 }
 
 /** Platform admin in personal space (no active org). */
