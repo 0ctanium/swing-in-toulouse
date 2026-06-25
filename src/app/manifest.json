@@ -1,7 +1,24 @@
 {
   "name": "Swingin Toulouse",
   "short_name": "Swingin Toulouse",
+  "description": "L'agenda swing à Toulouse : soirées, cours, stages et festivals.",
+  "lang": "fr",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/web-app-manifest-192x192.png",
       "sizes": "192x192",
@@ -17,5 +34,6 @@
   ],
   "theme_color": "#ffffff",
   "background_color": "#ffffff",
-  "display": "standalone"
+  "display": "standalone",
+  "orientation": "any"
 }

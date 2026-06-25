@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
+import { PwaInstallButton } from "@/components/pwa/pwa-install-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { emptyIcalPayload } from "@/lib/ical/payload";
 import { siteConfig } from "@/lib/site";
@@ -23,6 +24,7 @@ export function SiteFooter() {
             </button>
           </CalendarSubscribeDialog>
         </p>
+        <PwaInstallButton />
         <nav className="flex flex-wrap gap-x-4 gap-y-1">
           <Link
             href="/evenements"

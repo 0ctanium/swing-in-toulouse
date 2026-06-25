@@ -58,6 +58,10 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: siteConfig.name,
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: "/web-app-manifest-192x192.png",
   },
 };
 
