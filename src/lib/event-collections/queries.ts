@@ -121,7 +121,9 @@ export async function listEvenementsHubCollectionsUncached() {
   const eventTags = await listPublishedTagCollectionsUncached("evenement");
 
   return {
-    timePresets: listTimePresetDefinitions().map(timePresetToCollection),
+    timePresets: listTimePresetDefinitions().map((preset) =>
+      timePresetToCollection(preset),
+    ),
     eventTags,
   };
 }
