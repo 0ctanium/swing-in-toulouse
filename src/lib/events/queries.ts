@@ -334,7 +334,20 @@ async function getEventBySlugUncached(slug: string) {
   return resolution.event;
 }
 
-async function getOrganizerBySlugUncached(slug: string) {
+async function loadOrganizerUpcomingEventsForOrganizationId(
+  organizationId: string,
+): Promise<EventOccurrence[]> {
+  const masters = await fetchMastersForOrganization(organizationId);
+  const window = getDefaultExpansionWindow();
+  const occurrences = await expandEventsWithOverrides(masters, window);
+
+  return filterOccurrences(
+    filterOccurrencesForOrganization(occurrences, organizationId),
+    window,
+  );
+}
+
+export async function getOrganizerProfileUncached(slug: string) {
   const organization = await db.query.organizations.findFirst({
     where: eq(organizations.slug, slug),
   });
@@ -345,19 +358,72 @@ async function getOrganizerBySlugUncached(slug: string) {
 
   const venue = await loadOrganizationDisplayVenue(organization.venueId);
 
-  const masters = await fetchMastersForOrganization(organization.id);
-
-  const window = getDefaultExpansionWindow();
-  const occurrences = await expandEventsWithOverrides(masters, window);
-
   return {
     ...organization,
     venue,
-    events: filterOccurrences(
-      filterOccurrencesForOrganization(occurrences, organization.id),
-      window,
-    ),
   };
+}
+
+export async function getOrganizerUpcomingEventsUncached(slug: string) {
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.slug, slug),
+    columns: { id: true },
+  });
+
+  if (!organization) {
+    return [];
+  }
+
+  return loadOrganizerUpcomingEventsForOrganizationId(organization.id);
+}
+
+async function getOrganizerBySlugUncached(slug: string) {
+  const profile = await getOrganizerProfileUncached(slug);
+
+  if (!profile) {
+    return null;
+  }
+
+  const events = await loadOrganizerUpcomingEventsForOrganizationId(profile.id);
+
+  return {
+    ...profile,
+    events,
+  };
+}
+
+async function loadVenueUpcomingEventsForVenueId(
+  venueId: string,
+): Promise<EventOccurrence[]> {
+  const masters = await fetchMastersForVenue(venueId, {
+    includeCancelled: false,
+  });
+  const window = getDefaultExpansionWindow();
+  const occurrences = await expandEventsWithOverrides(masters, window);
+
+  return filterOccurrences(
+    await filterOccurrencesForVenue(occurrences, venueId),
+    window,
+  );
+}
+
+export async function getVenueProfileUncached(slug: string) {
+  return db.query.venues.findFirst({
+    where: and(eq(venues.slug, slug), isNull(venues.canonicalVenueId)),
+  });
+}
+
+export async function getVenueUpcomingEventsUncached(slug: string) {
+  const venue = await db.query.venues.findFirst({
+    where: and(eq(venues.slug, slug), isNull(venues.canonicalVenueId)),
+    columns: { id: true },
+  });
+
+  if (!venue) {
+    return [];
+  }
+
+  return loadVenueUpcomingEventsForVenueId(venue.id);
 }
 
 async function getVenueBySlugUncached(slug: string) {
@@ -371,21 +437,11 @@ async function getVenueBySlugUncached(slug: string) {
     return null;
   }
 
-  const venue = resolution.venue;
-
-  const masters = await fetchMastersForVenue(venue.id, {
-    includeCancelled: false,
-  });
-
-  const window = getDefaultExpansionWindow();
-  const occurrences = await expandEventsWithOverrides(masters, window);
+  const events = await loadVenueUpcomingEventsForVenueId(resolution.venue.id);
 
   return {
-    ...venue,
-    events: filterOccurrences(
-      await filterOccurrencesForVenue(occurrences, venue.id),
-      window,
-    ),
+    ...resolution.venue,
+    events,
   };
 }
 
@@ -500,6 +556,32 @@ async function getEventBySlugCached(slug: string) {
 
 export const getEventBySlug = cache(getEventBySlugCached);
 
+async function getOrganizerProfileCached(slug: string) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.organizers, `organizer-${slug}`);
+
+  return getOrganizerProfileUncached(slug);
+}
+
+export const getOrganizerProfile = cache(getOrganizerProfileCached);
+
+async function getOrganizerUpcomingEventsCached(slug: string) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.organizers, CACHE_TAGS.events, `organizer-events-${slug}`);
+
+  return getOrganizerUpcomingEventsUncached(slug);
+}
+
+export const getOrganizerUpcomingEvents = cache(getOrganizerUpcomingEventsCached);
+
 async function getOrganizerBySlugCached(slug: string) {
   "use cache";
   cacheLife({
@@ -518,6 +600,32 @@ export const getOrganizationBySlug = getOrganizerBySlug;
 
 export { resolveVenueBySlug };
 export type { VenueSlugResolution } from "@/lib/venues/canonical";
+
+async function getVenueProfileCached(slug: string) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.venues, `venue-${slug}`);
+
+  return getVenueProfileUncached(slug);
+}
+
+export const getVenueProfile = cache(getVenueProfileCached);
+
+async function getVenueUpcomingEventsCached(slug: string) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.venues, CACHE_TAGS.events, `venue-events-${slug}`);
+
+  return getVenueUpcomingEventsUncached(slug);
+}
+
+export const getVenueUpcomingEvents = cache(getVenueUpcomingEventsCached);
 
 async function getVenueBySlugCached(slug: string) {
   "use cache";

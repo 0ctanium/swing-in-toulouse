@@ -5,7 +5,7 @@ import {
   VenuePageContent,
   VenuePageSkeleton,
 } from "@/components/venues/venue-page-content";
-import { getVenueBySlug, resolveVenueBySlug } from "@/lib/events/queries";
+import { getVenueProfile, resolveVenueBySlug } from "@/lib/events/queries";
 import { publicMetadata } from "@/lib/metadata";
 import { generateVenueStaticParams } from "@/lib/static-params";
 
@@ -28,7 +28,7 @@ export async function generateMetadata({
 
   const venue =
     resolution.kind === "redirect"
-      ? await getVenueBySlug(resolution.targetSlug)
+      ? await getVenueProfile(resolution.targetSlug)
       : resolution.venue;
 
   if (!venue) {

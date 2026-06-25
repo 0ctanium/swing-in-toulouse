@@ -167,9 +167,7 @@ async function getDanceTagPageUncached(
     return null;
   }
 
-  const events = await getUpcomingEventsUncached({
-    categoryName: tag.name,
-  });
+  const events = await getDanceUpcomingEventsUncached(slug);
 
   return { ...tag, events };
 }
@@ -186,3 +184,28 @@ async function getDanceTagPageCached(slug: string) {
 }
 
 export const getDanceTagPage = cache(getDanceTagPageCached);
+
+export async function getDanceUpcomingEventsUncached(slug: string) {
+  const tag = await getPublishedDanceTagBySlugUncached(slug);
+
+  if (!tag) {
+    return [];
+  }
+
+  return getUpcomingEventsUncached({
+    categoryName: tag.name,
+  });
+}
+
+async function getDanceUpcomingEventsCached(slug: string) {
+  "use cache";
+  cacheLife({
+    stale: PUBLIC_PAGE_REVALIDATE,
+    revalidate: PUBLIC_PAGE_REVALIDATE,
+  });
+  cacheTag(CACHE_TAGS.categoryTags, CACHE_TAGS.events, `dance-events-${slug}`);
+
+  return getDanceUpcomingEventsUncached(slug);
+}
+
+export const getDanceUpcomingEvents = cache(getDanceUpcomingEventsCached);

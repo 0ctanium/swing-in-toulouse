@@ -8,13 +8,13 @@ import {
   EventOrganizerLine,
 } from "@/components/events/event-details";
 import { EventPageActions } from "@/components/events/event-page-actions";
-import { RelatedEventsSection } from "@/components/events/related-events-section";
+import { EventListSkeleton } from "@/components/events/event-list-skeleton";
+import { EventRelatedEvents } from "@/components/events/event-related-events";
 import { VenueDetailsSection } from "@/components/venues/venue-details-section";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { breadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getRelatedEvents, resolveEventBySlug } from "@/lib/events/queries";
+import { resolveEventBySlug } from "@/lib/events/queries";
 import {
   eventBreadcrumbs,
   eventStructuredData,
@@ -52,17 +52,7 @@ async function EventPageContent({ params }: EventPageContentProps) {
   }
 
   const event = resolution.event;
-  const relatedEvents = await getRelatedEvents(
-    event.slug,
-    event.organization?.slug,
-    event.venue?.slug,
-  );
   const breadcrumbs = eventBreadcrumbs(event);
-  const relatedTitle = event.organization
-    ? `Autres événements de ${event.organization.name}`
-    : event.venue
-      ? `Autres événements au ${event.venue.name}`
-      : "Événements similaires";
 
   return (
     <>
@@ -95,12 +85,24 @@ async function EventPageContent({ params }: EventPageContentProps) {
           <VenueDetailsSection venue={event.venue} linkToVenuePage />
         ) : null}
 
-        {relatedEvents.length > 0 ? (
-          <>
-            <Separator />
-            <RelatedEventsSection title={relatedTitle} events={relatedEvents} />
-          </>
-        ) : null}
+        <Suspense fallback={<EventListSkeleton cards={2} />}>
+          <EventRelatedEvents
+            slug={event.slug}
+            organization={
+              event.organization
+                ? {
+                    slug: event.organization.slug,
+                    name: event.organization.name,
+                  }
+                : null
+            }
+            venue={
+              event.venue
+                ? { slug: event.venue.slug, name: event.venue.name }
+                : null
+            }
+          />
+        </Suspense>
       </article>
     </>
   );

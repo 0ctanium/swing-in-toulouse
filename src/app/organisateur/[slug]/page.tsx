@@ -5,7 +5,7 @@ import {
   OrganizerPageContent,
   OrganizerPageSkeleton,
 } from "@/components/organizations/organizer-page-content";
-import { getOrganizerBySlug } from "@/lib/events/queries";
+import { getOrganizerProfile } from "@/lib/events/queries";
 import { publicMetadata } from "@/lib/metadata";
 import { generateOrganizerStaticParams } from "@/lib/static-params";
 
@@ -21,7 +21,7 @@ export async function generateMetadata({
   params,
 }: OrganizerPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const organizer = await getOrganizerBySlug(slug);
+  const organizer = await getOrganizerProfile(slug);
 
   if (!organizer) {
     return { title: "Organisateur introuvable" };

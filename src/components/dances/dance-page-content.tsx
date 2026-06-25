@@ -1,15 +1,13 @@
-import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { DanceHero } from "@/components/dances/dance-hero";
-import { EventList } from "@/components/events/event-list";
+import { DanceUpcomingEvents } from "@/components/dances/dance-upcoming-events";
+import { EventListSkeleton } from "@/components/events/event-list-skeleton";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { breadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  agendaCategoryUrl,
-  getDanceTagPage,
-} from "@/lib/event-category-tags/dance-pages";
+import { getPublishedDanceTagBySlug } from "@/lib/event-category-tags/dance-pages";
 import { danceBreadcrumbs } from "@/lib/seo/structured-data";
 
 type DancePageContentProps = {
@@ -28,38 +26,24 @@ export function DancePageSkeleton() {
 
 export async function DancePageContent({ params }: DancePageContentProps) {
   const { slug } = await params;
-  const page = await getDanceTagPage(slug);
+  const tag = await getPublishedDanceTagBySlug(slug);
 
-  if (!page) {
+  if (!tag) {
     notFound();
   }
 
-  const breadcrumbs = danceBreadcrumbs(page);
+  const breadcrumbs = danceBreadcrumbs(tag);
 
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(breadcrumbs)} />
       <div className="flex flex-col gap-8">
         <Breadcrumbs items={breadcrumbs} />
-        <DanceHero tag={page} />
+        <DanceHero tag={tag} />
 
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 className="font-heading text-2xl font-semibold">
-              Prochains événements
-            </h2>
-            <Link
-              href={agendaCategoryUrl(page.name)}
-              className="text-sm font-medium underline"
-            >
-              Voir dans l&apos;agenda
-            </Link>
-          </div>
-          <EventList
-            events={page.events}
-            emptyMessage={`Aucun événement ${page.name} à venir pour le moment.`}
-          />
-        </section>
+        <Suspense fallback={<EventListSkeleton />}>
+          <DanceUpcomingEvents slug={slug} tag={tag} />
+        </Suspense>
       </div>
     </>
   );

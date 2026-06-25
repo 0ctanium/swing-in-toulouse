@@ -1,13 +1,14 @@
-import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
-import { EventList } from "@/components/events/event-list";
 import { OrganizerHeader } from "@/components/organizations/organizer-header";
+import { OrganizerUpcomingEvents } from "@/components/organizations/organizer-upcoming-events";
 import { VenueDetailsSection } from "@/components/venues/venue-details-section";
+import { EventListSkeleton } from "@/components/events/event-list-skeleton";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { breadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getOrganizerBySlug } from "@/lib/events/queries";
+import { getOrganizerProfile } from "@/lib/events/queries";
 import {
   organizerBreadcrumbs,
   organizationStructuredData,
@@ -20,8 +21,8 @@ type OrganizerPageContentProps = {
 export function OrganizerPageSkeleton() {
   return (
     <div className="flex flex-col gap-8">
+      <Skeleton className="h-6 w-40" />
       <Skeleton className="h-32 w-full rounded-xl" />
-      <Skeleton className="h-6 w-48" />
       <Skeleton className="h-28 w-full rounded-xl" />
     </div>
   );
@@ -31,7 +32,7 @@ export async function OrganizerPageContent({
   params,
 }: OrganizerPageContentProps) {
   const { slug } = await params;
-  const organizer = await getOrganizerBySlug(slug);
+  const organizer = await getOrganizerProfile(slug);
 
   if (!organizer) {
     notFound();
@@ -54,20 +55,9 @@ export async function OrganizerPageContent({
           <VenueDetailsSection venue={organizer.venue} linkToVenuePage />
         ) : null}
 
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 className="font-heading text-2xl font-semibold">
-              Prochains événements
-            </h2>
-            <Link href="/organisateurs" className="text-sm font-medium underline">
-              Tous les organisateurs
-            </Link>
-          </div>
-          <EventList
-            events={organizer.events}
-            emptyMessage="Aucun événement à venir pour cet organisateur."
-          />
-        </section>
+        <Suspense fallback={<EventListSkeleton />}>
+          <OrganizerUpcomingEvents slug={slug} />
+        </Suspense>
       </div>
     </>
   );
