@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
+import { Suspense } from "react";
 
 export type ProtectProps = React.PropsWithChildren<{
   fallback?: React.ReactNode;
@@ -9,7 +10,7 @@ export type ProtectProps = React.PropsWithChildren<{
 }>;
 
 /** Platform admin in personal space only — hidden when an org is active. */
-export function Protect({
+function ProtectInner({
   children,
   fallback,
   treatPendingAsSignedOut = true,
@@ -44,4 +45,12 @@ export function Protect({
   }
 
   return children;
+}
+
+export function Protect(props: ProtectProps) {
+  return (
+    <Suspense>
+      <ProtectInner {...props} />
+    </Suspense>
+  );
 }

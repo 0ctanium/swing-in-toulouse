@@ -2,20 +2,29 @@ import { SignIn } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 
 import { isAuthenticated } from "@/lib/admin/auth";
+import { Suspense } from "react";
 
 type AdminLoginPageProps = {
   searchParams: Promise<{ redirect_url?: string }>;
 };
 
-export default async function AdminLoginPage({
-  searchParams,
-}: AdminLoginPageProps) {
+async function SignInForm({ searchParams }: AdminLoginPageProps) {
   if (await isAuthenticated()) {
     redirect("/admin");
   }
 
   const { redirect_url: redirectUrl } = await searchParams;
 
+  return (
+    <SignIn
+      fallbackRedirectUrl={redirectUrl ?? "/"}
+      {...(redirectUrl ? { forceRedirectUrl: redirectUrl } : {})}
+      withSignUp={false}
+    />
+  );
+}
+
+export default function AdminLoginPage({ searchParams }: AdminLoginPageProps) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 py-16">
       <div className="text-center">
@@ -25,11 +34,9 @@ export default async function AdminLoginPage({
           reçu une invitation.
         </p>
       </div>
-      <SignIn
-        fallbackRedirectUrl={redirectUrl ?? "/"}
-        {...(redirectUrl ? { forceRedirectUrl: redirectUrl } : {})}
-        withSignUp={false}
-      />
+      <Suspense>
+        <SignInForm searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }

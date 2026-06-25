@@ -16,7 +16,7 @@ export async function AgendaPrefetchBoundary() {
   const initialPreferences = parseAgendaPreferences(preferencesCookie);
 
   const queryClient = getQueryClient();
-  await prefetchAgendaQueries(queryClient);
+  void prefetchAgendaQueries(queryClient);
 
   return (
     <AgendaHydration state={dehydrate(queryClient)}>

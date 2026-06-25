@@ -8,14 +8,7 @@ import { isAuthenticated } from "@/lib/admin/auth";
 import { getAdminPendingEventsCount } from "@/lib/admin/pending-events";
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import { Protect } from "@/components/admin-protect";
-
-function AdminDashboardShell({ children }: { children?: React.ReactNode }) {
-  return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 -mt-4">
-      {children}
-    </div>
-  );
-}
+import { Skeleton } from "@/components/ui/skeleton";
 
 async function AdminDashboardLayoutInner({
   children,
@@ -28,7 +21,15 @@ async function AdminDashboardLayoutInner({
     redirect("/admin/login?redirect_url=/admin");
   }
 
-  const pendingCount = await getAdminPendingEventsCount();
+  return children;
+}
+
+export default function AdminDashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pendingCount = getAdminPendingEventsCount();
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 -mt-4">
@@ -46,21 +47,15 @@ async function AdminDashboardLayoutInner({
           <UserButton />
         </div>
       </div>
-      <AdminSubNav />
-      <EventsPendingAlert pendingCount={pendingCount} />
-      {children}
+      <Suspense>
+        <AdminSubNav />
+      </Suspense>
+      <Suspense>
+        <EventsPendingAlert pendingCount={pendingCount} />
+      </Suspense>
+      <Suspense fallback={<Skeleton className="h-10 w-64" />}>
+        <AdminDashboardLayoutInner>{children}</AdminDashboardLayoutInner>
+      </Suspense>
     </div>
-  );
-}
-
-export default function AdminDashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <Suspense fallback={<AdminDashboardShell />}>
-      <AdminDashboardLayoutInner>{children}</AdminDashboardLayoutInner>
-    </Suspense>
   );
 }

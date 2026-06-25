@@ -80,7 +80,12 @@ type PlanningListProps = {
 };
 
 function PlanningList({ filters, venueSlugById }: PlanningListProps) {
-  const { data: events = [], isPending, isError, refetch } = usePlanningEvents();
+  const {
+    data: events = [],
+    isPending,
+    isError,
+    refetch,
+  } = usePlanningEvents();
   const filteredEvents = useMemo(
     () => filterAgendaOccurrences(events, filters, venueSlugById),
     [events, filters, venueSlugById],
@@ -121,7 +126,9 @@ export function AgendaView({
   hasStoredPreferences = false,
 }: AgendaViewProps) {
   const { filters, setFilters, venueSlugById } = useAgendaFilterContext();
-  const [viewMode, setViewMode] = useState<ViewMode>(initialPreferences.viewMode);
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    initialPreferences.viewMode,
+  );
   const [agendaMode, setAgendaMode] = useState<AgendaMode>(
     initialPreferences.agendaMode,
   );
@@ -132,6 +139,7 @@ export function AgendaView({
     }
 
     if (window.matchMedia(AGENDA_MOBILE_MEDIA_QUERY).matches) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setViewMode("planning");
     }
   }, [hasStoredPreferences]);

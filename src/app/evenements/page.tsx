@@ -16,6 +16,8 @@ import {
 } from "@/lib/events/queries";
 import { absoluteUrl } from "@/lib/site";
 import { publicMetadata } from "@/lib/metadata";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Suspense } from "react";
 
 type EventsIndexPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -46,9 +48,7 @@ export async function generateMetadata({
   });
 }
 
-export default async function EventsIndexPage({
-  searchParams,
-}: EventsIndexPageProps) {
+async function EventsIndexPageContent({ searchParams }: EventsIndexPageProps) {
   const resolvedSearchParams = await searchParams;
   const page = parsePageParam(resolvedSearchParams.page);
   const [events, archiveMonths] = await Promise.all([
@@ -98,5 +98,25 @@ export default async function EventsIndexPage({
 
       <EventArchiveSection months={archiveMonths} />
     </div>
+  );
+}
+
+function EventsIndexPageSkeleton() {
+  return (
+    <div className="flex flex-col gap-8">
+      <Skeleton className="h-32 w-full rounded-xl" />
+      <Skeleton className="h-6 w-48" />
+      <Skeleton className="h-28 w-full rounded-xl" />
+    </div>
+  );
+}
+
+export default async function EventsIndexPage({
+  searchParams,
+}: EventsIndexPageProps) {
+  return (
+    <Suspense fallback={<EventsIndexPageSkeleton />}>
+      <EventsIndexPageContent searchParams={searchParams} />
+    </Suspense>
   );
 }

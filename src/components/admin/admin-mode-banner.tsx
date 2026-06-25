@@ -12,16 +12,9 @@ import { Protect } from "../admin-protect";
 export function AdminModeBanner({ className }: { className?: string }) {
   const pathname = usePathname();
   const isAdminPage = pathname.startsWith("/admin");
-  const { isLoaded, userId, orgId, sessionClaims } = useAuth();
+  const { isLoaded, userId } = useAuth();
 
   if (isAdminPage || !isLoaded || !userId) {
-    return null;
-  }
-
-  const hasInlineEditAccess =
-    Boolean(orgId) || sessionClaims?.metadata?.role === "admin";
-
-  if (!hasInlineEditAccess) {
     return null;
   }
 

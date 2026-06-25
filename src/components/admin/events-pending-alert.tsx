@@ -1,10 +1,16 @@
+"use client";
+
 import Link from "next/link";
+import { use } from "react";
 
 type EventsPendingAlertProps = {
-  pendingCount: number;
+  pendingCount: Promise<number>;
 };
 
-export function EventsPendingAlert({ pendingCount }: EventsPendingAlertProps) {
+export function EventsPendingAlert({
+  pendingCount: pendingCountPromise,
+}: EventsPendingAlertProps) {
+  const pendingCount = use(pendingCountPromise);
   if (pendingCount === 0) {
     return null;
   }

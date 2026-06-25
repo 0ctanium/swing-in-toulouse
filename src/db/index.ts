@@ -15,7 +15,7 @@ if (env.NEON_LOCAL) {
 
 const drizzleConfig = {
   schema,
-  logger: true,
+  logger: env.DATABASE_LOG,
 } as const satisfies DrizzleConfig<typeof schema>;
 
 export const db =

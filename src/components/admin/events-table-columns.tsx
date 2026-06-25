@@ -215,6 +215,7 @@ export function createEventsTableColumns({
             <Button
               variant="ghost"
               size="sm"
+              nativeButton={false}
               render={
                 <Link
                   href={`/evenement/${event.slug}`}

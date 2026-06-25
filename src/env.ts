@@ -3,6 +3,17 @@ import "./load-env";
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+const booleanStringSchema = z.preprocess((value) => {
+  if (typeof value == "boolean") return value;
+  if (value === "true") {
+    return true;
+  } else if (value === "false") {
+    return false;
+  } else {
+    throw new Error("The string must be 'true' or 'false'");
+  }
+}, z.boolean());
+
 export const env = createEnv({
   server: {
     NODE_ENV: z
@@ -12,7 +23,8 @@ export const env = createEnv({
     DATABASE_DRIVER: z
       .enum(["node-postgres", "neon-http"])
       .default("node-postgres"),
-    NEON_LOCAL: z.coerce.boolean().default(false),
+    DATABASE_LOG: booleanStringSchema.default(false),
+    NEON_LOCAL: booleanStringSchema.default(false),
     CRON_SYNC_URL: z.string().url().optional(),
     QSTASH_URL: z.string().url(),
     QSTASH_TOKEN: z.string(),
@@ -42,6 +54,7 @@ export const env = createEnv({
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    DATABASE_LOG: process.env.DATABASE_LOG,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   emptyStringAsUndefined: true,

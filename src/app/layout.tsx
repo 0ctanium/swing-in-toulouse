@@ -13,6 +13,7 @@ import { siteWebSiteJsonLd } from "@/lib/seo/structured-data";
 import { siteConfig } from "@/lib/site";
 
 import "./globals.css";
+import { Suspense } from "react";
 
 const dmSans = DM_Sans({
   variable: "--font-sans",
@@ -70,7 +71,9 @@ export default function RootLayout({
         <AppClerkProvider>
           <ThemeProvider>
             <Providers>
-              <AdminModeBanner />
+              <Suspense>
+                <AdminModeBanner />
+              </Suspense>
               <SiteHeader />
               <main
                 className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10"

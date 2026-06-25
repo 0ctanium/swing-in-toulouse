@@ -22,6 +22,8 @@ import { listEventsInMonth } from "@/lib/events/queries";
 import { archiveBreadcrumbs } from "@/lib/seo/structured-data";
 import { absoluteUrl, eventUrl } from "@/lib/site";
 import { publicMetadata } from "@/lib/metadata";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type EventArchivePageProps = {
   params: Promise<{ year: string; month: string }>;
@@ -65,7 +67,7 @@ export async function generateMetadata({
   });
 }
 
-export default async function EventArchivePage({
+async function EventArchivePageContent({
   params,
   searchParams,
 }: EventArchivePageProps) {
@@ -131,5 +133,26 @@ export default async function EventArchivePage({
         />
       </div>
     </>
+  );
+}
+
+function EventArchivePageSkeleton() {
+  return (
+    <div className="flex flex-col gap-8">
+      <Skeleton className="h-32 w-full rounded-xl" />
+      <Skeleton className="h-6 w-48" />
+      <Skeleton className="h-28 w-full rounded-xl" />
+    </div>
+  );
+}
+
+export default async function EventArchivePage({
+  params,
+  searchParams,
+}: EventArchivePageProps) {
+  return (
+    <Suspense fallback={<EventArchivePageSkeleton />}>
+      <EventArchivePageContent params={params} searchParams={searchParams} />
+    </Suspense>
   );
 }

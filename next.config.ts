@@ -69,14 +69,20 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
 };
 
-export default withPostHogConfig(withMDX(nextConfig), {
-  personalApiKey: process.env.POSTHOG_API_KEY!,
-  projectId: "190420",
-  host: "https://eu.i.posthog.com",
-  logLevel: "error",
-  sourcemaps: {
-    enabled: true,
-    project: "swing-in-toulouse",
-    deleteAfterUpload: true,
-  },
-});
+let config = withMDX(nextConfig);
+
+if (process.env.SKIP_POSTHOG !== "true") {
+  config = withPostHogConfig(config, {
+    personalApiKey: process.env.POSTHOG_API_KEY!,
+    projectId: "190420",
+    host: "https://eu.i.posthog.com",
+    logLevel: "error",
+    sourcemaps: {
+      enabled: true,
+      project: "swing-in-toulouse",
+      deleteAfterUpload: true,
+    },
+  });
+}
+
+export default config;

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { AgendaPrefetchBoundary } from "@/components/events/agenda-prefetch-boundary";
-import { AgendaView } from "@/components/events/agenda-view";
 import { publicMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = publicMetadata({
@@ -20,10 +19,11 @@ export default function AgendaPage() {
           Agenda swing
         </h1>
         <p className="text-muted-foreground mt-2">
-          Vue calendrier par mois ou sur 4 semaines, ou liste chronologique dans le planning.
+          Vue calendrier par mois ou sur 4 semaines, ou liste chronologique dans
+          le planning.
         </p>
       </div>
-      <Suspense fallback={<AgendaView />}>
+      <Suspense>
         <AgendaPrefetchBoundary />
       </Suspense>
     </div>
