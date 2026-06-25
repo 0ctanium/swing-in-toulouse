@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { EventList } from "@/components/events/event-list";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
@@ -9,6 +10,7 @@ import {
   JsonLd,
 } from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   buildArchiveMonthPath,
   buildPaginatedPath,
@@ -19,17 +21,15 @@ import {
   parsePageParam,
 } from "@/lib/events/hub";
 import { listEventsInMonth } from "@/lib/events/queries";
+import { publicMetadata } from "@/lib/metadata";
 import { archiveBreadcrumbs } from "@/lib/seo/structured-data";
 import { absoluteUrl, eventUrl } from "@/lib/site";
-import { publicMetadata } from "@/lib/metadata";
 import { generateArchiveMonthStaticParams } from "@/lib/static-params";
 
 export { generateArchiveMonthStaticParams as generateStaticParams };
-import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type EventArchivePageProps = {
-  params: Promise<{ year: string; month: string }>;
+  params: Promise<{ slug: string; month: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -37,7 +37,7 @@ export async function generateMetadata({
   params,
   searchParams,
 }: EventArchivePageProps): Promise<Metadata> {
-  const { year, month } = await params;
+  const { slug: year, month } = await params;
   const parsed = parseArchiveMonthParams(year, month);
 
   if (!parsed) {
@@ -74,7 +74,7 @@ async function EventArchivePageContent({
   params,
   searchParams,
 }: EventArchivePageProps) {
-  const { year, month } = await params;
+  const { slug: year, month } = await params;
   const parsed = parseArchiveMonthParams(year, month);
 
   if (!parsed) {

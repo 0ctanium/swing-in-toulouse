@@ -157,6 +157,17 @@ export function danceBreadcrumbs(tag: { name: string; slug: string }) {
   ];
 }
 
+export function evenementsCollectionBreadcrumbs(collection: {
+  label: string;
+  path: string;
+}) {
+  return [
+    { label: "Accueil", href: "/" },
+    { label: "Événements", href: "/evenements" },
+    { label: collection.label, href: collection.path },
+  ];
+}
+
 export function siteWebSiteJsonLd() {
   return {
     "@context": "https://schema.org",

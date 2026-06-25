@@ -49,4 +49,34 @@ describe("category tags admin", () => {
     expect(updated.subtitle).toBe("Soirées Lindy Hop");
     expect(updated.isPublished).toBe(true);
   });
+
+  it("allows publishing evenement tags", async () => {
+    const updated = await updateCategoryTag("soiree", {
+      tagType: "evenement",
+      slug: "festivals",
+      isPublished: true,
+    });
+
+    expect(updated.tagType).toBe("evenement");
+    expect(updated.isPublished).toBe(true);
+    expect(updated.slug).toBe("festivals");
+  });
+
+  it("rejects reserved time preset slugs", async () => {
+    await expect(
+      updateCategoryTag("soiree", {
+        tagType: "evenement",
+        slug: "aujourd-hui",
+        isPublished: true,
+      }),
+    ).rejects.toThrow(/réservé/i);
+  });
+
+  it("returns null for unknown public slugs", async () => {
+    const { resolveEvenementsCollectionSlug } = await import(
+      "@/lib/event-collections/resolve"
+    );
+
+    await expect(resolveEvenementsCollectionSlug("inconnu")).resolves.toBeNull();
+  });
 });

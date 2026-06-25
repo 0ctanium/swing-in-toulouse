@@ -19,9 +19,13 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { AdminCategoryTagRow } from "@/lib/event-category-tags/admin";
 import {
-  DEFAULT_DANCE_HERO_TITLE_AFTER,
-  DEFAULT_DANCE_HERO_TITLE_BEFORE,
+  isHeroTitleCustomized,
 } from "@/lib/event-category-tags/hero-title";
+import {
+  categoryTagPublicPath,
+  isPublishableTagType,
+} from "@/lib/event-category-tags/publishable";
+import { defaultHeroTitleForTag } from "@/lib/event-collections/metadata";
 import { useUpdateCategoryTag } from "@/lib/admin/use-category-tags";
 import { generateCategoryTagSlug } from "@/lib/slug";
 import { DanceHeroTitle } from "@/components/dances/dance-hero-title";
@@ -32,12 +36,44 @@ type CategoryTagPageDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+function heroFieldsFromRow(row: AdminCategoryTagRow) {
+  const stored = {
+    heroTitleBefore: row.heroTitleBefore,
+    heroTitleEmphasis: row.heroTitleEmphasis,
+    heroTitleAfter: row.heroTitleAfter,
+  };
+
+  if (isHeroTitleCustomized(stored)) {
+    return {
+      heroTitleBefore: row.heroTitleBefore ?? "",
+      heroTitleEmphasis: row.heroTitleEmphasis ?? "",
+      heroTitleAfter: row.heroTitleAfter ?? "",
+    };
+  }
+
+  if (!isPublishableTagType(row.tagType)) {
+    return {
+      heroTitleBefore: "",
+      heroTitleEmphasis: "",
+      heroTitleAfter: "",
+    };
+  }
+
+  const defaults = defaultHeroTitleForTag(row.tagType, row.name);
+
+  return {
+    heroTitleBefore: defaults.heroTitleBefore ?? "",
+    heroTitleEmphasis: defaults.heroTitleEmphasis ?? row.name,
+    heroTitleAfter: defaults.heroTitleAfter ?? "",
+  };
+}
+
 function formStateFromRow(row: AdminCategoryTagRow) {
+  const heroFields = heroFieldsFromRow(row);
+
   return {
     slug: row.slug ?? generateCategoryTagSlug(row.name),
-    heroTitleBefore: row.heroTitleBefore ?? "",
-    heroTitleEmphasis: row.heroTitleEmphasis ?? "",
-    heroTitleAfter: row.heroTitleAfter ?? "",
+    ...heroFields,
     subtitle: row.subtitle ?? "",
     description: row.description ?? "",
     seoTitle: row.seoTitle ?? "",
@@ -75,7 +111,7 @@ export function CategoryTagPageDialog({
         seoDescription: form.seoDescription,
         isPublished: form.isPublished,
       });
-      toast.success("Page danse enregistrée.");
+      toast.success("Page enregistrée.");
       onOpenChange(false);
     } catch (error) {
       toast.error(
@@ -86,8 +122,38 @@ export function CategoryTagPageDialog({
 
   const previewHref =
     form.slug.trim() && form.isPublished
-      ? `/danse/${form.slug.trim()}`
+      ? categoryTagPublicPath(row.tagType, form.slug.trim())
       : null;
+
+  const heroDefaults = isPublishableTagType(row.tagType)
+    ? defaultHeroTitleForTag(row.tagType, row.name)
+    : {
+        heroTitleBefore: "",
+        heroTitleEmphasis: row.name,
+        heroTitleAfter: "",
+      };
+
+  const previewHero = {
+    before: form.heroTitleBefore,
+    emphasis: form.heroTitleEmphasis || row.name,
+    after: form.heroTitleAfter,
+  };
+
+  function resetHeroTitleToDefaults() {
+    setForm((current) => ({
+      ...current,
+      heroTitleBefore: heroDefaults.heroTitleBefore ?? "",
+      heroTitleEmphasis: heroDefaults.heroTitleEmphasis ?? row.name,
+      heroTitleAfter: heroDefaults.heroTitleAfter ?? "",
+    }));
+  }
+
+  const pagePath =
+    row.tagType === "evenement"
+      ? "/evenements/[slug]"
+      : row.tagType === "danse"
+        ? "/danse/[slug]"
+        : null;
 
   return (
     <Dialog
@@ -102,11 +168,14 @@ export function CategoryTagPageDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Page danse — {row.name}</DialogTitle>
+            <DialogTitle>
+              Page publique — {row.name}
+            </DialogTitle>
             <DialogDescription>
               Le nom du tag ({row.name}) sert au filtrage des événements iCal.
-              Le slug et le contenu ci-dessous alimentent la page publique
-              /danse/[slug].
+              {pagePath
+                ? ` Le slug et le contenu ci-dessous alimentent la page publique ${pagePath}.`
+                : " Seuls les tags Danse et Événement peuvent avoir une page publique."}
             </DialogDescription>
           </DialogHeader>
 
@@ -128,8 +197,22 @@ export function CategoryTagPageDialog({
               <p className="text-sm font-medium">Titre de la page</p>
               <p className="text-muted-foreground text-xs">
                 Trois segments : le segment du milieu est mis en emphase
-                (couleur primaire). Laissez vide pour les valeurs par défaut.
+                (couleur primaire). Les champs sont préremplis avec les valeurs
+                par défaut du type de tag ; modifiez-les librement, y compris en
+                laissant un segment vide.
               </p>
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+                onClick={resetHeroTitleToDefaults}
+              >
+                Réinitialiser le titre
+              </Button>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -143,7 +226,6 @@ export function CategoryTagPageDialog({
                     heroTitleBefore: event.target.value,
                   }))
                 }
-                placeholder={DEFAULT_DANCE_HERO_TITLE_BEFORE}
               />
             </div>
 
@@ -158,7 +240,6 @@ export function CategoryTagPageDialog({
                     heroTitleEmphasis: event.target.value,
                   }))
                 }
-                placeholder={row.name}
               />
             </div>
 
@@ -173,7 +254,6 @@ export function CategoryTagPageDialog({
                     heroTitleAfter: event.target.value,
                   }))
                 }
-                placeholder={DEFAULT_DANCE_HERO_TITLE_AFTER}
               />
             </div>
 
@@ -184,9 +264,7 @@ export function CategoryTagPageDialog({
               <DanceHeroTitle
                 as="p"
                 name={row.name}
-                heroTitleBefore={form.heroTitleBefore || null}
-                heroTitleEmphasis={form.heroTitleEmphasis || null}
-                heroTitleAfter={form.heroTitleAfter || null}
+                resolved={previewHero}
                 className="text-xl md:text-2xl"
               />
             </div>

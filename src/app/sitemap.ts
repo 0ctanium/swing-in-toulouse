@@ -9,6 +9,9 @@ import { SITEMAP_REVALIDATE } from "@/lib/cache/revalidate";
 import { buildArchiveMonthPath } from "@/lib/events/hub";
 import { listEventArchiveMonthsUncached } from "@/lib/events/queries";
 import { listPublishedDanceTagsUncached } from "@/lib/event-category-tags/dance-pages";
+import { listPublishedTagCollectionsUncached } from "@/lib/event-collections/tag-pages";
+import { TIME_PRESET_SLUGS } from "@/lib/event-collections/time-presets";
+import { timePresetCollectionPath } from "@/lib/event-collections/urls";
 import { siteConfig } from "@/lib/site";
 
 async function getSitemapData() {
@@ -32,12 +35,15 @@ async function getSitemapData() {
       .from(venues)
       .where(isNull(venues.canonicalVenueId)),
     listPublishedDanceTagsUncached(),
+    listPublishedTagCollectionsUncached("evenement"),
   ]);
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [[allEvents, allOrganizations, allVenues, publishedDances], archiveMonths] =
-    await Promise.all([getSitemapData(), listEventArchiveMonthsUncached()]);
+  const [
+    [allEvents, allOrganizations, allVenues, publishedDances, publishedEventTags],
+    archiveMonths,
+  ] = await Promise.all([getSitemapData(), listEventArchiveMonthsUncached()]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -121,6 +127,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.7,
+    })),
+    ...TIME_PRESET_SLUGS.map((slug) => ({
+      url: `${siteConfig.url}${timePresetCollectionPath(slug)}`,
+      lastModified: new Date(),
+      changeFrequency: "daily" as const,
+      priority: 0.85,
+    })),
+    ...publishedEventTags.map((tag) => ({
+      url: `${siteConfig.url}${tag.path}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.75,
     })),
   ];
 }

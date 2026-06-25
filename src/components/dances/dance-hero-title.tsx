@@ -1,6 +1,8 @@
 import {
   resolveDanceHeroTitle,
+  shouldRenderHeroTitleAfterInline,
   type DanceHeroTitleFields,
+  type ResolvedHeroTitle,
 } from "@/lib/event-category-tags/hero-title";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +10,8 @@ type DanceHeroTitleProps = Partial<DanceHeroTitleFields> & {
   name: string;
   className?: string;
   as?: "h1" | "h2" | "p";
+  /** When set, skips default resolution and renders these parts as-is. */
+  resolved?: ResolvedHeroTitle;
 };
 
 export function DanceHeroTitle({
@@ -17,12 +21,17 @@ export function DanceHeroTitle({
   heroTitleAfter,
   className,
   as: Tag = "h1",
+  resolved,
 }: DanceHeroTitleProps) {
-  const { before, emphasis, after } = resolveDanceHeroTitle(name, {
-    heroTitleBefore: heroTitleBefore ?? null,
-    heroTitleEmphasis: heroTitleEmphasis ?? null,
-    heroTitleAfter: heroTitleAfter ?? null,
-  });
+  const { before, emphasis, after } =
+    resolved ??
+    resolveDanceHeroTitle(name, {
+      heroTitleBefore: heroTitleBefore ?? null,
+      heroTitleEmphasis: heroTitleEmphasis ?? null,
+      heroTitleAfter: heroTitleAfter ?? null,
+    });
+
+  const inlineAfter = shouldRenderHeroTitleAfterInline(before, after);
 
   return (
     <Tag
@@ -34,11 +43,20 @@ export function DanceHeroTitle({
         className,
       )}
     >
-      <span className="block">
-        {before}{" "}
-        <span className="text-primary">{emphasis}</span>
-      </span>
-      {after ? <span className="mt-1 block">{after}</span> : null}
+      {inlineAfter ? (
+        <span>
+          <span className="text-primary">{emphasis}</span> {after.trim()}
+        </span>
+      ) : (
+        <>
+          <span className="block">
+            {before}
+            {before ? " " : null}
+            <span className="text-primary">{emphasis}</span>
+          </span>
+          {after ? <span className="mt-1 block">{after}</span> : null}
+        </>
+      )}
     </Tag>
   );
 }

@@ -198,7 +198,7 @@ describe("platform admin API routes", () => {
       "@/app/api/admin/organizations/[id]/route"
     );
     const { PATCH: patchCategoryTag } = await import(
-      "@/app/api/admin/category-tags/[name]/route"
+      "@/app/api/admin/category-tags/route"
     );
     const { DELETE: deleteVenueAlias } = await import(
       "@/app/api/admin/venues/[id]/alias/route"
@@ -231,10 +231,10 @@ describe("platform admin API routes", () => {
         { params: Promise.resolve({ id: FIXTURE_IDS.orgA }) },
       ),
       patchCategoryTag(
-        createJsonPatchRequest("/api/admin/category-tags/lindy", {
+        createJsonPatchRequest("/api/admin/category-tags", {
+          name: "lindy",
           subtitle: "Test",
         }),
-        { params: Promise.resolve({ name: "lindy" }) },
       ),
       deleteVenueAlias(createTestRequest(`/api/admin/venues/${venueId}/alias`, {
         method: "DELETE",
@@ -256,7 +256,7 @@ describe("platform admin API routes", () => {
       "@/app/api/admin/organizations/[id]/route"
     );
     const { PATCH: patchCategoryTag } = await import(
-      "@/app/api/admin/category-tags/[name]/route"
+      "@/app/api/admin/category-tags/route"
     );
     const { DELETE: deleteVenueAlias } = await import(
       "@/app/api/admin/venues/[id]/alias/route"
@@ -280,10 +280,10 @@ describe("platform admin API routes", () => {
         { params: Promise.resolve({ id: FIXTURE_IDS.orgA }) },
       ),
       patchCategoryTag(
-        createJsonPatchRequest("/api/admin/category-tags/lindy", {
+        createJsonPatchRequest("/api/admin/category-tags", {
+          name: "lindy",
           subtitle: "Hop",
         }),
-        { params: Promise.resolve({ name: "lindy" }) },
       ),
       deleteVenueAlias(createTestRequest(`/api/admin/venues/${venueId}/alias`, {
         method: "DELETE",

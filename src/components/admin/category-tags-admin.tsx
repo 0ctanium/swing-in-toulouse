@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { AdminCategoryTagsListResult } from "@/lib/event-category-tags/admin";
+import { isPublishableTagType } from "@/lib/event-category-tags/publishable";
 
 type CategoryTagsAdminProps = {
   data: AdminCategoryTagsListResult;
@@ -115,7 +116,7 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
             <TableRow>
               <TableHead>Tag</TableHead>
               <TableHead className="w-48">Type</TableHead>
-              <TableHead className="w-40">Page danse</TableHead>
+              <TableHead className="w-40">Page publique</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -140,7 +141,7 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
                     />
                   </TableCell>
                   <TableCell>
-                    {row.tagType === "danse" ? (
+                    {isPublishableTagType(row.tagType) ? (
                       <Button
                         type="button"
                         variant="outline"

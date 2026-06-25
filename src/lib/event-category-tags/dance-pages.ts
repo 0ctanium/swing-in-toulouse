@@ -1,12 +1,23 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { and, asc, eq, isNotNull } from "drizzle-orm";
 import { cache } from "react";
 
-import { db } from "@/db";
-import { eventCategoryTags } from "@/db/schema";
 import { CACHE_TAGS } from "@/lib/cache/tags";
 import { PUBLIC_PAGE_REVALIDATE } from "@/lib/cache/revalidate";
-import { getUpcomingEventsUncached } from "@/lib/events/queries";
+import {
+  collectionPageDescription,
+  collectionPageTitle,
+} from "@/lib/event-collections/metadata";
+import {
+  getTagCollectionPageUncached,
+  type CollectionPageData,
+} from "@/lib/event-collections/queries";
+import {
+  getPublishedTagCollection,
+  getPublishedTagCollectionUncached,
+  listPublishedTagCollections,
+  listPublishedTagCollectionsUncached,
+} from "@/lib/event-collections/tag-pages";
+import { agendaUrlForCollection } from "@/lib/event-collections/urls";
 import {
   formatDanceHeroTitlePlain,
   type DanceHeroTitleFields,
@@ -21,82 +32,69 @@ export type PublishedDanceTag = {
   seoDescription: string | null;
 } & DanceHeroTitleFields;
 
-type DanceTagRow = {
-  name: string;
-  slug: string | null;
-  subtitle: string | null;
-  description: string | null;
-  seoTitle: string | null;
-  seoDescription: string | null;
-  heroTitleBefore: string | null;
-  heroTitleEmphasis: string | null;
-  heroTitleAfter: string | null;
+export type DanceTagPageData = PublishedDanceTag & {
+  events: CollectionPageData["events"];
 };
 
-function toPublishedDanceTag(row: DanceTagRow): PublishedDanceTag | null {
-  if (!row.slug) {
+function collectionToPublishedDanceTag(
+  collection: Awaited<ReturnType<typeof getPublishedTagCollectionUncached>>,
+): PublishedDanceTag | null {
+  if (!collection) {
     return null;
   }
 
   return {
-    name: row.name,
-    slug: row.slug,
-    subtitle: row.subtitle,
-    description: row.description,
-    seoTitle: row.seoTitle,
-    seoDescription: row.seoDescription,
-    heroTitleBefore: row.heroTitleBefore,
-    heroTitleEmphasis: row.heroTitleEmphasis,
-    heroTitleAfter: row.heroTitleAfter,
+    name: collection.label,
+    slug: collection.slug,
+    subtitle: collection.subtitle,
+    description: collection.description,
+    seoTitle: collection.seoTitle,
+    seoDescription: collection.seoDescription,
+    heroTitleBefore: collection.heroTitleBefore,
+    heroTitleEmphasis: collection.heroTitleEmphasis,
+    heroTitleAfter: collection.heroTitleAfter,
   };
 }
 
 export function dancePageTitle(
   tag: Pick<PublishedDanceTag, "name" | "seoTitle"> & Partial<DanceHeroTitleFields>,
 ) {
-  return tag.seoTitle ?? formatDanceHeroTitlePlain(tag.name, tag);
+  return (
+    tag.seoTitle ??
+    formatDanceHeroTitlePlain(tag.name, tag)
+  );
 }
 
 export function dancePageDescription(
   tag: Pick<PublishedDanceTag, "name" | "seoDescription" | "description">,
 ) {
-  return (
-    tag.seoDescription ??
-    tag.description ??
-    `Soirées, cours et stages de ${tag.name} à Toulouse et en Occitanie.`
-  );
+  return collectionPageDescription({
+    kind: "tag",
+    tagType: "danse",
+    label: tag.name,
+    seoDescription: tag.seoDescription,
+    description: tag.description,
+  });
 }
 
 export function agendaCategoryUrl(categoryName: string) {
-  const params = new URLSearchParams();
-  params.append("category", categoryName);
-  return `/agenda?${params.toString()}`;
+  return agendaUrlForCollection({ categoryName });
 }
 
 export async function listPublishedDanceTagsUncached(): Promise<PublishedDanceTag[]> {
-  const rows = await db.query.eventCategoryTags.findMany({
-    where: and(
-      eq(eventCategoryTags.tagType, "danse"),
-      eq(eventCategoryTags.isPublished, true),
-      isNotNull(eventCategoryTags.slug),
-    ),
-    columns: {
-      name: true,
-      slug: true,
-      subtitle: true,
-      description: true,
-      seoTitle: true,
-      seoDescription: true,
-      heroTitleBefore: true,
-      heroTitleEmphasis: true,
-      heroTitleAfter: true,
-    },
-    orderBy: asc(eventCategoryTags.name),
-  });
+  const collections = await listPublishedTagCollectionsUncached("danse");
 
-  return rows
-    .map(toPublishedDanceTag)
-    .filter((row): row is PublishedDanceTag => row !== null);
+  return collections.map((collection) => ({
+    name: collection.label,
+    slug: collection.slug,
+    subtitle: collection.subtitle,
+    description: collection.description,
+    seoTitle: collection.seoTitle,
+    seoDescription: collection.seoDescription,
+    heroTitleBefore: collection.heroTitleBefore,
+    heroTitleEmphasis: collection.heroTitleEmphasis,
+    heroTitleAfter: collection.heroTitleAfter,
+  }));
 }
 
 async function listPublishedDanceTagsCached() {
@@ -112,33 +110,11 @@ async function listPublishedDanceTagsCached() {
 
 export const listPublishedDanceTags = cache(listPublishedDanceTagsCached);
 
-async function getPublishedDanceTagBySlugUncached(
+export async function getPublishedDanceTagBySlugUncached(
   slug: string,
 ): Promise<PublishedDanceTag | null> {
-  const row = await db.query.eventCategoryTags.findFirst({
-    where: and(
-      eq(eventCategoryTags.slug, slug),
-      eq(eventCategoryTags.tagType, "danse"),
-      eq(eventCategoryTags.isPublished, true),
-    ),
-    columns: {
-      name: true,
-      slug: true,
-      subtitle: true,
-      description: true,
-      seoTitle: true,
-      seoDescription: true,
-      heroTitleBefore: true,
-      heroTitleEmphasis: true,
-      heroTitleAfter: true,
-    },
-  });
-
-  if (!row) {
-    return null;
-  }
-
-  return toPublishedDanceTag(row);
+  const collection = await getPublishedTagCollectionUncached(slug, "danse");
+  return collectionToPublishedDanceTag(collection);
 }
 
 async function getPublishedDanceTagBySlugCached(slug: string) {
@@ -154,22 +130,25 @@ async function getPublishedDanceTagBySlugCached(slug: string) {
 
 export const getPublishedDanceTagBySlug = cache(getPublishedDanceTagBySlugCached);
 
-export type DanceTagPageData = PublishedDanceTag & {
-  events: Awaited<ReturnType<typeof getUpcomingEventsUncached>>;
-};
-
-async function getDanceTagPageUncached(
+export async function getDanceTagPageUncached(
   slug: string,
 ): Promise<DanceTagPageData | null> {
-  const tag = await getPublishedDanceTagBySlugUncached(slug);
+  const page = await getTagCollectionPageUncached(slug, "danse");
+
+  if (!page) {
+    return null;
+  }
+
+  const tag = collectionToPublishedDanceTag(page);
 
   if (!tag) {
     return null;
   }
 
-  const events = await getDanceUpcomingEventsUncached(slug);
-
-  return { ...tag, events };
+  return {
+    ...tag,
+    events: page.events,
+  };
 }
 
 async function getDanceTagPageCached(slug: string) {
@@ -186,15 +165,8 @@ async function getDanceTagPageCached(slug: string) {
 export const getDanceTagPage = cache(getDanceTagPageCached);
 
 export async function getDanceUpcomingEventsUncached(slug: string) {
-  const tag = await getPublishedDanceTagBySlugUncached(slug);
-
-  if (!tag) {
-    return [];
-  }
-
-  return getUpcomingEventsUncached({
-    categoryName: tag.name,
-  });
+  const page = await getTagCollectionPageUncached(slug, "danse");
+  return page?.events ?? [];
 }
 
 async function getDanceUpcomingEventsCached(slug: string) {
@@ -209,3 +181,10 @@ async function getDanceUpcomingEventsCached(slug: string) {
 }
 
 export const getDanceUpcomingEvents = cache(getDanceUpcomingEventsCached);
+
+export {
+  collectionPageDescription,
+  collectionPageTitle,
+  getPublishedTagCollection,
+  listPublishedTagCollections,
+};

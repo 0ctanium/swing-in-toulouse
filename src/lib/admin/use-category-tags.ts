@@ -20,11 +20,11 @@ async function updateCategoryTagMetadata({
   tagType,
 }: UpdateCategoryTagMetadataInput) {
   return fetchJson<{ tag: EventCategoryTag }>(
-    `/api/admin/category-tags/${encodeURIComponent(name)}`,
+    "/api/admin/category-tags",
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tagType }),
+      body: JSON.stringify({ name, tagType }),
     },
     "Enregistrement impossible.",
   );
@@ -35,11 +35,11 @@ async function updateCategoryTagPage({
   ...input
 }: UpdateCategoryTagPageInput) {
   return fetchJson<{ tag: EventCategoryTag }>(
-    `/api/admin/category-tags/${encodeURIComponent(name)}`,
+    "/api/admin/category-tags",
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
+      body: JSON.stringify({ name, ...input }),
     },
     "Enregistrement impossible.",
   );

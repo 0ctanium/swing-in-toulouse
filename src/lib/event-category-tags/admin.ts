@@ -9,6 +9,8 @@ import {
 import { collectDistinctEventCategoryTagNames } from "@/lib/event-category-tags/collect";
 import { DEFAULT_EVENT_CATEGORY_TAG_TYPE } from "@/lib/event-category-tags/tag-types";
 import type { UpdateCategoryTagInput } from "@/lib/event-category-tags/schemas";
+import { isPublishableTagType } from "@/lib/event-category-tags/publishable";
+import { isTimePresetSlug } from "@/lib/event-collections/time-presets";
 
 export const ADMIN_CATEGORY_TAGS_PAGE_SIZE = 20;
 
@@ -35,6 +37,37 @@ export type AdminCategoryTagsListResult = {
   totalPages: number;
   search: string;
 };
+
+function preservePublishedState(
+  tagType: EventCategoryTagType,
+  existing: EventCategoryTag | undefined,
+) {
+  return isPublishableTagType(tagType) ? (existing?.isPublished ?? false) : false;
+}
+
+function assertPublishableSlug(
+  tagType: EventCategoryTagType,
+  slug: string | null,
+  isPublished: boolean,
+) {
+  if (!isPublished) {
+    return;
+  }
+
+  if (!slug) {
+    throw new Error("Un slug est requis pour publier la page.");
+  }
+
+  if (isTimePresetSlug(slug)) {
+    throw new Error("Ce slug est réservé à une page période.");
+  }
+
+  if (!isPublishableTagType(tagType)) {
+    throw new Error(
+      "Seuls les tags de type Danse ou Événement peuvent être publiés.",
+    );
+  }
+}
 
 function matchesSearch(name: string, search: string) {
   if (!search) {
@@ -117,8 +150,7 @@ export async function upsertCategoryTagMetadata(
   });
 
   const effectiveTagType = tagType;
-  const isPublished =
-    effectiveTagType === "danse" ? (existing?.isPublished ?? false) : false;
+  const isPublished = preservePublishedState(effectiveTagType, existing);
 
   const [row] = await db
     .insert(eventCategoryTags)
@@ -146,18 +178,11 @@ function resolveUpdateFields(
 ) {
   const tagType = input.tagType ?? existing?.tagType ?? DEFAULT_EVENT_CATEGORY_TAG_TYPE;
   const slug = input.slug !== undefined ? input.slug : (existing?.slug ?? null);
-  const isPublished =
-    tagType === "danse"
-      ? (input.isPublished ?? existing?.isPublished ?? false)
-      : false;
+  const isPublished = isPublishableTagType(tagType)
+    ? (input.isPublished ?? existing?.isPublished ?? false)
+    : false;
 
-  if (isPublished && !slug) {
-    throw new Error("Un slug est requis pour publier la page.");
-  }
-
-  if (tagType !== "danse" && input.isPublished) {
-    throw new Error("Seuls les tags de type Danse peuvent être publiés.");
-  }
+  assertPublishableSlug(tagType, slug, isPublished);
 
   return {
     tagType,

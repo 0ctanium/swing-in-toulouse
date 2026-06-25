@@ -3,6 +3,8 @@ import { isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { events, organizations, venues } from "@/db/schema";
 import { listPublishedDanceTagsUncached } from "@/lib/event-category-tags/dance-pages";
+import { TIME_PRESET_SLUGS } from "@/lib/event-collections/time-presets";
+import { listPublishedTagCollectionsUncached } from "@/lib/event-collections/tag-pages";
 import { listEventArchiveMonthsUncached } from "@/lib/events/queries";
 
 /** Cache Components require at least one param at build time. */
@@ -74,6 +76,19 @@ export async function generateVenueStaticParams() {
   );
 }
 
+export async function listStaticEventCollectionSlugs(): Promise<string[]> {
+  const eventTags = await listPublishedTagCollectionsUncached("evenement");
+  return [...TIME_PRESET_SLUGS, ...eventTags.map((tag) => tag.slug)];
+}
+
+export async function generateEventCollectionStaticParams() {
+  const slugs = await listStaticEventCollectionSlugs();
+  return withBuildPlaceholder(
+    slugs.map((slug) => ({ slug })),
+    { slug: "__build_placeholder__" },
+  );
+}
+
 export async function generateDanceStaticParams() {
   const slugs = await listStaticDanceSlugs();
   return withBuildPlaceholder(
@@ -84,5 +99,12 @@ export async function generateDanceStaticParams() {
 
 export async function generateArchiveMonthStaticParams() {
   const months = await listStaticArchiveMonthParams();
-  return withBuildPlaceholder(months, { year: "1970", month: "01" });
+
+  return withBuildPlaceholder(
+    months.map(({ year, month }) => ({
+      slug: String(year),
+      month: String(month).padStart(2, "0"),
+    })),
+    { slug: "1970", month: "01" },
+  );
 }

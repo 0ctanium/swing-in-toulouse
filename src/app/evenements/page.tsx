@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { EventArchiveSection } from "@/components/events/event-archive-section";
+import { EventsHubCollectionsSection } from "@/components/events/events-hub-collections-section";
 import { EventList } from "@/components/events/event-list";
 import { PaginationNav } from "@/components/seo/pagination-nav";
 import {
@@ -73,6 +74,8 @@ async function EventsIndexPageContent({ searchParams }: EventsIndexPageProps) {
           .
         </p>
       </div>
+
+      <EventsHubCollectionsSection />
 
       <section className="flex flex-col gap-4">
         <h2 className="font-heading text-2xl font-semibold">À venir</h2>
