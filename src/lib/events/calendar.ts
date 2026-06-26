@@ -3,17 +3,19 @@ import {
   addMonths,
   addWeeks,
   eachDayOfInterval,
+  endOfDay,
   endOfMonth,
   endOfWeek,
   format,
   isSameDay,
   isSameMonth,
   isToday,
+  startOfDay,
   startOfMonth,
   startOfWeek,
 } from "date-fns";
 import { fr } from "date-fns/locale";
-import { toZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
 import {
   calendarDayKey,
@@ -25,6 +27,14 @@ import { siteConfig } from "@/lib/site";
 
 const WEEK_OPTIONS = { weekStartsOn: 1 as const };
 
+function startOfSiteDay(zonedDate: Date) {
+  return fromZonedTime(startOfDay(zonedDate), siteConfig.timezone);
+}
+
+function endOfSiteDay(zonedDate: Date) {
+  return fromZonedTime(endOfDay(zonedDate), siteConfig.timezone);
+}
+
 export function getAgendaCalendarAnchor(now = new Date()) {
   return toZonedTime(now, siteConfig.timezone);
 }
@@ -33,14 +43,20 @@ export function getMonthGridBounds(month: Date) {
   const start = startOfWeek(startOfMonth(month), WEEK_OPTIONS);
   const end = endOfWeek(endOfMonth(month), WEEK_OPTIONS);
 
-  return { from: start, to: end };
+  return {
+    from: startOfSiteDay(start),
+    to: endOfSiteDay(end),
+  };
 }
 
 export function getFourWeekGridBounds(anchor: Date) {
   const start = startOfWeek(anchor, WEEK_OPTIONS);
   const end = addDays(addWeeks(start, 4), -1);
 
-  return { from: start, to: end };
+  return {
+    from: startOfSiteDay(start),
+    to: endOfSiteDay(end),
+  };
 }
 
 export function getMonthGrid(month: Date) {
