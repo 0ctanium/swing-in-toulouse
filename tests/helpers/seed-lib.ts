@@ -1,4 +1,5 @@
 import type { PgTestDb } from "./pg-test-db";
+import { projectIntegrationOccurrences } from "./project-occurrences";
 import {
   eventCategoryTags,
   eventOverrides,
@@ -153,4 +154,6 @@ export async function seedLibIntegrationFixtures(testDb: PgTestDb) {
       eventsCancelled: 0,
     },
   ]);
+
+  await projectIntegrationOccurrences();
 }

@@ -6,7 +6,7 @@ import {
   buildAdminMetaForOccurrences,
   type AdminEventMeta,
 } from "@/lib/events/admin-meta";
-import { getUpcomingEvents } from "@/lib/events/queries";
+import { getUpcomingEventsUncached } from "@/lib/events/queries";
 import { loadOverridesForEvents } from "@/lib/events/overrides";
 import {
   serializeOccurrence,
@@ -20,7 +20,7 @@ export async function loadPublicEventsForRange(
   to: Date,
   limit?: number,
 ): Promise<SerializableEventOccurrence[]> {
-  const events = await getUpcomingEvents({
+  const events = await getUpcomingEventsUncached({
     from: startOfDay(from),
     to: endOfDay(to),
     limit,

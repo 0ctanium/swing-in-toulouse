@@ -18,10 +18,12 @@ const drizzleConfig = {
   logger: env.DATABASE_LOG,
 } as const satisfies DrizzleConfig<typeof schema>;
 
-export const db =
-  env.DATABASE_DRIVER === "node-postgres"
-    ? drizzleNodePostgres(env.DATABASE_URL, drizzleConfig)
-    : drizzleNeonHttp(env.DATABASE_URL, drizzleConfig);
+export const db = drizzleNeonHttp(env.DATABASE_URL, drizzleConfig);
+
+// export const db =
+//   env.DATABASE_DRIVER === "node-postgres"
+//     ? drizzleNodePostgres(env.DATABASE_URL, drizzleConfig)
+//     : drizzleNeonHttp(env.DATABASE_URL, drizzleConfig);
 
 export type Db = typeof db;
 export type Transaction = Parameters<Parameters<Db["transaction"]>[0]>[0];

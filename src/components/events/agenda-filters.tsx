@@ -199,6 +199,29 @@ export function AgendaFiltersBar({
   );
 }
 
+export function AgendaFiltersBarSkeleton() {
+  return (
+    <>
+      <div className="sm:hidden">
+        <Button variant="outline" className="h-9 w-full justify-between">
+          <span className="inline-flex items-center gap-2">
+            <ListFilter className="size-4" />
+            Filtres
+          </span>
+        </Button>
+      </div>
+      <div className="hidden sm:block">
+        <AgendaFiltersFields
+          filters={{ category: [], venue: [], org: [] }}
+          data={emptyFilterOptions}
+          isLoading={true}
+          onFiltersChange={() => void 0}
+        />
+      </div>
+    </>
+  );
+}
+
 export function useAgendaFilterContext() {
   const [filters, setFilters] = useAgendaFiltersState();
   const { data: filterOptions } = useAgendaFilterOptions();

@@ -10,7 +10,22 @@ type OccurrenceRef = {
   id: string;
   masterEventId: string;
   startAt: Date;
+  seriesStartAt?: Date;
 };
+
+function resolveSeriesStartAt(occurrence: OccurrenceRef) {
+  if (occurrence.seriesStartAt) {
+    return occurrence.seriesStartAt;
+  }
+
+  const hashIndex = occurrence.id.indexOf("#");
+
+  if (hashIndex === -1) {
+    return occurrence.startAt;
+  }
+
+  return new Date(occurrence.id.slice(hashIndex + 1));
+}
 
 export function buildAdminMetaForOccurrences(
   occurrences: OccurrenceRef[],
@@ -21,9 +36,10 @@ export function buildAdminMetaForOccurrences(
   for (const occurrence of occurrences) {
     const masterId = occurrence.masterEventId;
     const masterOverride = overrides.master.get(masterId);
+    const seriesStartAt = resolveSeriesStartAt(occurrence);
     const occurrenceOverride = overrides.occurrences
       .get(masterId)
-      ?.get(occurrence.startAt.toISOString());
+      ?.get(seriesStartAt.toISOString());
 
     const occurrenceCount = overrides.occurrences.get(masterId)?.size ?? 0;
     const overrideCount =

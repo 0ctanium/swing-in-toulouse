@@ -10,8 +10,14 @@ import {
   type GroupedCategoryFilterOptions,
 } from "@/lib/event-category-tags/grouped-options";
 import { loadEventCategoryTagMetadataMap } from "@/lib/event-category-tags/metadata";
-import { getUpcomingEvents } from "@/lib/events/queries";
-import { getDefaultExpansionWindow } from "@/lib/ical/recurrence";
+import {
+  listDistinctCategoriesInProjectionWindow,
+  listDistinctOrganizationIdsInProjectionWindow,
+  listDistinctVenueIdsInProjectionWindow,
+  loadOrganizationsByIds,
+  loadVenuesByIds,
+} from "@/lib/events/occurrence-queries";
+import { getProjectionWindow } from "@/lib/events/projection-window";
 import { loadVenueCanonicalMap } from "@/lib/venues/canonical";
 
 export type AgendaFilterOption = {
@@ -34,65 +40,60 @@ function sortOptions(options: AgendaFilterOption[]) {
 }
 
 export async function getAgendaFilterOptionsUncached(): Promise<AgendaFilterOptions> {
-  const window = getDefaultExpansionWindow();
-  const occurrences = await getUpcomingEvents({
-    from: window.from,
-    to: window.to,
-  });
+  const window = getProjectionWindow();
 
-  const [canonicalMap, allVenues, tagMetadata] = await Promise.all([
-    loadVenueCanonicalMap(),
+  const [
+    categories,
+    venueIds,
+    organizationIds,
+    allVenues,
+    canonicalMap,
+    tagMetadata,
+  ] = await Promise.all([
+    listDistinctCategoriesInProjectionWindow(window),
+    listDistinctVenueIdsInProjectionWindow(window),
+    listDistinctOrganizationIdsInProjectionWindow(window),
     db.query.venues.findMany({
-      columns: { id: true, slug: true, name: true },
+      columns: { id: true, slug: true },
     }),
+    loadVenueCanonicalMap(),
     loadEventCategoryTagMetadataMap(),
   ]);
 
-  const venueById = new Map(allVenues.map((venue) => [venue.id, venue]));
-  const categories = new Set<string>();
-  const venues = new Map<string, AgendaFilterOption>();
-  const organizations = new Map<string, AgendaFilterOption>();
+  const [venuesInWindow, organizations] = await Promise.all([
+    loadVenuesByIds(venueIds),
+    loadOrganizationsByIds(organizationIds),
+  ]);
+
   const venueSlugById: Record<string, string> = {};
 
-  for (const occurrence of occurrences) {
-    occurrence.categories?.forEach((category) => {
-      const trimmed = category.trim();
-      if (trimmed) {
-        categories.add(trimmed);
-      }
-    });
-
-    if (occurrence.venue) {
-      const canonicalId = canonicalMap.resolve(occurrence.venue.id);
-      const canonicalVenue = venueById.get(canonicalId);
-
-      if (canonicalVenue) {
-        venues.set(canonicalId, {
-          value: canonicalVenue.slug,
-          label: canonicalVenue.name,
-        });
-        venueSlugById[occurrence.venue.id] = canonicalVenue.slug;
-      }
-    }
-
-    if (occurrence.organization) {
-      organizations.set(occurrence.organization.id, {
-        value: occurrence.organization.slug,
-        label: occurrence.organization.name,
-      });
-    }
+  for (const venue of allVenues) {
+    const canonicalId = canonicalMap.resolve(venue.id);
+    const canonicalVenue =
+      allVenues.find((candidate) => candidate.id === canonicalId) ?? venue;
+    venueSlugById[venue.id] = canonicalVenue.slug;
   }
 
   const categoryGroups = buildGroupedCategoryFilterOptions(
-    categories,
+    new Set(categories),
     tagMetadata,
   );
 
   return {
     categories: sortOptions(flattenGroupedCategoryFilterOptions(categoryGroups)),
     categoryGroups,
-    venues: sortOptions([...venues.values()]),
-    organizations: sortOptions([...organizations.values()]),
+    venues: sortOptions(
+      venuesInWindow.map((venue) => ({
+        value: venue.slug,
+        label: venue.name,
+      })),
+    ),
+    organizations: sortOptions(
+      organizations.map((organization) => ({
+        value: organization.slug,
+        label: organization.name,
+      })),
+    ),
     venueSlugById,
   };
 }

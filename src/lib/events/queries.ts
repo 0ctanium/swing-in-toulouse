@@ -22,9 +22,11 @@ import {
 import { events, organizations, venues } from "@/db/schema";
 import { expandEventsWithOverrides } from "@/lib/events/expand-with-overrides";
 import {
-  collectArchiveMonthsFromOccurrences,
-  getArchiveLookbackStart,
-  getLastCompleteArchiveMonthEnd,
+  listArchiveMonthsFromProjection,
+  queryOccurrencesInWindow,
+} from "@/lib/events/occurrence-queries";
+import { getProjectionWindow } from "@/lib/events/projection-window";
+import {
   getMonthWindowInSiteTimezone,
   type ArchiveMonth,
 } from "@/lib/events/hub";
@@ -32,16 +34,10 @@ import {
   applyMasterOverride,
   loadOverridesForEvents,
 } from "@/lib/events/overrides";
-import {
-  fetchMastersForVenue,
-  filterOccurrencesForVenue,
-} from "@/lib/venues/effective-venue";
 import { loadOrganizationDisplayVenue } from "@/lib/organizations/location";
-import {
-  fetchMastersForOrganization,
-  filterOccurrencesForOrganization,
-} from "@/lib/organizations/effective-organization";
+import { fetchMastersForOrganization } from "@/lib/organizations/effective-organization";
 import { resolveVenueBySlug } from "@/lib/venues/canonical";
+import { fetchMastersForVenue } from "@/lib/venues/effective-venue";
 import {
   getDefaultExpansionWindow,
   getDefaultFromDate,
@@ -264,12 +260,27 @@ export async function getUpcomingEventsUncached(
   options?: UpcomingEventsOptions,
 ): Promise<EventOccurrence[]> {
   const from = options?.from ?? getDefaultFromDate();
-  const window: ExpansionWindow = {
-    from,
-    to: options?.to ?? getDefaultExpansionWindow(from).to,
-  };
+  const to = options?.to ?? getDefaultExpansionWindow(from).to;
 
-  let venueId: string | undefined;
+  if (options?.includeCancelled) {
+    return getUpcomingEventsFromExpansion(options);
+  }
+
+  let organizationId: string | undefined;
+  if (options?.organizationSlug) {
+    const organization = await db.query.organizations.findFirst({
+      where: eq(organizations.slug, options.organizationSlug),
+      columns: { id: true },
+    });
+
+    if (!organization) {
+      return [];
+    }
+
+    organizationId = organization.id;
+  }
+
+  let canonicalVenueId: string | undefined;
   if (options?.venueSlug) {
     const resolution = await resolveVenueBySlug(options.venueSlug);
 
@@ -277,14 +288,33 @@ export async function getUpcomingEventsUncached(
       return [];
     }
 
-    venueId = resolution.venue.id;
+    canonicalVenueId = resolution.venue.id;
   }
+
+  return queryOccurrencesInWindow({
+    from,
+    to,
+    organizationId,
+    canonicalVenueId,
+    categoryName: options?.categoryName,
+    limit: options?.limit,
+  });
+}
+
+async function getUpcomingEventsFromExpansion(
+  options?: UpcomingEventsOptions,
+): Promise<EventOccurrence[]> {
+  const from = options?.from ?? getDefaultFromDate();
+  const window: ExpansionWindow = {
+    from,
+    to: options?.to ?? getDefaultExpansionWindow(from).to,
+  };
 
   const masters = await fetchMasterEvents({
     organizationSlug: options?.organizationSlug,
     venueSlug: options?.venueSlug,
     includeCancelled: options?.includeCancelled,
-    from: from,
+    from,
     to: options?.to,
   });
 
@@ -293,18 +323,25 @@ export async function getUpcomingEventsUncached(
   if (options?.organizationSlug) {
     const organization = await db.query.organizations.findFirst({
       where: eq(organizations.slug, options.organizationSlug),
+      columns: { id: true },
     });
 
     if (organization) {
-      occurrences = filterOccurrencesForOrganization(
-        occurrences,
-        organization.id,
+      occurrences = occurrences.filter(
+        (occurrence) => occurrence.organization?.id === organization.id,
       );
     }
   }
 
-  if (venueId) {
-    occurrences = await filterOccurrencesForVenue(occurrences, venueId);
+  if (options?.venueSlug) {
+    const resolution = await resolveVenueBySlug(options.venueSlug);
+
+    if (resolution?.kind === "venue") {
+      const venueId = resolution.venue.id;
+      occurrences = occurrences.filter(
+        (occurrence) => occurrence.venue?.id === venueId,
+      );
+    }
   }
 
   let filtered = filterOccurrences(occurrences, window, options?.limit);
@@ -337,14 +374,13 @@ async function getEventBySlugUncached(slug: string) {
 async function loadOrganizerUpcomingEventsForOrganizationId(
   organizationId: string,
 ): Promise<EventOccurrence[]> {
-  const masters = await fetchMastersForOrganization(organizationId);
   const window = getDefaultExpansionWindow();
-  const occurrences = await expandEventsWithOverrides(masters, window);
 
-  return filterOccurrences(
-    filterOccurrencesForOrganization(occurrences, organizationId),
-    window,
-  );
+  return queryOccurrencesInWindow({
+    from: window.from,
+    to: window.to,
+    organizationId,
+  });
 }
 
 export async function getOrganizerProfileUncached(slug: string) {
@@ -395,16 +431,13 @@ async function getOrganizerBySlugUncached(slug: string) {
 async function loadVenueUpcomingEventsForVenueId(
   venueId: string,
 ): Promise<EventOccurrence[]> {
-  const masters = await fetchMastersForVenue(venueId, {
-    includeCancelled: false,
-  });
   const window = getDefaultExpansionWindow();
-  const occurrences = await expandEventsWithOverrides(masters, window);
 
-  return filterOccurrences(
-    await filterOccurrencesForVenue(occurrences, venueId),
-    window,
-  );
+  return queryOccurrencesInWindow({
+    from: window.from,
+    to: window.to,
+    canonicalVenueId: venueId,
+  });
 }
 
 export async function getVenueProfileUncached(slug: string) {
@@ -729,17 +762,7 @@ export const listEventsInMonth = cache(listEventsInMonthCached);
 export async function listEventArchiveMonthsUncached(): Promise<
   ArchiveMonth[]
 > {
-  const now = getDefaultFromDate();
-  const from = getArchiveLookbackStart(now);
-  const to = getLastCompleteArchiveMonthEnd(now);
-
-  if (to < from) {
-    return [];
-  }
-
-  const occurrences = await getUpcomingEventsUncached({ from, to });
-
-  return collectArchiveMonthsFromOccurrences(occurrences, now);
+  return listArchiveMonthsFromProjection(getDefaultFromDate());
 }
 
 async function listEventArchiveMonthsCached() {
@@ -802,26 +825,24 @@ async function getRelatedEventsCached(
 export const getRelatedEvents = cache(getRelatedEventsCached);
 
 export async function listOrganizersForVenueUncached(venueId: string) {
-  const [byHomeVenue, masters] = await Promise.all([
+  const window = getProjectionWindow();
+  const [byHomeVenue, venueOccurrences] = await Promise.all([
     db.query.organizations.findMany({
       where: and(
         eq(organizations.isActive, true),
         eq(organizations.venueId, venueId),
       ),
     }),
-    fetchMastersForVenue(venueId),
+    queryOccurrencesInWindow({
+      from: window.from,
+      to: window.to,
+      canonicalVenueId: venueId,
+    }),
   ]);
-
-  const window = getDefaultExpansionWindow();
-  const occurrences = await expandEventsWithOverrides(masters, window);
-  const venueOccurrences = await filterOccurrencesForVenue(
-    occurrences,
-    venueId,
-  );
 
   const organizationIds = new Set([
     ...byHomeVenue.map((organizer) => organizer.id),
-    ...filterOccurrences(venueOccurrences, window)
+    ...venueOccurrences
       .map((occurrence) => occurrence.organization?.id)
       .filter((id): id is string => Boolean(id)),
   ]);

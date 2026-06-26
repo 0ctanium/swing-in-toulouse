@@ -26,6 +26,7 @@ export const env = createEnv({
     DATABASE_LOG: booleanStringSchema.default(false),
     NEON_LOCAL: booleanStringSchema.default(false),
     CRON_SYNC_URL: z.string().url().optional(),
+    CRON_PROJECT_OCCURRENCES_URL: z.string().url().optional(),
     QSTASH_URL: z.string().url(),
     QSTASH_TOKEN: z.string(),
     QSTASH_CURRENT_SIGNING_KEY: z.string(),
@@ -33,6 +34,14 @@ export const env = createEnv({
     GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
     BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
     CLERK_SECRET_KEY: z.string().min(1),
+    PROJECTION_MONTHS_AHEAD: z
+      .number()
+      .int()
+      .positive()
+      .default(18)
+      .describe(
+        "How far ahead occurrences are materialized beyond the default expansion window.",
+      ),
   },
   client: {
     NEXT_PUBLIC_SITE_URL: z.string().url(),
@@ -44,6 +53,7 @@ export const env = createEnv({
     DATABASE_DRIVER: process.env.DATABASE_DRIVER,
     NEON_LOCAL: process.env.NEON_LOCAL,
     CRON_SYNC_URL: process.env.CRON_SYNC_URL,
+    CRON_PROJECT_OCCURRENCES_URL: process.env.CRON_PROJECT_OCCURRENCES_URL,
     QSTASH_URL: process.env.QSTASH_URL,
     QSTASH_TOKEN: process.env.QSTASH_TOKEN,
     QSTASH_CURRENT_SIGNING_KEY: process.env.QSTASH_CURRENT_SIGNING_KEY,
@@ -55,6 +65,7 @@ export const env = createEnv({
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     DATABASE_LOG: process.env.DATABASE_LOG,
+    PROJECTION_MONTHS_AHEAD: process.env.PROJECTION_MONTHS_AHEAD,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   emptyStringAsUndefined: true,
@@ -62,6 +73,13 @@ export const env = createEnv({
 
 export function getCronSyncUrl() {
   return env.CRON_SYNC_URL ?? `${env.NEXT_PUBLIC_SITE_URL}/api/cron/sync`;
+}
+
+export function getCronProjectOccurrencesUrl() {
+  return (
+    env.CRON_PROJECT_OCCURRENCES_URL ??
+    `${env.NEXT_PUBLIC_SITE_URL}/api/cron/project-occurrences`
+  );
 }
 
 export function isQStashConfigured() {

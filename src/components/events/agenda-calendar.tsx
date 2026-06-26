@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { CalendarDayDrawer } from "@/components/events/calendar-day-drawer";
 import { CalendarEventChip } from "@/components/events/calendar-event-chip";
@@ -18,6 +18,7 @@ import {
   formatMonthLabel,
   getEventsForDay,
   getFourWeekGrid,
+  getAgendaCalendarAnchor,
   getFourWeekGridBounds,
   getMonthGrid,
   getMonthGridBounds,
@@ -69,7 +70,7 @@ function useMobileCalendarLayout() {
   return isMobile;
 }
 
-function CalendarSkeleton() {
+export function CalendarSkeleton() {
   return (
     <div className="rounded-xl border">
       <div className="grid grid-cols-7 border-b bg-muted/40">
@@ -97,6 +98,57 @@ function CalendarSkeleton() {
       </div>
     </div>
   );
+}
+
+export function AgendaCalendarSkeleton({ mode }: { mode: AgendaMode }) {
+  return (
+    <div className="flex flex-col gap-3 sm:gap-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-heading min-w-0 text-base leading-tight font-semibold capitalize sm:text-xl">
+          <Suspense>
+            <SkeletonLabel mode={mode} />
+          </Suspense>
+        </h2>
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs sm:h-8 sm:px-2.5 sm:text-sm"
+          >
+            Aujourd&apos;hui
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label="Période précédente"
+          >
+            <ChevronLeft />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label="Période suivante"
+          >
+            <ChevronRight />
+          </Button>
+        </div>
+      </div>
+
+      <CalendarSkeleton />
+    </div>
+  );
+}
+
+function SkeletonLabel({ mode }: { mode: AgendaMode }) {
+  const [month] = useState(getAgendaCalendarAnchor);
+  const [fourWeekAnchor] = useState(getAgendaCalendarAnchor);
+
+  const label =
+    mode === "month"
+      ? formatMonthLabel(month)
+      : formatFourWeekLabel(fourWeekAnchor);
+
+  return label;
 }
 
 type CalendarWeekRowProps = {
@@ -242,8 +294,8 @@ export function AgendaCalendar({
   venueSlugById,
 }: AgendaCalendarProps) {
   const isMobileLayout = useMobileCalendarLayout();
-  const [month, setMonth] = useState(() => new Date());
-  const [fourWeekAnchor, setFourWeekAnchor] = useState(() => new Date());
+  const [month, setMonth] = useState(getAgendaCalendarAnchor);
+  const [fourWeekAnchor, setFourWeekAnchor] = useState(getAgendaCalendarAnchor);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const visibleEventCount = isMobileLayout

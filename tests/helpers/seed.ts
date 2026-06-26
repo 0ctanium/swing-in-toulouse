@@ -1,4 +1,5 @@
 import type { PgTestDb } from "./pg-test-db";
+import { projectIntegrationOccurrences } from "./project-occurrences";
 import { events, organizations, sources, venues } from "@/db/schema";
 
 export const FIXTURE_IDS = {
@@ -88,4 +89,6 @@ export async function seedAuthMatrixFixtures(testDb: PgTestDb) {
       status: "published",
     },
   ]);
+
+  await projectIntegrationOccurrences();
 }

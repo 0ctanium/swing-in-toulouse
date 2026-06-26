@@ -10,6 +10,7 @@ import {
   FIXTURE_CLERK_ORGS,
   FIXTURE_IDS,
 } from "./seed";
+import { projectIntegrationOccurrences } from "./project-occurrences";
 
 export const FIXTURE_ICS_URL = "https://fixture.test/calendar.ics";
 
@@ -81,6 +82,8 @@ export async function seedConfirmWorkflowFixtures(testDb: PgTestDb) {
     status: "published",
     confirmedAt: null,
   });
+
+  await projectIntegrationOccurrences();
 }
 
 /** Confirmed event for override workflow tests. */

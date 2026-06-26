@@ -68,7 +68,7 @@ export function eventsRangeQueryOptions(
 }
 
 export function planningEventsQueryOptions(
-  limit: number | undefined,
+  limit: number | undefined = PLANNING_EVENTS_LIMIT,
   editKey: Exclude<EventsQueryEditKey, "loading">,
 ) {
   const { from, to } = getPlanningRange();

@@ -10,6 +10,7 @@ const require = createRequire(import.meta.url);
 export type PgTestDb = Awaited<ReturnType<typeof createPgTestDb>>;
 
 const TRUNCATE_TABLES = [
+  "event_occurrences",
   "event_overrides",
   "sync_logs",
   "events",

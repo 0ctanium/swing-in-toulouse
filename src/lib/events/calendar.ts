@@ -13,6 +13,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toZonedTime } from "date-fns-tz";
 
 import {
   calendarDayKey,
@@ -20,8 +21,13 @@ import {
   isAllDayEvent,
 } from "@/lib/events/format";
 import type { EventOccurrence } from "@/lib/events/queries";
+import { siteConfig } from "@/lib/site";
 
 const WEEK_OPTIONS = { weekStartsOn: 1 as const };
+
+export function getAgendaCalendarAnchor(now = new Date()) {
+  return toZonedTime(now, siteConfig.timezone);
+}
 
 export function getMonthGridBounds(month: Date) {
   const start = startOfWeek(startOfMonth(month), WEEK_OPTIONS);
@@ -157,7 +163,9 @@ function placementCoversColumn(
   placement: Pick<CalendarAllDayPlacement, "startCol" | "span">,
   column: number,
 ) {
-  return column >= placement.startCol && column < placement.startCol + placement.span;
+  return (
+    column >= placement.startCol && column < placement.startCol + placement.span
+  );
 }
 
 function buildAllDaySegment(
@@ -321,7 +329,7 @@ export function getSpanStripHeightStyle(laneCount: number) {
   }
 
   return `calc(${laneCount} * var(--span-bar-h) + ${laneCount - 1} * var(--span-lane-gap) + var(--span-strip-gap))`;
-};
+}
 
 /** @deprecated Use getSpanStripHeightStyle with CSS variables on the week row. */
 export function getSpanStripHeight(laneCount: number) {
@@ -364,6 +372,14 @@ export function getWeekAllDayLaneCount(
 
 export { isSameDay, isSameMonth, isToday, addMonths, addWeeks };
 
-export const WEEKDAY_LABELS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
+export const WEEKDAY_LABELS = [
+  "lun.",
+  "mar.",
+  "mer.",
+  "jeu.",
+  "ven.",
+  "sam.",
+  "dim.",
+];
 
 export const WEEKDAY_LABELS_COMPACT = ["L", "M", "M", "J", "V", "S", "D"];

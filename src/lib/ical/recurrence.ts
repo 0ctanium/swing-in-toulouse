@@ -31,6 +31,8 @@ export type EventOccurrence = {
   source: Source;
   venue: Venue | null;
   isOverridden?: boolean;
+  /** Original recurrence slot (before occurrence-level time overrides). */
+  seriesStartAt?: Date;
 };
 
 export type ExpansionWindow = {
@@ -47,8 +49,8 @@ export function getDefaultExpansionWindow(
   };
 }
 
-export function getDefaultFromDate() {
-  return startOfDay(toZonedTime(new Date(), siteConfig.timezone));
+export function getDefaultFromDate(date = new Date()) {
+  return startOfDay(toZonedTime(date, siteConfig.timezone));
 }
 
 async function loadNodeIcal(): Promise<NodeIcalModule> {

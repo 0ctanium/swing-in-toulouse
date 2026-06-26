@@ -7,14 +7,16 @@ import { loadPublicEventsForRange } from "@/lib/events/public-events-loader";
 const querySchema = z.object({
   from: z.coerce.date(),
   to: z.coerce.date(),
-  limit: z.coerce.number().optional(),
+  limit: z.coerce.number().int().positive().optional(),
 });
 
 export async function GET(request: NextRequest) {
+  const limitParam = request.nextUrl.searchParams.get("limit");
+
   const parsed = querySchema.safeParse({
     from: request.nextUrl.searchParams.get("from"),
     to: request.nextUrl.searchParams.get("to"),
-    limit: request.nextUrl.searchParams.get("limit"),
+    ...(limitParam ? { limit: limitParam } : {}),
   });
 
   if (!parsed.success) {

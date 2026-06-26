@@ -20,11 +20,9 @@ import {
   shouldClearEventConfirmation,
 } from "@/lib/events/confirmation";
 import { eventUrl } from "@/lib/site";
+import { rebuildOccurrencesForMasters } from "@/lib/events/occurrence-projector";
 
-import {
-  hasIcalDataChanges,
-  hasIcalRevisionChanges,
-} from "./changes";
+import { hasIcalDataChanges, hasIcalRevisionChanges } from "./changes";
 import { fetchAndParseIcalFeed, parseIcalContent } from "./parser";
 import type { NormalizedEvent } from "./types";
 import { resolveEventUid } from "./uid";
@@ -65,7 +63,7 @@ async function upsertEvent(
   source: SourceWithOrganization,
   normalized: NormalizedEvent,
   stats: UpsertStats,
-) {
+): Promise<string | undefined> {
   const uid = resolveEventUid(normalized.uid);
   const sourceUid = normalized.uid;
   const baseSlug = generateEventSlug(
@@ -74,10 +72,7 @@ async function upsertEvent(
   );
 
   let existing = await db.query.events.findFirst({
-    where: and(
-      eq(events.sourceId, source.id),
-      eq(events.sourceUid, sourceUid),
-    ),
+    where: and(eq(events.sourceId, source.id), eq(events.sourceUid, sourceUid)),
   });
 
   if (!existing) {
@@ -142,7 +137,7 @@ async function upsertEvent(
         .where(eq(events.id, existing.id));
 
       stats.unchanged += 1;
-      return;
+      return undefined;
     }
 
     await db
@@ -159,11 +154,14 @@ async function upsertEvent(
       .where(eq(events.id, existing.id));
 
     stats.updated += 1;
-    return;
+    return existing.id;
   }
 
-  await db.insert(events).values(values);
+  const [created] = await db.insert(events).values(values).returning({
+    id: events.id,
+  });
   stats.created += 1;
+  return created.id;
 }
 
 async function cancelMissingEvents(
@@ -171,8 +169,10 @@ async function cancelMissingEvents(
   activeSourceUids: string[],
   stats: UpsertStats,
 ) {
+  const cancelledMasterIds: string[] = [];
+
   if (activeSourceUids.length === 0) {
-    return;
+    return cancelledMasterIds;
   }
 
   const activeUidSet = new Set(activeSourceUids);
@@ -182,6 +182,7 @@ async function cancelMissingEvents(
       isNotNull(events.sourceUid),
       eq(events.status, "published"),
     ),
+    columns: { id: true, sourceUid: true, sequence: true, confirmedAt: true },
   });
 
   const now = new Date();
@@ -203,7 +204,10 @@ async function cancelMissingEvents(
       .where(eq(events.id, event.id));
 
     stats.cancelled += 1;
+    cancelledMasterIds.push(event.id);
   }
+
+  return cancelledMasterIds;
 }
 
 async function loadSourceEvents(source: SourceWithOrganization) {
@@ -238,13 +242,29 @@ export async function syncSource(source: SourceWithOrganization) {
   try {
     const parsedEvents = await loadSourceEvents(source);
     const activeSourceUids: string[] = [];
+    const changedMasterIds = new Set<string>();
 
     for (const parsedEvent of parsedEvents) {
       activeSourceUids.push(parsedEvent.uid);
-      await upsertEvent(source, parsedEvent, stats);
+      const masterId = await upsertEvent(source, parsedEvent, stats);
+      if (masterId) {
+        changedMasterIds.add(masterId);
+      }
     }
 
-    await cancelMissingEvents(source.id, activeSourceUids, stats);
+    const cancelledMasterIds = await cancelMissingEvents(
+      source.id,
+      activeSourceUids,
+      stats,
+    );
+
+    for (const masterId of cancelledMasterIds) {
+      changedMasterIds.add(masterId);
+    }
+
+    if (changedMasterIds.size > 0) {
+      await rebuildOccurrencesForMasters([...changedMasterIds]);
+    }
 
     await db.insert(syncLogs).values({
       sourceId: source.id,

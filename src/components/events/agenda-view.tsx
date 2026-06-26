@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import posthog from "posthog-js";
 
-import { AgendaCalendar } from "@/components/events/agenda-calendar";
+import {
+  AgendaCalendar,
+  AgendaCalendarSkeleton,
+  CalendarSkeleton,
+} from "@/components/events/agenda-calendar";
 import {
   AgendaFiltersBar,
+  AgendaFiltersBarSkeleton,
   useAgendaFilterContext,
 } from "@/components/events/agenda-filters";
 import { CompactPlanningView } from "@/components/events/compact-planning-view";
@@ -21,8 +26,6 @@ import {
 } from "@/lib/events/agenda-preferences";
 import { usePlanningEvents } from "@/lib/events/use-events";
 import { cn } from "@/lib/utils";
-
-const AGENDA_MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 
 function ViewToggle({
   value,
@@ -118,12 +121,10 @@ function PlanningList({ filters, venueSlugById }: PlanningListProps) {
 
 type AgendaViewProps = {
   initialPreferences?: AgendaPreferences;
-  hasStoredPreferences?: boolean;
 };
 
 export function AgendaView({
   initialPreferences = defaultAgendaPreferences,
-  hasStoredPreferences = false,
 }: AgendaViewProps) {
   const { filters, setFilters, venueSlugById } = useAgendaFilterContext();
   const [viewMode, setViewMode] = useState<ViewMode>(
@@ -132,17 +133,6 @@ export function AgendaView({
   const [agendaMode, setAgendaMode] = useState<AgendaMode>(
     initialPreferences.agendaMode,
   );
-
-  useLayoutEffect(() => {
-    if (hasStoredPreferences) {
-      return;
-    }
-
-    if (window.matchMedia(AGENDA_MOBILE_MEDIA_QUERY).matches) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setViewMode("planning");
-    }
-  }, [hasStoredPreferences]);
 
   useEffect(() => {
     writeAgendaPreferencesCookie({ viewMode, agendaMode });
@@ -190,6 +180,55 @@ export function AgendaView({
           filters={filters}
           venueSlugById={venueSlugById}
         />
+      )}
+    </div>
+  );
+}
+
+export function AgendaViewSkeleton({
+  preferences,
+}: {
+  preferences?: AgendaPreferences | null;
+}) {
+  return (
+    <div className="flex flex-col gap-4 sm:gap-6">
+      <AgendaFiltersBarSkeleton />
+
+      {preferences ? (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <ViewToggle
+              value={preferences.viewMode}
+              options={[
+                { value: "agenda", label: "Agenda" },
+                { value: "planning", label: "Planning" },
+              ]}
+              onChange={() => void 0}
+            />
+
+            {preferences.viewMode === "agenda" ? (
+              <ViewToggle
+                value={preferences.agendaMode}
+                options={[
+                  { value: "month", label: "Mois" },
+                  { value: "4-weeks", label: "4 sem." },
+                ]}
+                onChange={() => void 0}
+              />
+            ) : null}
+          </div>
+
+          {preferences.viewMode === "planning" ? (
+            <PlanningListSkeleton />
+          ) : (
+            <AgendaCalendarSkeleton mode={preferences.agendaMode} />
+          )}
+        </>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-24 w-full" />
+        </div>
       )}
     </div>
   );

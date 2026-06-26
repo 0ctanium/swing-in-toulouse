@@ -16,6 +16,7 @@ import {
   type EventOverridePatch,
   occurrenceOverrideKey,
 } from "./overrides.types";
+import { rebuildOccurrencesForMaster } from "./occurrence-projector";
 
 export type StoredEventOverride = typeof eventOverrides.$inferSelect;
 
@@ -270,6 +271,7 @@ export async function upsertEventOverride(options: {
       .where(eq(eventOverrides.id, existing.id))
       .returning();
 
+    await rebuildOccurrencesForMaster(options.eventId);
     return updated;
   }
 
@@ -283,6 +285,7 @@ export async function upsertEventOverride(options: {
     })
     .returning();
 
+  await rebuildOccurrencesForMaster(options.eventId);
   return created;
 }
 
@@ -299,6 +302,7 @@ export async function deleteEventOverride(options: {
           eq(eventOverrides.occurrenceStartAt, options.occurrenceStartAt),
         ),
       );
+    await rebuildOccurrencesForMaster(options.eventId);
     return;
   }
 
@@ -310,6 +314,7 @@ export async function deleteEventOverride(options: {
         isNull(eventOverrides.occurrenceStartAt),
       ),
     );
+  await rebuildOccurrencesForMaster(options.eventId);
 }
 
 export async function getEventWithOverrides(eventId: string) {

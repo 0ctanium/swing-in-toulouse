@@ -1,16 +1,30 @@
 import "@/load-env";
 
-import { getCronSyncUrl } from "@/env";
-import { ensureHourlySyncSchedule } from "@/lib/qstash";
+import { getCronProjectOccurrencesUrl, getCronSyncUrl } from "@/env";
+import {
+  ensureDailyProjectOccurrencesSchedule,
+  ensureHourlySyncSchedule,
+} from "@/lib/qstash";
 
 async function main() {
-  const schedule = await ensureHourlySyncSchedule();
+  const syncSchedule = await ensureHourlySyncSchedule();
+  const projectionSchedule = await ensureDailyProjectOccurrencesSchedule();
 
-  console.info("QStash schedule configured:");
-  console.info(`  id: ${schedule.scheduleId}`);
-  console.info(`  cron: ${schedule.cron}`);
-  console.info(`  destination: ${schedule.destination}`);
+  console.info("QStash schedules configured:");
+  console.info("");
+  console.info("Hourly iCal sync:");
+  console.info(`  id: ${syncSchedule.scheduleId}`);
+  console.info(`  cron: ${syncSchedule.cron}`);
+  console.info(`  destination: ${syncSchedule.destination}`);
   console.info(`  (CRON_SYNC_URL / default: ${getCronSyncUrl()})`);
+  console.info("");
+  console.info("Daily occurrence projection:");
+  console.info(`  id: ${projectionSchedule.scheduleId}`);
+  console.info(`  cron: ${projectionSchedule.cron}`);
+  console.info(`  destination: ${projectionSchedule.destination}`);
+  console.info(
+    `  (CRON_PROJECT_OCCURRENCES_URL / default: ${getCronProjectOccurrencesUrl()})`,
+  );
 }
 
 main()

@@ -85,9 +85,6 @@ export default function RootLayout({
         <AppClerkProvider>
           <ThemeProvider>
             <Providers>
-              <Suspense>
-                <AdminModeBanner />
-              </Suspense>
               <SiteHeader />
               <main
                 className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10"
@@ -95,6 +92,9 @@ export default function RootLayout({
               >
                 {children}
               </main>
+              <Suspense>
+                <AdminModeBanner />
+              </Suspense>
             </Providers>
             <SiteFooter />
           </ThemeProvider>

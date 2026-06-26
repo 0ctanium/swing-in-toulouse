@@ -19,28 +19,30 @@ export function AdminModeBanner({ className }: { className?: string }) {
   }
 
   return (
-    <div
-      className={cn(
-        "border-b border-amber-500/30 bg-amber-500/10 text-amber-950 dark:text-amber-100",
-        className,
-      )}
-    >
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2 text-sm">
-        <div className="inline-flex items-center gap-2">
-          <Settings2 className="size-4 shrink-0" />
-          <span>Mode admin actif — corrections visibles sur le site.</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/admin"
-            className="rounded-md px-2 py-1 font-medium hover:bg-amber-500/15"
-          >
-            Admin
-          </Link>
-          <Protect fallback={<OrganizationSwitcher hidePersonal />} ignoreOrg>
-            <OrganizationSwitcher />
-          </Protect>
-          <UserButton />
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background w-full">
+      <div
+        className={cn(
+          "size-full border-t border-amber-500/30 bg-amber-500/10 text-amber-950 dark:text-amber-100",
+          className,
+        )}
+      >
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-2 text-sm">
+          <div className="inline-flex items-center gap-2">
+            <Settings2 className="size-4 shrink-0" />
+            <span>Mode admin actif — corrections visibles sur le site.</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin"
+              className="rounded-md px-2 py-1 font-medium hover:bg-amber-500/15"
+            >
+              Admin
+            </Link>
+            <Protect fallback={<OrganizationSwitcher hidePersonal />} ignoreOrg>
+              <OrganizationSwitcher />
+            </Protect>
+            <UserButton />
+          </div>
         </div>
       </div>
     </div>

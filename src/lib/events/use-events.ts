@@ -5,6 +5,7 @@ import {
   eventsRangeQueryOptions,
   planningEventsQueryOptions,
 } from "@/lib/events/event-query-options";
+import { PLANNING_EVENTS_LIMIT } from "@/lib/events/planning-range";
 import { parseOccurrences } from "@/lib/events/serialize";
 
 export function useEvents(payload: {
@@ -24,7 +25,7 @@ export function useEvents(payload: {
   });
 }
 
-export function usePlanningEvents(limit?: number) {
+export function usePlanningEvents(limit = PLANNING_EVENTS_LIMIT) {
   const editKey = useEventsQueryEditKey();
   const resolvedEditKey = editKey === "loading" ? "none" : editKey;
 

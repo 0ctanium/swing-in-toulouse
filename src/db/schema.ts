@@ -246,6 +246,65 @@ export const events = pgTable(
   ],
 );
 
+/** Denormalized public read model: expanded occurrences with overrides applied. */
+export const eventOccurrences = pgTable(
+  "event_occurrences",
+  {
+    id: text("id").primaryKey(),
+    masterEventId: uuid("master_event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    seriesStartAt: timestamp("series_start_at", {
+      withTimezone: true,
+    }).notNull(),
+    startAt: timestamp("start_at", { withTimezone: true }).notNull(),
+    endAt: timestamp("end_at", { withTimezone: true }),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    isAllDay: boolean("is_all_day").notNull().default(false),
+    locationRaw: text("location_raw"),
+    sourceUrl: text("source_url"),
+    url: text("url").notNull(),
+    status: eventStatusEnum("status").notNull(),
+    categories: text("categories").array(),
+    organizationId: uuid("organization_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    venueId: uuid("venue_id").references(() => venues.id, {
+      onDelete: "set null",
+    }),
+    canonicalVenueId: uuid("canonical_venue_id").references(() => venues.id, {
+      onDelete: "set null",
+    }),
+    sourceId: uuid("source_id")
+      .notNull()
+      .references(() => sources.id, { onDelete: "cascade" }),
+    isOverridden: boolean("is_overridden").notNull().default(false),
+    materializedAt: timestamp("materialized_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("event_occurrences_master_series_unique_idx").on(
+      table.masterEventId,
+      table.seriesStartAt,
+    ),
+    index("event_occurrences_start_at_idx").on(table.startAt),
+    index("event_occurrences_published_start_at_idx")
+      .on(table.startAt)
+      .where(sql`${table.status} = 'published'`),
+    index("event_occurrences_canonical_venue_idx").on(table.canonicalVenueId),
+    index("event_occurrences_organization_idx").on(table.organizationId),
+    index("event_occurrences_master_event_id_idx").on(table.masterEventId),
+    index("event_occurrences_source_id_idx").on(table.sourceId),
+    index("event_occurrences_categories_gin_idx").using(
+      "gin",
+      table.categories,
+    ),
+  ],
+);
+
 export const eventOverrides = pgTable(
   "event_overrides",
   {
@@ -374,7 +433,35 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
   }),
   duplicateEvents: many(events, { relationName: "eventDuplicates" }),
   overrides: many(eventOverrides),
+  occurrences: many(eventOccurrences),
 }));
+
+export const eventOccurrencesRelations = relations(
+  eventOccurrences,
+  ({ one }) => ({
+    masterEvent: one(events, {
+      fields: [eventOccurrences.masterEventId],
+      references: [events.id],
+    }),
+    organization: one(organizations, {
+      fields: [eventOccurrences.organizationId],
+      references: [organizations.id],
+    }),
+    venue: one(venues, {
+      fields: [eventOccurrences.venueId],
+      references: [venues.id],
+    }),
+    canonicalVenue: one(venues, {
+      fields: [eventOccurrences.canonicalVenueId],
+      references: [venues.id],
+      relationName: "canonicalVenueOccurrences",
+    }),
+    source: one(sources, {
+      fields: [eventOccurrences.sourceId],
+      references: [sources.id],
+    }),
+  }),
+);
 
 export const eventOverridesRelations = relations(eventOverrides, ({ one }) => ({
   event: one(events, {
@@ -410,6 +497,8 @@ export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
 export type EventOverride = typeof eventOverrides.$inferSelect;
 export type NewEventOverride = typeof eventOverrides.$inferInsert;
+export type EventOccurrenceRow = typeof eventOccurrences.$inferSelect;
+export type NewEventOccurrenceRow = typeof eventOccurrences.$inferInsert;
 export type SyncLog = typeof syncLogs.$inferSelect;
 
 export type SourceWithOrganization = Source & {

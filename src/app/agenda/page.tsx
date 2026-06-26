@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { AgendaPrefetchBoundary } from "@/components/events/agenda-prefetch-boundary";
 import { publicMetadata } from "@/lib/metadata";
+import { AgendaViewSkeleton } from "@/components/events/agenda-view";
 
 export const metadata: Metadata = publicMetadata({
   title: "Agenda",
@@ -23,7 +24,7 @@ export default function AgendaPage() {
           le planning.
         </p>
       </div>
-      <Suspense>
+      <Suspense fallback={<AgendaViewSkeleton />}>
         <AgendaPrefetchBoundary />
       </Suspense>
     </div>
