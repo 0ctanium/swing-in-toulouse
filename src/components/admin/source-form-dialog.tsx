@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { OrganizationSelect } from "@/components/admin/organization-select";
+import { EventCategoryTagsInput } from "@/components/admin/event-category-tags-input";
 import { VenueSelect } from "@/components/admin/venue-select";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +33,7 @@ import {
   useUpdateSource,
 } from "@/lib/admin/use-sources";
 import { formatVenueAsDefaultLocation } from "@/lib/sources/defaults";
-import { parseSourceCategoriesInput } from "@/lib/sources/schemas";
+import { normalizeSourceCategories } from "@/lib/sources/schemas";
 import type { AdminSourceRow } from "@/lib/sources/admin";
 import type { SourceType } from "@/db/schema";
 import { generateSourceSlug } from "@/lib/slug";
@@ -55,7 +56,7 @@ function emptyFormState() {
     url: "",
     organizationId: "",
     defaultVenueId: "",
-    defaultCategories: "",
+    defaultCategories: [] as string[],
     isActive: true,
   };
 }
@@ -90,7 +91,7 @@ function formStateFromSource(
       venues,
       source.defaultLocationRaw,
     ),
-    defaultCategories: (source.defaultCategories ?? []).join(", "),
+    defaultCategories: source.defaultCategories ?? [],
     isActive: source.isActive,
   };
 }
@@ -138,7 +139,7 @@ export function SourceFormDialog({
   const [url, setUrl] = useState("");
   const [organizationId, setOrganizationId] = useState("");
   const [defaultVenueId, setDefaultVenueId] = useState("");
-  const [defaultCategories, setDefaultCategories] = useState("");
+  const [defaultCategories, setDefaultCategories] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -214,7 +215,7 @@ export function SourceFormDialog({
       slug: slug.trim(),
       organizationId: organizationId || null,
       defaultLocationRaw: defaultLocationPreview,
-      defaultCategories: parseSourceCategoriesInput(defaultCategories),
+      defaultCategories: normalizeSourceCategories(defaultCategories),
       isActive,
     };
 
@@ -259,7 +260,7 @@ export function SourceFormDialog({
         if (metadata.defaultLocationRaw) {
           formData.append("defaultLocationRaw", metadata.defaultLocationRaw);
         }
-        if (metadata.defaultCategories.length > 0) {
+        if (metadata.defaultCategories && metadata.defaultCategories.length > 0) {
           formData.append(
             "defaultCategories",
             metadata.defaultCategories.join(", "),
@@ -438,16 +439,13 @@ export function SourceFormDialog({
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="source-categories">Catégories par défaut</Label>
-            <Input
+            <EventCategoryTagsInput
               id="source-categories"
               value={defaultCategories}
-              onChange={(event) => setDefaultCategories(event.target.value)}
+              onChange={setDefaultCategories}
               disabled={pending}
               placeholder="Ex. Lindy Hop, Soirée"
             />
-            <p className="text-muted-foreground text-xs">
-              Séparez les catégories par des virgules.
-            </p>
           </div>
 
           <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">

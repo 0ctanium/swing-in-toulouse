@@ -21,7 +21,7 @@ const baseForm = {
   description: "Bal swing",
   organizationId: "22222222-2222-4222-8222-222222222222",
   venueId: "11111111-1111-4111-8111-111111111111",
-  categories: "lindy, balboa",
+  categories: ["lindy", "balboa"],
   status: "published" as const,
   sourceUrl: "https://example.com/event",
   notes: "",
@@ -68,7 +68,7 @@ describe("hasMasterOverrideChangesFromForm", () => {
     expect(hasMasterOverrideChangesFromForm(baseForm, synced)).toBe(false);
     expect(
       hasMasterOverrideChangesFromForm(
-        { ...baseForm, categories: "blues" },
+        { ...baseForm, categories: ["blues"] },
         synced,
       ),
     ).toBe(true);

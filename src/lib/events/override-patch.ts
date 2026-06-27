@@ -15,7 +15,7 @@ export type MasterOverrideFormState = {
   description: string;
   organizationId: string;
   venueId: string;
-  categories: string;
+  categories: string[];
   status: "published" | "cancelled";
   sourceUrl: string;
   notes: string;
@@ -26,9 +26,8 @@ function normalizeText(value: string | null | undefined) {
   return trimmed === "" ? null : trimmed;
 }
 
-function parseCategories(value: string) {
-  return value
-    .split(",")
+function normalizeCategories(categories: string[]) {
+  return categories
     .map((item) => item.trim())
     .filter(Boolean)
     .sort();
@@ -39,8 +38,8 @@ function categoriesEqual(
   right: string[] | null | undefined,
 ) {
   return (
-    JSON.stringify(parseCategories((left ?? []).join(", "))) ===
-    JSON.stringify(parseCategories((right ?? []).join(", ")))
+    JSON.stringify(normalizeCategories(left ?? [])) ===
+    JSON.stringify(normalizeCategories(right ?? []))
   );
 }
 
@@ -70,7 +69,7 @@ export function buildMasterOverridePatch(
     patch.venueId = venueId;
   }
 
-  const parsedCategories = parseCategories(form.categories);
+  const parsedCategories = normalizeCategories(form.categories);
   if (!categoriesEqual(parsedCategories, synced.categories)) {
     patch.categories = parsedCategories;
   }

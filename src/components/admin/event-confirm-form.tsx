@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { OrganizationSelect } from "@/components/admin/organization-select";
+import { EventCategoryTagsInput } from "@/components/admin/event-category-tags-input";
 import {
   VenueSelect,
   type VenueSelectOption,
@@ -41,7 +42,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
+    <div className="flex flex-col gap-1 text-sm">
       <span className="font-medium">{label}</span>
       {syncedValue ? (
         <span className="text-muted-foreground text-xs">
@@ -49,7 +50,7 @@ function Field({
         </span>
       ) : null}
       {children}
-    </label>
+    </div>
   );
 }
 
@@ -74,7 +75,7 @@ export function EventConfirmForm({
     currentPatch.venueId ?? synced.venueId ?? "",
   );
   const [categories, setCategories] = useState(
-    (currentPatch.categories ?? synced.categories ?? []).join(", "),
+    currentPatch.categories ?? synced.categories ?? [],
   );
   const [status, setStatus] = useState(currentPatch.status ?? synced.status);
   const [sourceUrl, setSourceUrl] = useState(
@@ -192,14 +193,11 @@ export function EventConfirmForm({
           <VenueSelect venues={venues} value={venueId} onChange={setVenueId} />
         </Field>
 
-        <Field
-          label="Catégories (séparées par des virgules)"
-          syncedValue={synced.categories?.join(", ")}
-        >
-          <input
-            className="rounded-lg border bg-background px-3 py-2"
+        <Field label="Catégories" syncedValue={synced.categories?.join(", ")}>
+          <EventCategoryTagsInput
             value={categories}
-            onChange={(event) => setCategories(event.target.value)}
+            onChange={setCategories}
+            disabled={pending}
           />
         </Field>
 
