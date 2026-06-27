@@ -155,7 +155,8 @@ export function hasMaterialOccurrencePatch(patch: EventOverridePatch) {
     patch.organizationId !== undefined ||
     patch.categories !== undefined ||
     patch.status !== undefined ||
-    patch.sourceUrl !== undefined
+    patch.sourceUrl !== undefined ||
+    patch.offers !== undefined
   );
 }
 

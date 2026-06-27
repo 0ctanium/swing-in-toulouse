@@ -1,7 +1,26 @@
 import type { EventMaster, Organization, Venue } from "@/db/schema";
+import type { EventOffer } from "@/lib/events/offers";
 import type { EventOccurrence } from "@/lib/events/queries";
 import { getVenueDisplayAddress, getVenueMapsUrl } from "@/lib/venues/display";
 import { absoluteUrl, eventUrl, organizerUrl, siteConfig, venueUrl } from "@/lib/site";
+
+function eventOffersJsonLd(
+  offers: EventOffer[] | null | undefined,
+  status: EventOccurrence["status"],
+) {
+  if (!offers?.length || status === "cancelled") {
+    return undefined;
+  }
+
+  const mapped = offers.map((offer) => ({
+    "@type": "Offer" as const,
+    ...(offer.label !== "Entrée" ? { name: offer.label } : {}),
+    price: String(offer.price),
+    priceCurrency: offer.currency,
+  }));
+
+  return mapped.length === 1 ? mapped[0] : mapped;
+}
 
 export function eventStructuredData(
   event: Pick<
@@ -16,7 +35,9 @@ export function eventStructuredData(
     | "venue"
     | "locationRaw"
     | "status"
-  >,
+  > & {
+    offers?: EventOffer[] | null;
+  },
 ) {
   const location = event.venue
     ? {
@@ -33,6 +54,8 @@ export function eventStructuredData(
           name: event.locationRaw,
         }
       : undefined;
+
+  const offers = eventOffersJsonLd(event.offers ?? null, event.status);
 
   return {
     "@context": "https://schema.org",
@@ -52,6 +75,7 @@ export function eventStructuredData(
     ...(event.organization && {
       organizer: organizationStructuredData(event.organization),
     }),
+    ...(offers && { offers }),
   };
 }
 

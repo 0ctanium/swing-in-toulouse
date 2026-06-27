@@ -41,6 +41,7 @@ function buildSyntheticOccurrence(
     sourceUrl: master.sourceUrl,
     status: master.status,
     categories: master.categories,
+    offers: master.offers ?? null,
     organization: master.organization,
     venue: master.venue,
   };

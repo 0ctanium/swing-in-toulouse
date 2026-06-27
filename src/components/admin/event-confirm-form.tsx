@@ -8,6 +8,11 @@ import { EntitySuggestionHints } from "@/components/admin/entity-suggestion-hint
 import { OrganizationSelect } from "@/components/admin/organization-select";
 import { EventCategoryTagsInput } from "@/components/admin/event-category-tags-input";
 import {
+  EventOffersInput,
+  offersFormIsValid,
+  resolveInitialOffersFormState,
+} from "@/components/admin/event-offers-input";
+import {
   appendCreatedVenueOption,
   mergeVenueMatchCandidates,
   mergeVenueSelectOptions,
@@ -93,6 +98,12 @@ export function EventConfirmForm({
     currentPatch.sourceUrl ?? synced.sourceUrl ?? "",
   );
   const [notes, setNotes] = useState(currentPatch.notes ?? "");
+  const initialOffersState = resolveInitialOffersFormState({
+    currentPatchOffers: currentPatch.offers,
+    syncedOffers: synced.offers,
+  });
+  const [offersMode, setOffersMode] = useState(initialOffersState.mode);
+  const [offerRows, setOfferRows] = useState(initialOffersState.rows);
   const [createdVenues, setCreatedVenues] = useState<VenueSelectOption[]>([]);
   const pending = confirmEvent.isPending;
 
@@ -155,6 +166,8 @@ export function EventConfirmForm({
       status,
       sourceUrl,
       notes,
+      offersMode,
+      offerRows,
     },
     synced,
   );
@@ -163,6 +176,11 @@ export function EventConfirmForm({
     : "Confirmer sans modification";
 
   async function handleConfirm() {
+    if (!offersFormIsValid(offersMode, offerRows)) {
+      toast.error("Vérifiez les tarifs saisis.");
+      return;
+    }
+
     const patch = buildMasterOverridePatch(
       {
         title,
@@ -173,6 +191,8 @@ export function EventConfirmForm({
         status,
         sourceUrl,
         notes,
+        offersMode,
+        offerRows,
       },
       synced,
     );
@@ -307,6 +327,16 @@ export function EventConfirmForm({
             className="rounded-lg border bg-background px-3 py-2"
             value={sourceUrl}
             onChange={(event) => setSourceUrl(event.target.value)}
+          />
+        </Field>
+
+        <Field label="Tarification">
+          <EventOffersInput
+            mode={offersMode}
+            rows={offerRows}
+            onModeChange={setOffersMode}
+            onRowsChange={setOfferRows}
+            disabled={pending}
           />
         </Field>
 

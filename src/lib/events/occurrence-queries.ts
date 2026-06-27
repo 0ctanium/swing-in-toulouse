@@ -52,6 +52,7 @@ function toEventOccurrence(row: OccurrenceWithRelations): EventOccurrence {
     icalData: null,
     status: row.status,
     categories: row.categories,
+    offers: row.offers,
     organization: row.organization,
     source: row.source,
     venue: row.venue,

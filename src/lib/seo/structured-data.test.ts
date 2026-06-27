@@ -41,6 +41,7 @@ describe("eventStructuredData", () => {
       } as never,
       locationRaw: null,
       status: "published",
+      offers: null,
     });
 
     expect(data["@type"]).toBe("Event");
@@ -72,6 +73,7 @@ describe("eventStructuredData", () => {
       venue: null,
       locationRaw: "Toulouse",
       status: "cancelled",
+      offers: null,
     });
 
     expect(data.eventStatus).toBe("https://schema.org/EventCancelled");
@@ -79,6 +81,60 @@ describe("eventStructuredData", () => {
       "@type": "Place",
       name: "Toulouse",
     });
+  });
+
+  it("includes schema.org Offer JSON-LD for priced events", () => {
+    const data = eventStructuredData({
+      title: "Workshop",
+      description: null,
+      startAt: new Date("2026-06-20T18:00:00.000Z"),
+      endAt: null,
+      slug: "workshop",
+      sourceUrl: "https://example.com/book",
+      organization: null,
+      venue: null,
+      locationRaw: null,
+      status: "published",
+      offers: [
+        { label: "Atelier 1h", price: 75, currency: "EUR" },
+        { label: "Atelier 2h", price: 100, currency: "EUR" },
+      ],
+    });
+
+    expect(data.offers).toEqual([
+      expect.objectContaining({
+        "@type": "Offer",
+        name: "Atelier 1h",
+        price: "75",
+        priceCurrency: "EUR",
+      }),
+      expect.objectContaining({
+        "@type": "Offer",
+        name: "Atelier 2h",
+        price: "100",
+      }),
+    ]);
+    const offerList = Array.isArray(data.offers) ? data.offers : [data.offers];
+    expect(offerList.every((offer) => !("availability" in offer))).toBe(true);
+    expect(offerList.every((offer) => !("url" in offer))).toBe(true);
+  });
+
+  it("omits offers when unset", () => {
+    const data = eventStructuredData({
+      title: "Soirée",
+      description: null,
+      startAt: new Date("2026-06-20T18:00:00.000Z"),
+      endAt: null,
+      slug: "soiree",
+      sourceUrl: null,
+      organization: null,
+      venue: null,
+      locationRaw: null,
+      status: "published",
+      offers: null,
+    });
+
+    expect(data.offers).toBeUndefined();
   });
 });
 

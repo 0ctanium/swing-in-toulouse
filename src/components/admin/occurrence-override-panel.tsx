@@ -20,6 +20,7 @@ import {
   WEEKDAY_LABELS,
 } from "@/lib/events/calendar";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
+import type { EventOffer } from "@/lib/events/offers";
 import { cn } from "@/lib/utils";
 
 type OrganizationOption = { id: string; name: string };
@@ -35,6 +36,7 @@ export type AdminOccurrenceItem = {
   categories: string[] | null;
   status: "published" | "cancelled";
   sourceUrl: string | null;
+  offers: EventOffer[] | null;
   hasOverride: boolean;
   currentPatch: EventOverridePatch;
 };
@@ -285,6 +287,7 @@ export function OccurrenceOverridePanel({
                 categories: selected.categories,
                 status: selected.status,
                 sourceUrl: selected.sourceUrl,
+                offers: selected.offers,
               }}
               currentPatch={selected.currentPatch}
               organizations={organizations}

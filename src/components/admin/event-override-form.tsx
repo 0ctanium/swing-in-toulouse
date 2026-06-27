@@ -7,6 +7,12 @@ import { EntitySuggestionHints } from "@/components/admin/entity-suggestion-hint
 import { OrganizationSelect } from "@/components/admin/organization-select";
 import { EventCategoryTagsInput } from "@/components/admin/event-category-tags-input";
 import {
+  buildOffersPatchFromForm,
+  EventOffersInput,
+  offersFormIsValid,
+  resolveInitialOffersFormState,
+} from "@/components/admin/event-offers-input";
+import {
   appendCreatedVenueOption,
   mergeVenueMatchCandidates,
   mergeVenueSelectOptions,
@@ -21,6 +27,7 @@ import {
   useSaveEventOverride,
 } from "@/lib/admin/use-events-admin";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
+import type { EventOffer } from "@/lib/events/offers";
 import { suggestNamedEntitiesFromText } from "@/lib/proper-names/match-in-text";
 import {
   buildOrganizationMatchCandidates,
@@ -41,6 +48,7 @@ type EventOverrideFormProps = {
     categories: string[] | null;
     status: "published" | "cancelled";
     sourceUrl: string | null;
+    offers: EventOffer[] | null;
   };
   currentPatch: EventOverridePatch;
   organizations: OrganizationOption[];
@@ -101,6 +109,12 @@ export function EventOverrideForm({
   );
   const [hidden, setHidden] = useState(currentPatch.hidden ?? false);
   const [notes, setNotes] = useState(currentPatch.notes ?? "");
+  const initialOffersState = resolveInitialOffersFormState({
+    currentPatchOffers: currentPatch.offers,
+    syncedOffers: synced.offers,
+  });
+  const [offersMode, setOffersMode] = useState(initialOffersState.mode);
+  const [offerRows, setOfferRows] = useState(initialOffersState.rows);
   const [message, setMessage] = useState<string | null>(null);
   const [createdVenues, setCreatedVenues] = useState<VenueSelectOption[]>([]);
   const pending = saveOverride.isPending || deleteOverride.isPending;
@@ -165,6 +179,11 @@ export function EventOverrideForm({
   async function save() {
     setMessage(null);
 
+    if (!offersFormIsValid(offersMode, offerRows)) {
+      setMessage("Vérifiez les tarifs saisis.");
+      return;
+    }
+
     const patch: EventOverridePatch = {};
 
     if (title.trim() && title.trim() !== synced.title) {
@@ -204,6 +223,16 @@ export function EventOverrideForm({
     if (notes.trim()) {
       patch.notes = notes.trim();
     }
+
+    Object.assign(
+      patch,
+      buildOffersPatchFromForm({
+        mode: offersMode,
+        rows: offerRows,
+        syncedOffers: synced.offers,
+        currentPatchOffers: currentPatch.offers,
+      }),
+    );
 
     try {
       await saveOverride.mutateAsync({
@@ -316,6 +345,16 @@ export function EventOverrideForm({
             className="rounded-lg border bg-background px-3 py-2"
             value={sourceUrl}
             onChange={(event) => setSourceUrl(event.target.value)}
+          />
+        </Field>
+
+        <Field label="Tarification">
+          <EventOffersInput
+            mode={offersMode}
+            rows={offerRows}
+            onModeChange={setOffersMode}
+            onRowsChange={setOfferRows}
+            disabled={pending}
           />
         </Field>
 

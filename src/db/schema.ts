@@ -16,6 +16,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import type { IcalStoredData } from "@/lib/ical/types";
+import type { EventOffer } from "@/lib/events/offers";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
 import type { OrganizationDance } from "@/lib/organizations/dances";
 import type { OrganizationSocialLinks } from "@/lib/organizations/social-links";
@@ -268,6 +269,7 @@ export const eventOccurrences = pgTable(
     url: text("url").notNull(),
     status: eventStatusEnum("status").notNull(),
     categories: text("categories").array(),
+    offers: jsonb("offers").$type<EventOffer[] | null>(),
     organizationId: uuid("organization_id").references(() => organizations.id, {
       onDelete: "set null",
     }),
@@ -510,4 +512,5 @@ export type EventMaster = Event & {
   source: Source;
   organization: Organization | null;
   venue: Venue | null;
+  offers?: EventOffer[] | null;
 };

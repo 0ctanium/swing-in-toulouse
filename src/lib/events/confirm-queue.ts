@@ -41,6 +41,7 @@ export type EventConfirmQueueItem = {
     categories: string[] | null;
     status: "published" | "cancelled";
     sourceUrl: string | null;
+    offers: null;
   };
   currentPatch: EventOverridePatch;
 };
@@ -101,6 +102,7 @@ export async function getEventConfirmQueue(
         categories: event.categories,
         status: event.status,
         sourceUrl: event.sourceUrl,
+        offers: null,
       },
       currentPatch: masterOverride?.patch ?? {},
     };

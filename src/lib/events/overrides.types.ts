@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { eventOfferSchema } from "@/lib/events/offers";
+
 export const eventOverridePatchSchema = z
   .object({
     title: z.string().min(1).optional(),
@@ -13,6 +15,7 @@ export const eventOverridePatchSchema = z
     categories: z.array(z.string()).nullable().optional(),
     status: z.enum(["published", "cancelled"]).optional(),
     sourceUrl: z.string().url().nullable().optional(),
+    offers: z.array(eventOfferSchema).nullable().optional(),
     hidden: z.boolean().optional(),
     notes: z.string().nullable().optional(),
   })

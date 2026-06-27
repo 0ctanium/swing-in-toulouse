@@ -25,6 +25,7 @@ function createOccurrence(
     icalData: null,
     status: "published",
     categories: ["Lindy Hop"],
+    offers: null,
     organization: {
       name: "Swing Club",
     } as EventOccurrence["organization"],

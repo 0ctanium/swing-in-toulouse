@@ -17,6 +17,7 @@ import {
   occurrenceOverrideKey,
 } from "./overrides.types";
 import { rebuildOccurrencesForMaster } from "./occurrence-projector";
+import type { EventOffer } from "@/lib/events/offers";
 
 export type StoredEventOverride = typeof eventOverrides.$inferSelect;
 
@@ -71,6 +72,7 @@ function applyPatchToEventFields<
     categories: string[] | null;
     status: Event["status"];
     sourceUrl: string | null;
+    offers: EventOffer[] | null;
   },
 >(base: T, patch: EventOverridePatch): T {
   const next = { ...base };
@@ -108,6 +110,9 @@ function applyPatchToEventFields<
   if (patch.sourceUrl !== undefined) {
     next.sourceUrl = patch.sourceUrl;
   }
+  if (patch.offers !== undefined) {
+    next.offers = patch.offers;
+  }
 
   return next;
 }
@@ -124,7 +129,13 @@ export function applyMasterOverride(
     return master;
   }
 
-  const merged = applyPatchToEventFields(master, override.patch);
+  const merged = applyPatchToEventFields(
+    {
+      ...master,
+      offers: null,
+    },
+    override.patch,
+  );
 
   const organization =
     merged.organizationId !== master.organizationId
@@ -155,6 +166,7 @@ export type OccurrenceLike = {
   sourceUrl: string | null;
   status: Event["status"];
   categories: string[] | null;
+  offers: EventOffer[] | null;
   organization: Organization | null;
   venue: Venue | null;
   isOverridden?: boolean;
@@ -187,6 +199,7 @@ export function applyOccurrenceOverride<T extends OccurrenceLike>(
       categories: occurrence.categories,
       status: occurrence.status,
       sourceUrl: occurrence.sourceUrl,
+      offers: occurrence.offers ?? null,
     },
     patch,
   );
@@ -212,6 +225,7 @@ export function applyOccurrenceOverride<T extends OccurrenceLike>(
     sourceUrl: merged.sourceUrl,
     status: merged.status,
     categories: merged.categories,
+    offers: merged.offers,
     organization,
     venue,
     isOverridden: true,

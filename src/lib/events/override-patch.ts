@@ -1,4 +1,10 @@
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
+import {
+  buildOffersOverridePatch,
+  type EventOffer,
+  type EventOfferDraft,
+  type EventOffersMode,
+} from "@/lib/events/offers";
 
 export type MasterOverrideSyncedFields = {
   title: string;
@@ -8,6 +14,7 @@ export type MasterOverrideSyncedFields = {
   categories: string[] | null;
   status: "published" | "cancelled";
   sourceUrl: string | null;
+  offers: EventOffer[] | null;
 };
 
 export type MasterOverrideFormState = {
@@ -19,6 +26,8 @@ export type MasterOverrideFormState = {
   status: "published" | "cancelled";
   sourceUrl: string;
   notes: string;
+  offersMode: EventOffersMode;
+  offerRows: EventOfferDraft[];
 };
 
 function normalizeText(value: string | null | undefined) {
@@ -87,6 +96,16 @@ export function buildMasterOverridePatch(
   if (notes) {
     patch.notes = notes;
   }
+
+  Object.assign(
+    patch,
+    buildOffersOverridePatch({
+      mode: form.offersMode,
+      rows: form.offerRows,
+      syncedOffers: synced.offers,
+      currentPatchOffers: undefined,
+    }),
+  );
 
   return patch;
 }

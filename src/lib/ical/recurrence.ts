@@ -4,6 +4,7 @@ import { toZonedTime } from "date-fns-tz";
 import { formatInTimeZone } from "date-fns-tz";
 
 import type { Event, Organization, Source, Venue } from "@/db/schema";
+import type { EventOffer } from "@/lib/events/offers";
 import type { IcalStoredData } from "@/lib/ical/types";
 import { siteConfig } from "@/lib/site";
 
@@ -27,6 +28,7 @@ export type EventOccurrence = {
   icalData: IcalStoredData | null;
   status: Event["status"];
   categories: string[] | null;
+  offers: EventOffer[] | null;
   organization: Organization | null;
   source: Source;
   venue: Venue | null;
@@ -76,6 +78,7 @@ type MasterEvent = Event & {
   source: Source;
   organization: Organization | null;
   venue: Venue | null;
+  offers?: EventOffer[] | null;
 };
 
 function isWithinWindow(
@@ -194,6 +197,7 @@ function buildOccurrence(
     icalData: master.icalData,
     status: master.status,
     categories: master.categories,
+    offers: master.offers ?? null,
     organization: master.organization,
     source: master.source,
     venue: master.venue,

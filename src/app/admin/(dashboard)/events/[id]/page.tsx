@@ -102,6 +102,7 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
         categories: occurrence.categories,
         status: occurrence.status,
         sourceUrl: occurrence.sourceUrl,
+        offers: occurrence.offers,
         hasOverride: Boolean(override),
         currentPatch: override?.patch ?? {},
       };
@@ -190,6 +191,7 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
           categories: synced.categories,
           status: synced.status,
           sourceUrl: synced.sourceUrl,
+          offers: eventData.effective.offers ?? null,
         }}
         currentPatch={masterOverride?.patch ?? {}}
         organizations={scopedOrganizations}

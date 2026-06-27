@@ -110,6 +110,7 @@ describe("applyOccurrenceOverride", () => {
       sourceUrl: null,
       status: "published" as const,
       categories: ["lindy"],
+      offers: null,
       organization,
       venue,
     };

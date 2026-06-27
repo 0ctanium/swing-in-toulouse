@@ -14,6 +14,7 @@ const synced = {
   categories: ["lindy", "balboa"],
   status: "published" as const,
   sourceUrl: "https://example.com/event",
+  offers: null,
 };
 
 const baseForm = {
@@ -25,6 +26,8 @@ const baseForm = {
   status: "published" as const,
   sourceUrl: "https://example.com/event",
   notes: "",
+  offersMode: "unset" as const,
+  offerRows: [{ label: "Entrée", price: "" }],
 };
 
 describe("buildMasterOverridePatch", () => {
