@@ -3,19 +3,21 @@ import { useQuery } from "@tanstack/react-query";
 import { adminQueryKeys } from "@/lib/admin/query-keys";
 import { fetchJson } from "@/lib/api/fetch-json";
 import type { GroupedCategoryFilterOptions } from "@/lib/event-category-tags/category-filter-options";
+import type { CategoryTagAliasesByTag } from "@/lib/event-category-tags/aliases";
 
-type CategoryTagOptionsResponse = {
+export type EventCategoryTagOptions = {
   categoryGroups: GroupedCategoryFilterOptions;
+  aliasesByTag: CategoryTagAliasesByTag;
 };
 
+type CategoryTagOptionsResponse = EventCategoryTagOptions;
+
 async function fetchEventCategoryTagOptions() {
-  const data = await fetchJson<CategoryTagOptionsResponse>(
+  return fetchJson<CategoryTagOptionsResponse>(
     "/api/admin/category-tag-options",
     { credentials: "same-origin" },
     "Impossible de charger les catégories.",
   );
-
-  return data.categoryGroups;
 }
 
 export function useEventCategoryTagOptions(options?: { enabled?: boolean }) {

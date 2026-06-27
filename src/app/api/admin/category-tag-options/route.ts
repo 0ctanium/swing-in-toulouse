@@ -11,5 +11,5 @@ export async function GET() {
 
   const categoryGroups = await getEventCategoryTagSelectOptions();
 
-  return NextResponse.json({ categoryGroups });
+  return NextResponse.json(categoryGroups);
 }

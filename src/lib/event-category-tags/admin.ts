@@ -6,6 +6,12 @@ import {
   type EventCategoryTag,
   type EventCategoryTagType,
 } from "@/db/schema";
+import {
+  assertCategoryTagAliasesValid,
+  buildCategoryTagAliasesByTag,
+  normalizeCategoryTagAliases,
+  type CategoryTagAliasesByTag,
+} from "@/lib/event-category-tags/aliases";
 import { collectDistinctEventCategoryTagNames } from "@/lib/event-category-tags/collect";
 import { DEFAULT_EVENT_CATEGORY_TAG_TYPE } from "@/lib/event-category-tags/tag-types";
 import type { UpdateCategoryTagInput } from "@/lib/event-category-tags/schemas";
@@ -18,6 +24,7 @@ export type AdminCategoryTagRow = {
   name: string;
   tagType: EventCategoryTagType;
   hasMetadata: boolean;
+  aliases: string[];
   slug: string | null;
   subtitle: string | null;
   description: string | null;
@@ -77,9 +84,49 @@ function matchesSearch(name: string, search: string) {
   return name.toLocaleLowerCase("fr").includes(search.toLocaleLowerCase("fr"));
 }
 
+async function loadCategoryTagAliasContext(excludeTagName?: string) {
+  const [allNames, rows] = await Promise.all([
+    collectDistinctEventCategoryTagNames(),
+    db.query.eventCategoryTags.findMany({
+      columns: { name: true, aliases: true },
+    }),
+  ]);
+
+  const aliasesByOtherTags = buildCategoryTagAliasesByTag(
+    excludeTagName
+      ? rows.filter((row) => row.name !== excludeTagName)
+      : rows,
+  );
+
+  return { allNames, aliasesByOtherTags };
+}
+
+async function validateCategoryTagAliases(
+  tagName: string,
+  aliases: readonly string[],
+) {
+  const { allNames, aliasesByOtherTags } =
+    await loadCategoryTagAliasContext(tagName);
+
+  assertCategoryTagAliasesValid({
+    tagName,
+    aliases,
+    canonicalTagNames: allNames,
+    aliasesByOtherTags,
+  });
+}
+
 async function loadCategoryTagRowsByName() {
   const rows = await db.query.eventCategoryTags.findMany();
   return new Map(rows.map((row) => [row.name, row]));
+}
+
+export async function loadCategoryTagAliasesByTag(): Promise<CategoryTagAliasesByTag> {
+  const rows = await db.query.eventCategoryTags.findMany({
+    columns: { name: true, aliases: true },
+  });
+
+  return buildCategoryTagAliasesByTag(rows);
 }
 
 export async function listAdminCategoryTags(options: {
@@ -105,6 +152,7 @@ export async function listAdminCategoryTags(options: {
       name,
       tagType: metadata?.tagType ?? DEFAULT_EVENT_CATEGORY_TAG_TYPE,
       hasMetadata: metadata !== undefined,
+      aliases: normalizeCategoryTagAliases(metadata?.aliases),
       slug: metadata?.slug ?? null,
       subtitle: metadata?.subtitle ?? null,
       description: metadata?.description ?? null,
@@ -184,9 +232,15 @@ function resolveUpdateFields(
 
   assertPublishableSlug(tagType, slug, isPublished);
 
+  const aliases =
+    input.aliases !== undefined
+      ? normalizeCategoryTagAliases(input.aliases)
+      : normalizeCategoryTagAliases(existing?.aliases);
+
   return {
     tagType,
     slug,
+    aliases,
     subtitle:
       input.subtitle !== undefined
         ? input.subtitle
@@ -227,6 +281,13 @@ export async function updateCategoryTag(name: string, input: UpdateCategoryTagIn
   const existing = await db.query.eventCategoryTags.findFirst({
     where: eq(eventCategoryTags.name, trimmed),
   });
+
+  if (input.aliases !== undefined) {
+    await validateCategoryTagAliases(
+      trimmed,
+      normalizeCategoryTagAliases(input.aliases),
+    );
+  }
 
   const fields = resolveUpdateFields(existing, input);
 

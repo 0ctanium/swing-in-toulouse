@@ -51,6 +51,18 @@ describe("findCategoryTagMatchesInText", () => {
     ]);
   });
 
+  it("matches configured aliases from settings", () => {
+    expect(
+      findCategoryTagMatchesInText(
+        "ATELIERS d'été et workshop intensif",
+        candidateTags,
+        {
+          Stage: ["Atelier", "Workshop"],
+        },
+      ),
+    ).toEqual([{ tag: "Stage", kind: "configured" }]);
+  });
+
   it("does not alias a shared word when another tag already matches it in context", () => {
     const danceTags = [
       "Jazz Manouche",

@@ -72,6 +72,28 @@ describe("category tags admin", () => {
     ).rejects.toThrow(/réservé/i);
   });
 
+  it("updates category tag aliases", async () => {
+    const updated = await updateCategoryTag("lindy", {
+      aliases: ["Atelier", "Workshop"],
+    });
+
+    expect(updated.aliases).toEqual(["Atelier", "Workshop"]);
+  });
+
+  it("rejects aliases that match another tag name", async () => {
+    await expect(
+      updateCategoryTag("lindy", { aliases: ["soiree"] }),
+    ).rejects.toThrow(/déjà un tag/i);
+  });
+
+  it("rejects aliases already used by another tag", async () => {
+    await updateCategoryTag("soiree", { aliases: ["festin"] });
+
+    await expect(
+      updateCategoryTag("lindy", { aliases: ["festin"] }),
+    ).rejects.toThrow(/déjà un alias/i);
+  });
+
   it("returns null for unknown public slugs", async () => {
     const { resolveEvenementsCollectionSlug } = await import(
       "@/lib/event-collections/resolve"

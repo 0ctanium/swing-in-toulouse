@@ -80,10 +80,11 @@ export function EventCategoryTagsInput({
   id,
 }: EventCategoryTagsInputProps) {
   const anchor = useComboboxAnchor();
-  const { data: loadedGroups } = useEventCategoryTagOptions({
+  const { data: loadedOptions } = useEventCategoryTagOptions({
     enabled: !groupsProp,
   });
-  const groups = groupsProp ?? loadedGroups ?? [];
+  const groups = groupsProp ?? loadedOptions?.categoryGroups ?? [];
+  const aliasesByTag = loadedOptions?.aliasesByTag ?? {};
   const comboboxGroups = useMemo(() => toComboboxGroups(groups), [groups]);
   const candidateTags = useMemo(
     () =>
@@ -99,8 +100,9 @@ export function EventCategoryTagsInput({
             description,
             candidateTags,
             selectedTags: value,
+            aliasesByTag,
           }),
-    [title, description, candidateTags, value],
+    [title, description, candidateTags, value, aliasesByTag],
   );
   const [inputValue, setInputValue] = useState("");
   const [open, setOpen] = useState(false);

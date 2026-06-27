@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
+import { CategoryTagAliasesDialog } from "@/components/admin/category-tag-aliases-dialog";
 import { CategoryTagPageDialog } from "@/components/admin/category-tag-page-dialog";
 import { CategoryTagTypeSelect } from "@/components/admin/category-tag-type-select";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,8 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
   const [isPending, startTransition] = useTransition();
   const [searchInput, setSearchInput] = useState(data.search);
   const [pageDialogRow, setPageDialogRow] =
+    useState<AdminCategoryTagsListResult["rows"][number] | null>(null);
+  const [aliasesDialogRow, setAliasesDialogRow] =
     useState<AdminCategoryTagsListResult["rows"][number] | null>(null);
 
   useEffect(() => {
@@ -116,6 +119,7 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
             <TableRow>
               <TableHead>Tag</TableHead>
               <TableHead className="w-48">Type</TableHead>
+              <TableHead className="w-36">Alias</TableHead>
               <TableHead className="w-40">Page publique</TableHead>
             </TableRow>
           </TableHeader>
@@ -123,7 +127,7 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
             {data.rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={3}
+                  colSpan={4}
                   className="text-muted-foreground h-24 text-center"
                 >
                   Aucun tag trouvé.
@@ -139,6 +143,19 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
                       value={row.tagType}
                       disabled={isPending}
                     />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => setAliasesDialogRow(row)}
+                    >
+                      {row.aliases.length > 0
+                        ? `${row.aliases.length} alias`
+                        : "Configurer"}
+                    </Button>
                   </TableCell>
                   <TableCell>
                     {isPublishableTagType(row.tagType) ? (
@@ -188,6 +205,19 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
             </Button>
           </div>
         </div>
+      ) : null}
+
+      {aliasesDialogRow ? (
+        <CategoryTagAliasesDialog
+          key={aliasesDialogRow.name}
+          row={aliasesDialogRow}
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setAliasesDialogRow(null);
+            }
+          }}
+        />
       ) : null}
 
       {pageDialogRow ? (

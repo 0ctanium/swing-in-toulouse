@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { adminQueryKeys } from "@/lib/admin/query-keys";
@@ -14,6 +14,11 @@ type UpdateCategoryTagMetadataInput = {
 type UpdateCategoryTagPageInput = {
   name: string;
 } & UpdateCategoryTagInput;
+
+type UpdateCategoryTagAliasesInput = {
+  name: string;
+  aliases: string[];
+};
 
 async function updateCategoryTagMetadata({
   name,
@@ -35,11 +40,26 @@ async function updateCategoryTagPage({
   ...input
 }: UpdateCategoryTagPageInput) {
   return fetchJson<{ tag: EventCategoryTag }>(
-    "/api/admin/category-tags",
+    `/api/admin/category-tags/${encodeURIComponent(name)}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, ...input }),
+      body: JSON.stringify(input),
+    },
+    "Enregistrement impossible.",
+  );
+}
+
+async function updateCategoryTagAliases({
+  name,
+  aliases,
+}: UpdateCategoryTagAliasesInput) {
+  return fetchJson<{ tag: EventCategoryTag }>(
+    `/api/admin/category-tags/${encodeURIComponent(name)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aliases }),
     },
     "Enregistrement impossible.",
   );
@@ -64,6 +84,22 @@ export function useUpdateCategoryTag() {
     mutationKey: [...adminQueryKeys.categoryTags(), "page"],
     mutationFn: updateCategoryTagPage,
     onSuccess: () => {
+      router.refresh();
+    },
+  });
+}
+
+export function useUpdateCategoryTagAliases() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationKey: [...adminQueryKeys.categoryTags(), "aliases"],
+    mutationFn: updateCategoryTagAliases,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...adminQueryKeys.categoryTags(), "options"],
+      });
       router.refresh();
     },
   });

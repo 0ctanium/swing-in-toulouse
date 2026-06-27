@@ -1,4 +1,10 @@
-export type TagSuggestionMatchKind = "exact" | "flexible" | "alias";
+import type { CategoryTagAliasesByTag } from "@/lib/event-category-tags/aliases";
+
+export type TagSuggestionMatchKind =
+  | "exact"
+  | "configured"
+  | "flexible"
+  | "alias";
 
 export type TagSuggestionMatch = {
   tag: string;
@@ -7,8 +13,9 @@ export type TagSuggestionMatch = {
 
 const MATCH_PRIORITY: Record<TagSuggestionMatchKind, number> = {
   exact: 0,
-  flexible: 1,
-  alias: 2,
+  configured: 1,
+  flexible: 2,
+  alias: 3,
 };
 
 function escapeRegex(value: string) {
@@ -100,6 +107,7 @@ function isAliasWordUsedInAnotherMatchingTag(
   aliasWord: string,
   currentTag: string,
   candidateTags: readonly string[],
+  aliasesByTag: CategoryTagAliasesByTag = {},
 ) {
   for (const tag of candidateTags) {
     if (tag === currentTag) {
@@ -120,6 +128,25 @@ function isAliasWordUsedInAnotherMatchingTag(
     }
   }
 
+  for (const [tag, configuredAliases] of Object.entries(aliasesByTag)) {
+    if (tag === currentTag) {
+      continue;
+    }
+
+    for (const alias of configuredAliases) {
+      const normalizedAlias = normalizeTextForTagMatching(alias);
+      const aliasWords = normalizedAlias.split(" ").filter(Boolean);
+
+      if (!aliasWords.includes(aliasWord)) {
+        continue;
+      }
+
+      if (matchesPhrase(haystack, normalizedAlias, true)) {
+        return true;
+      }
+    }
+  }
+
   return false;
 }
 
@@ -135,13 +162,14 @@ function compareSuggestions(left: TagSuggestionMatch, right: TagSuggestionMatch)
 export function findCategoryTagMatchesInText(
   text: string,
   candidateTags: readonly string[],
+  aliasesByTag: CategoryTagAliasesByTag = {},
 ): TagSuggestionMatch[] {
   const haystack = paddedHaystack(text);
   if (!haystack) {
     return [];
   }
 
-  const aliases = buildUniqueFirstWordAliases(candidateTags);
+  const heuristicAliases = buildUniqueFirstWordAliases(candidateTags);
   const matches: TagSuggestionMatch[] = [];
 
   for (const tag of candidateTags) {
@@ -155,6 +183,16 @@ export function findCategoryTagMatchesInText(
       continue;
     }
 
+    const configuredAliases = aliasesByTag[tag] ?? [];
+    const configuredMatch = configuredAliases.some((alias) =>
+      matchesPhrase(haystack, normalizeTextForTagMatching(alias), true),
+    );
+
+    if (configuredMatch) {
+      matches.push({ tag, kind: "configured" });
+      continue;
+    }
+
     if (matchesPhrase(haystack, normalizedTag, true)) {
       matches.push({ tag, kind: "flexible" });
       continue;
@@ -162,7 +200,7 @@ export function findCategoryTagMatchesInText(
 
     const words = normalizedTag.split(" ").filter(Boolean);
     const [firstWord] = words;
-    if (words.length >= 2 && firstWord && aliases.get(firstWord) === tag) {
+    if (words.length >= 2 && firstWord && heuristicAliases.get(firstWord) === tag) {
       if (
         matchesPhrase(haystack, firstWord, true) &&
         !isAliasWordUsedInAnotherMatchingTag(
@@ -170,6 +208,7 @@ export function findCategoryTagMatchesInText(
           firstWord,
           tag,
           candidateTags,
+          aliasesByTag,
         )
       ) {
         matches.push({ tag, kind: "alias" });
@@ -185,11 +224,13 @@ export function suggestCategoryTagsFromText({
   description,
   candidateTags,
   selectedTags = [],
+  aliasesByTag = {},
 }: {
   title?: string | null;
   description?: string | null;
   candidateTags: readonly string[];
   selectedTags?: readonly string[];
+  aliasesByTag?: CategoryTagAliasesByTag;
 }): string[] {
   const selected = new Set(selectedTags);
   const text = [title ?? "", description ?? ""].filter(Boolean).join(" ");
@@ -201,7 +242,11 @@ export function suggestCategoryTagsFromText({
   const seen = new Set<string>();
   const suggestions: string[] = [];
 
-  for (const match of findCategoryTagMatchesInText(text, candidateTags)) {
+  for (const match of findCategoryTagMatchesInText(
+    text,
+    candidateTags,
+    aliasesByTag,
+  )) {
     if (selected.has(match.tag) || seen.has(match.tag)) {
       continue;
     }

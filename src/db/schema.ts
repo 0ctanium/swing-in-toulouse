@@ -350,6 +350,7 @@ export const eventCategoryTags = pgTable(
     heroTitleBefore: text("hero_title_before"),
     heroTitleEmphasis: text("hero_title_emphasis"),
     heroTitleAfter: text("hero_title_after"),
+    aliases: text("aliases").array().notNull().default([]),
     isPublished: boolean("is_published").notNull().default(false),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

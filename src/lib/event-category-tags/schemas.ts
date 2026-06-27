@@ -25,6 +25,16 @@ const nullableShortString = z
 export const updateCategoryTagSchema = z
   .object({
     tagType: z.enum(eventCategoryTagTypeValues).optional(),
+    aliases: z
+      .array(
+        z
+          .string()
+          .trim()
+          .min(1, "Alias vide.")
+          .max(80, "Alias trop long (80 caractères max)."),
+      )
+      .max(20, "20 alias maximum.")
+      .optional(),
     slug: nullableTrimmedString,
     subtitle: z
       .string()
