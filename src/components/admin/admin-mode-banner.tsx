@@ -29,15 +29,11 @@ function AdminBanner({ className }: { className?: string }) {
   useEffect(() => {
     const banner = bannerRef.current;
 
-    console.log("banner", banner);
-
     if (!banner) return;
 
     setBannerHeight(banner.clientHeight);
 
     const resizeObserver = new window.ResizeObserver((entries) => {
-      console.log("entries", entries);
-
       for (const entry of entries) {
         if (entry.target === bannerRef.current) {
           setBannerHeight(entry.contentRect.height);
