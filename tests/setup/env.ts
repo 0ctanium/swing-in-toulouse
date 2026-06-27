@@ -10,3 +10,4 @@ process.env.QSTASH_URL ??= "https://qstash.test";
 process.env.QSTASH_TOKEN ??= "qstash-test-token";
 process.env.QSTASH_CURRENT_SIGNING_KEY ??= "qstash-current-key";
 process.env.QSTASH_NEXT_SIGNING_KEY ??= "qstash-next-key";
+process.env.PROJECTION_MONTHS_AHEAD ??= "18";

@@ -29,6 +29,18 @@ function formatFileSize(bytes: number | null) {
   return `${(bytes / 1024).toFixed(1)} Ko`;
 }
 
+function sourceTypeLabel(type: AdminSourceRow["type"]) {
+  if (type === "ical-file") {
+    return "Fichier";
+  }
+
+  if (type === "manual") {
+    return "Manuel";
+  }
+
+  return "URL";
+}
+
 export function createSourcesTableColumns({
   onEdit,
   onDelete,
@@ -46,9 +58,7 @@ export function createSourcesTableColumns({
           <div className="flex min-w-0 flex-col gap-0.5">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{source.name}</span>
-              <Badge variant="outline">
-                {source.type === "ical-file" ? "Fichier" : "URL"}
-              </Badge>
+              <Badge variant="outline">{sourceTypeLabel(source.type)}</Badge>
             </div>
             <span className="text-muted-foreground text-xs">
               /{source.slug}
@@ -144,30 +154,33 @@ export function createSourcesTableColumns({
       cell: ({ row }) => {
         const source = row.original;
         const syncing = syncingSourceId === source.id;
+        const canSync = source.type !== "manual";
 
         return (
           <div className="flex justify-end gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={syncing}
-              onClick={() => {
-                void onSync(source).catch((error) => {
-                  toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : "Synchronisation impossible.",
-                  );
-                });
-              }}
-            >
-              <RefreshCw
-                data-icon="inline-start"
-                className={syncing ? "animate-spin" : undefined}
-              />
-              {syncing ? "Sync…" : "Sync"}
-            </Button>
+            {canSync ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={syncing}
+                onClick={() => {
+                  void onSync(source).catch((error) => {
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : "Synchronisation impossible.",
+                    );
+                  });
+                }}
+              >
+                <RefreshCw
+                  data-icon="inline-start"
+                  className={syncing ? "animate-spin" : undefined}
+                />
+                {syncing ? "Sync…" : "Sync"}
+              </Button>
+            ) : null}
             {source.organizationSlug ? (
               <Button
                 variant="ghost"

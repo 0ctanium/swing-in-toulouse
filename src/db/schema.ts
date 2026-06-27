@@ -32,7 +32,11 @@ export const syncStatusEnum = pgEnum("sync_status", [
   "failed",
 ]);
 
-export const sourceTypeEnum = pgEnum("source_type", ["ical", "ical-file"]);
+export const sourceTypeEnum = pgEnum("source_type", [
+  "ical",
+  "ical-file",
+  "manual",
+]);
 
 export const organizationCategoryEnum = pgEnum("organization_category", [
   "school",

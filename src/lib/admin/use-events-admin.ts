@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 
 import { fetchJson, fetchJsonVoid } from "@/lib/api/fetch-json";
 import { adminQueryKeys } from "@/lib/admin/query-keys";
+import type { EventOffer } from "@/lib/events/offers";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
 
 type SaveEventOverrideInput = {
@@ -154,5 +155,39 @@ export function useConfirmEvent() {
     onSuccess: () => {
       router.refresh();
     },
+  });
+}
+
+export type CreateManualEventInput = {
+  title: string;
+  description?: string | null;
+  startAt: string;
+  endAt?: string | null;
+  isAllDay?: boolean;
+  organizationId?: string | null;
+  venueId?: string | null;
+  categories?: string[] | null;
+  status?: "published" | "cancelled";
+  sourceUrl?: string | null;
+  offers?: EventOffer[] | null;
+  notes?: string | null;
+};
+
+async function createManualEventRequest(input: CreateManualEventInput) {
+  return fetchJson<{ event: { id: string } }>(
+    "/api/admin/events",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+    "Création impossible.",
+  );
+}
+
+export function useCreateManualEvent() {
+  return useMutation({
+    mutationKey: [...adminQueryKeys.events(), "create-manual"],
+    mutationFn: createManualEventRequest,
   });
 }

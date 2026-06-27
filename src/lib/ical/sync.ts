@@ -228,6 +228,10 @@ async function loadSourceEvents(source: SourceWithOrganization) {
     return parseIcalContent(content);
   }
 
+  if (source.type === "manual") {
+    throw new Error("Les sources manuelles ne peuvent pas être synchronisées.");
+  }
+
   throw new Error(`Unsupported source type: ${source.type}`);
 }
 

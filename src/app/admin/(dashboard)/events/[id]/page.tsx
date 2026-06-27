@@ -141,7 +141,9 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
         </Link>
         <h1 className="font-heading text-3xl font-semibold">{synced.title}</h1>
         <p className="text-muted-foreground">
-          Source iCal : {synced.source.name}
+          {synced.source.type === "manual"
+            ? "Événement manuel"
+            : `Source iCal : ${synced.source.name}`}
           {synced.recurrenceRule ? " · événement récurrent" : ""}
         </p>
       </div>
@@ -149,7 +151,9 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">
-            Valeurs synchronisées (iCal)
+            {synced.source.type === "manual"
+              ? "Valeurs de l'événement"
+              : "Valeurs synchronisées (iCal)"}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
