@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 
 import { fetchJson, fetchJsonVoid } from "@/lib/api/fetch-json";
 import { adminQueryKeys } from "@/lib/admin/query-keys";
-import type { VenueCategory, VenueLocationKind } from "@/db/schema";
+import type { Venue, VenueCategory, VenueLocationKind } from "@/db/schema";
 import type { VenueAssignment } from "@/lib/venues/assignments";
 import type { VenueWriteInput } from "@/lib/venues/schemas";
 
@@ -186,7 +186,7 @@ export function useConfirmVenueArea() {
 }
 
 async function createVenue(input: VenueWriteInput) {
-  return fetchJson(
+  return fetchJson<{ venue: Venue }>(
     "/api/admin/venues",
     {
       method: "POST",

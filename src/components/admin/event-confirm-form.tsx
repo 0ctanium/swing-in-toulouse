@@ -8,9 +8,12 @@ import { EntitySuggestionHints } from "@/components/admin/entity-suggestion-hint
 import { OrganizationSelect } from "@/components/admin/organization-select";
 import { EventCategoryTagsInput } from "@/components/admin/event-category-tags-input";
 import {
-  VenueSelect,
-  type VenueSelectOption,
-} from "@/components/admin/venue-select";
+  appendCreatedVenueOption,
+  mergeVenueMatchCandidates,
+  mergeVenueSelectOptions,
+  VenueSelectWithCreate,
+} from "@/components/admin/venue-select-with-create";
+import type { VenueSelectOption } from "@/lib/venues/select-options";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -90,15 +93,24 @@ export function EventConfirmForm({
     currentPatch.sourceUrl ?? synced.sourceUrl ?? "",
   );
   const [notes, setNotes] = useState(currentPatch.notes ?? "");
+  const [createdVenues, setCreatedVenues] = useState<VenueSelectOption[]>([]);
   const pending = confirmEvent.isPending;
 
+  const allVenues = useMemo(
+    () => mergeVenueSelectOptions(venues, createdVenues),
+    [venues, createdVenues],
+  );
+  const allVenueMatchCandidates = useMemo(
+    () => mergeVenueMatchCandidates(venueMatchCandidates, createdVenues),
+    [venueMatchCandidates, createdVenues],
+  );
   const organizationLabelsById = useMemo(
     () => new Map(organizations.map((organization) => [organization.id, organization.name])),
     [organizations],
   );
   const venueLabelsById = useMemo(
-    () => new Map(venues.map((venue) => [venue.id, venue.name])),
-    [venues],
+    () => new Map(allVenues.map((venue) => [venue.id, venue.name])),
+    [allVenues],
   );
   const organizationMatchCandidates = useMemo(
     () => buildOrganizationMatchCandidates(organizations),
@@ -126,11 +138,11 @@ export function EventConfirmForm({
       suggestNamedEntitiesFromText({
         title,
         description,
-        candidates: venueMatchCandidates,
+        candidates: allVenueMatchCandidates,
         labelsById: venueLabelsById,
         selectedId: venueId,
       }),
-    [title, description, venueMatchCandidates, venueLabelsById, venueId],
+    [title, description, allVenueMatchCandidates, venueLabelsById, venueId],
   );
 
   const hasChanges = hasMasterOverrideChangesFromForm(
@@ -248,10 +260,14 @@ export function EventConfirmForm({
 
         <Field label="Lieu">
           <div className="flex flex-col gap-1.5">
-            <VenueSelect
-              venues={venues}
+            <VenueSelectWithCreate
+              venues={allVenues}
               value={venueId}
               onChange={setVenueId}
+              disabled={pending}
+              onVenueCreated={(venue) =>
+                setCreatedVenues((current) => appendCreatedVenueOption(current, venue))
+              }
             />
             <EntitySuggestionHints
               label="Lieu suggéré"

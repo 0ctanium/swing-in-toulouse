@@ -16,7 +16,7 @@ import { EntitySelect } from "@/components/ui/entity-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateVenue, useUpdateVenue } from "@/lib/admin/use-venues";
-import type { VenueCategory, VenueLocationKind } from "@/db/schema";
+import type { Venue, VenueCategory, VenueLocationKind } from "@/db/schema";
 import { generateVenueSlug } from "@/lib/slug";
 import type { AdminVenueRow } from "@/lib/venues/admin-venue-row";
 import { venueCategoryOptions } from "@/lib/venues/categories";
@@ -26,6 +26,7 @@ type VenueFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   venue: AdminVenueRow | null;
+  onCreated?: (venue: Venue) => void;
 };
 
 type VenueFormState = {
@@ -63,6 +64,7 @@ export function VenueFormDialog({
   open,
   onOpenChange,
   venue,
+  onCreated,
 }: VenueFormDialogProps) {
   const isEdit = venue !== null;
   const createVenue = useCreateVenue();
@@ -119,7 +121,8 @@ export function VenueFormDialog({
         await updateVenue.mutateAsync(payload);
         toast.success("Lieu enregistré.");
       } else {
-        await createVenue.mutateAsync(payload);
+        const { venue: created } = await createVenue.mutateAsync(payload);
+        onCreated?.(created);
         toast.success("Lieu créé.");
       }
 
