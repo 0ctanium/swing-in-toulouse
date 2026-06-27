@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { EventOverrideForm } from "@/components/admin/event-override-form";
+import type { VenueMatchCandidate } from "@/lib/venues/match-candidates";
 import type { VenueSelectOption } from "@/lib/venues/select-options";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ type OccurrenceOverridePanelProps = {
   occurrences: AdminOccurrenceItem[];
   organizations: OrganizationOption[];
   venues: VenueSelectOption[];
+  venueMatchCandidates: VenueMatchCandidate[];
 };
 
 function formatOccurrenceLabel(startAt: string, isAllDay?: boolean) {
@@ -58,6 +60,7 @@ export function OccurrenceOverridePanel({
   occurrences,
   organizations,
   venues,
+  venueMatchCandidates,
 }: OccurrenceOverridePanelProps) {
   const [month, setMonth] = useState(() => new Date());
   const [selectedStartAt, setSelectedStartAt] = useState<string | null>(
@@ -286,6 +289,7 @@ export function OccurrenceOverridePanel({
               currentPatch={selected.currentPatch}
               organizations={organizations}
               venues={venues}
+              venueMatchCandidates={venueMatchCandidates}
             />
           ) : (
             <Card>

@@ -21,6 +21,7 @@ import {
 } from "@/lib/cache/revalidate";
 import { events, organizations, venues } from "@/db/schema";
 import { expandEventsWithOverrides } from "@/lib/events/expand-with-overrides";
+import { buildVenueMatchCandidates } from "@/lib/venues/match-candidates";
 import {
   listArchiveMonthsFromProjection,
   queryOccurrencesInWindow,
@@ -719,6 +720,16 @@ async function listVenuesCached() {
 }
 
 export const listVenues = cache(listVenuesCached);
+
+async function listVenueMatchCandidatesUncached() {
+  const rows = await db.query.venues.findMany({
+    columns: { id: true, name: true, canonicalVenueId: true },
+  });
+
+  return buildVenueMatchCandidates(rows);
+}
+
+export const listVenueMatchCandidates = cache(listVenueMatchCandidatesUncached);
 
 export async function listUpcomingEventsForHubUncached() {
   const from = getDefaultFromDate();

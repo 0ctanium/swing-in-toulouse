@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { EntitySuggestionHints } from "@/components/admin/entity-suggestion-hints";
 import { OrganizationSelect } from "@/components/admin/organization-select";
 import { EventCategoryTagsInput } from "@/components/admin/event-category-tags-input";
 import {
@@ -21,6 +22,11 @@ import {
   buildMasterOverridePatch,
   hasMasterOverrideChangesFromForm,
 } from "@/lib/events/override-patch";
+import { suggestNamedEntitiesFromText } from "@/lib/proper-names/match-in-text";
+import {
+  buildOrganizationMatchCandidates,
+  type VenueMatchCandidate,
+} from "@/lib/venues/match-candidates";
 
 type OrganizationOption = { id: string; name: string };
 
@@ -28,6 +34,7 @@ type EventConfirmFormProps = {
   item: EventConfirmQueueItem;
   organizations: OrganizationOption[];
   venues: VenueSelectOption[];
+  venueMatchCandidates: VenueMatchCandidate[];
   onConfirmed: () => void;
   onSkip: () => void;
 };
@@ -58,6 +65,7 @@ export function EventConfirmForm({
   item,
   organizations,
   venues,
+  venueMatchCandidates,
   onConfirmed,
   onSkip,
 }: EventConfirmFormProps) {
@@ -83,6 +91,47 @@ export function EventConfirmForm({
   );
   const [notes, setNotes] = useState(currentPatch.notes ?? "");
   const pending = confirmEvent.isPending;
+
+  const organizationLabelsById = useMemo(
+    () => new Map(organizations.map((organization) => [organization.id, organization.name])),
+    [organizations],
+  );
+  const venueLabelsById = useMemo(
+    () => new Map(venues.map((venue) => [venue.id, venue.name])),
+    [venues],
+  );
+  const organizationMatchCandidates = useMemo(
+    () => buildOrganizationMatchCandidates(organizations),
+    [organizations],
+  );
+  const suggestedOrganizations = useMemo(
+    () =>
+      suggestNamedEntitiesFromText({
+        title,
+        description,
+        candidates: organizationMatchCandidates,
+        labelsById: organizationLabelsById,
+        selectedId: organizationId,
+      }),
+    [
+      title,
+      description,
+      organizationMatchCandidates,
+      organizationLabelsById,
+      organizationId,
+    ],
+  );
+  const suggestedVenues = useMemo(
+    () =>
+      suggestNamedEntitiesFromText({
+        title,
+        description,
+        candidates: venueMatchCandidates,
+        labelsById: venueLabelsById,
+        selectedId: venueId,
+      }),
+    [title, description, venueMatchCandidates, venueLabelsById, venueId],
+  );
 
   const hasChanges = hasMasterOverrideChangesFromForm(
     {
@@ -182,15 +231,35 @@ export function EventConfirmForm({
         </Field>
 
         <Field label="Organisateur">
-          <OrganizationSelect
-            organizations={organizations}
-            value={organizationId}
-            onChange={setOrganizationId}
-          />
+          <div className="flex flex-col gap-1.5">
+            <OrganizationSelect
+              organizations={organizations}
+              value={organizationId}
+              onChange={setOrganizationId}
+            />
+            <EntitySuggestionHints
+              label="Organisateur suggéré"
+              suggestions={suggestedOrganizations}
+              disabled={pending}
+              onSelect={setOrganizationId}
+            />
+          </div>
         </Field>
 
         <Field label="Lieu">
-          <VenueSelect venues={venues} value={venueId} onChange={setVenueId} />
+          <div className="flex flex-col gap-1.5">
+            <VenueSelect
+              venues={venues}
+              value={venueId}
+              onChange={setVenueId}
+            />
+            <EntitySuggestionHints
+              label="Lieu suggéré"
+              suggestions={suggestedVenues}
+              disabled={pending}
+              onSelect={setVenueId}
+            />
+          </div>
         </Field>
 
         <Field label="Catégories" syncedValue={synced.categories?.join(", ")}>

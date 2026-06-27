@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { EventConfirmForm } from "@/components/admin/event-confirm-form";
 import { Card, CardContent } from "@/components/ui/card";
 import type { EventConfirmQueueItem } from "@/lib/events/confirm-queue";
+import type { VenueMatchCandidate } from "@/lib/venues/match-candidates";
 import type { VenueSelectOption } from "@/lib/venues/select-options";
 
 type OrganizationOption = { id: string; name: string };
@@ -13,6 +14,7 @@ type EventConfirmQueueProps = {
   initialItems: EventConfirmQueueItem[];
   organizations: OrganizationOption[];
   venues: VenueSelectOption[];
+  venueMatchCandidates: VenueMatchCandidate[];
   confirmedCount: number;
 };
 
@@ -20,6 +22,7 @@ export function EventConfirmQueue({
   initialItems,
   organizations,
   venues,
+  venueMatchCandidates,
   confirmedCount,
 }: EventConfirmQueueProps) {
   const [items, setItems] = useState(initialItems);
@@ -74,6 +77,7 @@ export function EventConfirmQueue({
         item={current}
         organizations={organizations}
         venues={venues}
+        venueMatchCandidates={venueMatchCandidates}
         onConfirmed={confirmCurrent}
         onSkip={skipCurrent}
       />

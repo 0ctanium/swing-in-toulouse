@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { EntitySuggestionHints } from "@/components/admin/entity-suggestion-hints";
 import { OrganizationSelect } from "@/components/admin/organization-select";
 import { EventCategoryTagsInput } from "@/components/admin/event-category-tags-input";
 import {
@@ -17,6 +18,11 @@ import {
   useSaveEventOverride,
 } from "@/lib/admin/use-events-admin";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
+import { suggestNamedEntitiesFromText } from "@/lib/proper-names/match-in-text";
+import {
+  buildOrganizationMatchCandidates,
+  type VenueMatchCandidate,
+} from "@/lib/venues/match-candidates";
 
 type OrganizationOption = { id: string; name: string };
 
@@ -36,6 +42,7 @@ type EventOverrideFormProps = {
   currentPatch: EventOverridePatch;
   organizations: OrganizationOption[];
   venues: VenueSelectOption[];
+  venueMatchCandidates: VenueMatchCandidate[];
 };
 
 function Field({
@@ -68,6 +75,7 @@ export function EventOverrideForm({
   currentPatch,
   organizations,
   venues,
+  venueMatchCandidates,
 }: EventOverrideFormProps) {
   const saveOverride = useSaveEventOverride(eventId);
   const deleteOverride = useDeleteEventOverride(eventId);
@@ -92,6 +100,47 @@ export function EventOverrideForm({
   const [notes, setNotes] = useState(currentPatch.notes ?? "");
   const [message, setMessage] = useState<string | null>(null);
   const pending = saveOverride.isPending || deleteOverride.isPending;
+
+  const organizationLabelsById = useMemo(
+    () => new Map(organizations.map((organization) => [organization.id, organization.name])),
+    [organizations],
+  );
+  const venueLabelsById = useMemo(
+    () => new Map(venues.map((venue) => [venue.id, venue.name])),
+    [venues],
+  );
+  const organizationMatchCandidates = useMemo(
+    () => buildOrganizationMatchCandidates(organizations),
+    [organizations],
+  );
+  const suggestedOrganizations = useMemo(
+    () =>
+      suggestNamedEntitiesFromText({
+        title,
+        description,
+        candidates: organizationMatchCandidates,
+        labelsById: organizationLabelsById,
+        selectedId: organizationId,
+      }),
+    [
+      title,
+      description,
+      organizationMatchCandidates,
+      organizationLabelsById,
+      organizationId,
+    ],
+  );
+  const suggestedVenues = useMemo(
+    () =>
+      suggestNamedEntitiesFromText({
+        title,
+        description,
+        candidates: venueMatchCandidates,
+        labelsById: venueLabelsById,
+        selectedId: venueId,
+      }),
+    [title, description, venueMatchCandidates, venueLabelsById, venueId],
+  );
 
   const scopeLabel = useMemo(
     () =>
@@ -191,15 +240,31 @@ export function EventOverrideForm({
         </Field>
 
         <Field label="Organisateur">
-          <OrganizationSelect
-            organizations={organizations}
-            value={organizationId}
-            onChange={setOrganizationId}
-          />
+          <div className="flex flex-col gap-1.5">
+            <OrganizationSelect
+              organizations={organizations}
+              value={organizationId}
+              onChange={setOrganizationId}
+            />
+            <EntitySuggestionHints
+              label="Organisateur suggéré"
+              suggestions={suggestedOrganizations}
+              disabled={pending}
+              onSelect={setOrganizationId}
+            />
+          </div>
         </Field>
 
         <Field label="Lieu (venue)">
-          <VenueSelect venues={venues} value={venueId} onChange={setVenueId} />
+          <div className="flex flex-col gap-1.5">
+            <VenueSelect venues={venues} value={venueId} onChange={setVenueId} />
+            <EntitySuggestionHints
+              label="Lieu suggéré"
+              suggestions={suggestedVenues}
+              disabled={pending}
+              onSelect={setVenueId}
+            />
+          </div>
         </Field>
 
         <Field label="Catégories" syncedValue={synced.categories?.join(", ")}>

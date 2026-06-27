@@ -7,7 +7,7 @@ import {
   getEventConfirmQueue,
   getEventConfirmQueueStats,
 } from "@/lib/events/confirm-queue";
-import { listOrganizers, listVenues } from "@/lib/events/queries";
+import { listOrganizers, listVenueMatchCandidates, listVenues } from "@/lib/events/queries";
 import { toVenueSelectOption } from "@/lib/venues/select-options";
 import { adminMetadata } from "@/lib/metadata";
 import { requireAdminDataScope } from "@/lib/admin/access";
@@ -30,12 +30,14 @@ function AdminEventsConfirmPageSkeleton() {
 async function AdminEventsConfirmPageContent() {
   const dataScope = await requireAdminDataScope();
 
-  const [items, stats, organizations, venues] = await Promise.all([
-    getEventConfirmQueue(dataScope),
-    getEventConfirmQueueStats(dataScope),
-    listOrganizers(),
-    listVenues(),
-  ]);
+  const [items, stats, organizations, venues, venueMatchCandidates] =
+    await Promise.all([
+      getEventConfirmQueue(dataScope),
+      getEventConfirmQueueStats(dataScope),
+      listOrganizers(),
+      listVenues(),
+      listVenueMatchCandidates(),
+    ]);
 
   const organizationOptions =
     dataScope.mode === "org"
@@ -67,6 +69,7 @@ async function AdminEventsConfirmPageContent() {
         initialItems={items}
         organizations={organizationOptions}
         venues={venues.map(toVenueSelectOption)}
+        venueMatchCandidates={venueMatchCandidates}
         confirmedCount={stats.confirmedCount}
       />
     </div>

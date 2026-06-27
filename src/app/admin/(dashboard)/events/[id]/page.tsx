@@ -19,6 +19,7 @@ import {
 import {
   getAdminEventOccurrences,
   listOrganizers,
+  listVenueMatchCandidates,
   listVenues,
 } from "@/lib/events/queries";
 import { toVenueSelectOption } from "@/lib/venues/select-options";
@@ -51,12 +52,13 @@ function AdminEventPageSkeleton() {
 async function AdminEventPageContent({ params }: AdminEventPageProps) {
   const { id } = await params;
   const dataScope = await requireAdminDataScope();
-  const [eventData, occurrencesData, organizations, venues, duplicateInfo] =
+  const [eventData, occurrencesData, organizations, venues, venueMatchCandidates, duplicateInfo] =
     await Promise.all([
       getEventWithOverrides(id),
       getAdminEventOccurrences(id),
       listOrganizers(),
       listVenues(),
+      listVenueMatchCandidates(),
       getDuplicateLinkInfo(id),
     ]);
 
@@ -192,6 +194,7 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
         currentPatch={masterOverride?.patch ?? {}}
         organizations={scopedOrganizations}
         venues={venues.map(toVenueSelectOption)}
+        venueMatchCandidates={venueMatchCandidates}
       />
 
       {synced.recurrenceRule && occurrenceItems.length > 0 ? (
@@ -200,6 +203,7 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
           occurrences={occurrenceItems}
           organizations={scopedOrganizations}
           venues={venues.map(toVenueSelectOption)}
+          venueMatchCandidates={venueMatchCandidates}
         />
       ) : null}
     </div>
