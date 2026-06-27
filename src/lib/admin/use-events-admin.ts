@@ -185,6 +185,76 @@ async function createManualEventRequest(input: CreateManualEventInput) {
   );
 }
 
+export type ManualEventInput = CreateManualEventInput;
+
+async function updateManualEventRequest(
+  eventId: string,
+  input: ManualEventInput,
+) {
+  return fetchJson<{ event: { id: string } }>(
+    `/api/admin/events/${eventId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+    "Enregistrement impossible.",
+  );
+}
+
+export function useUpdateManualEvent(eventId: string) {
+  const router = useRouter();
+
+  return useMutation({
+    mutationKey: [...adminQueryKeys.event(eventId), "update-manual"],
+    mutationFn: (input: ManualEventInput) =>
+      updateManualEventRequest(eventId, input),
+    onSuccess: () => {
+      router.refresh();
+    },
+  });
+}
+
+async function cancelManualEventRequest(eventId: string) {
+  return fetchJson<{ event: { id: string } }>(
+    `/api/admin/events/${eventId}`,
+    { method: "DELETE" },
+    "Annulation impossible.",
+  );
+}
+
+export function useCancelManualEvent(eventId: string) {
+  const router = useRouter();
+
+  return useMutation({
+    mutationKey: [...adminQueryKeys.event(eventId), "cancel-manual"],
+    mutationFn: () => cancelManualEventRequest(eventId),
+    onSuccess: () => {
+      router.refresh();
+    },
+  });
+}
+
+async function deleteManualEventPermanentlyRequest(eventId: string) {
+  return fetchJsonVoid(
+    `/api/admin/events/${eventId}?permanent=1`,
+    { method: "DELETE" },
+    "Suppression impossible.",
+  );
+}
+
+export function useDeleteManualEventPermanently(eventId: string) {
+  const router = useRouter();
+
+  return useMutation({
+    mutationKey: [...adminQueryKeys.event(eventId), "delete-manual"],
+    mutationFn: () => deleteManualEventPermanentlyRequest(eventId),
+    onSuccess: () => {
+      router.push("/admin/events");
+    },
+  });
+}
+
 export function useCreateManualEvent() {
   return useMutation({
     mutationKey: [...adminQueryKeys.events(), "create-manual"],

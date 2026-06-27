@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { DuplicateMergePanel } from "@/components/admin/duplicate-merge-panel";
+import { EventManualEditForm } from "@/components/admin/event-manual-edit-form";
 import { EventOverrideForm } from "@/components/admin/event-override-form";
 import {
   OccurrenceOverridePanel,
@@ -26,8 +27,9 @@ import { toVenueSelectOption } from "@/lib/venues/select-options";
 import { formatEventDate } from "@/lib/events/format";
 import type { EventMaster } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
-import { requireAdminDataScope } from "@/lib/admin/access";
+import { requireAdminDataScope, getAdminAccessScope } from "@/lib/admin/access";
 import { assertEventInDataScope } from "@/lib/admin/auth";
+import { isOrgScoped } from "@/lib/admin/data-scope";
 
 type AdminEventPageProps = {
   params: Promise<{ id: string }>;
@@ -51,7 +53,10 @@ function AdminEventPageSkeleton() {
 
 async function AdminEventPageContent({ params }: AdminEventPageProps) {
   const { id } = await params;
-  const dataScope = await requireAdminDataScope();
+  const [dataScope, accessScope] = await Promise.all([
+    requireAdminDataScope(),
+    getAdminAccessScope(),
+  ]);
   const [eventData, occurrencesData, organizations, venues, venueMatchCandidates, duplicateInfo] =
     await Promise.all([
       getEventWithOverrides(id),
@@ -78,6 +83,10 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
       : organizations;
 
   const { synced, masterOverride } = eventData;
+  const isManualEvent = synced.source.type === "manual";
+  const lockedOrganizationId = isOrgScoped(dataScope)
+    ? dataScope.organizationId
+    : null;
   const occurrenceOverrides = new Map(
     eventData.occurrenceOverrides.map((override) => [
       override.occurrenceStartAt?.toISOString() ?? "",
@@ -148,28 +157,26 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">
-            {synced.source.type === "manual"
-              ? "Valeurs de l'événement"
-              : "Valeurs synchronisées (iCal)"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2 text-sm">
-          <p>
-            {formatEventDate(synced.startAt, synced.endAt, synced.isAllDay)}
-          </p>
-          <p>
-            {synced.organization?.name ?? "—"} ·{" "}
-            {synced.venue?.name ?? synced.locationRaw ?? "—"}
-          </p>
-          <p>{synced.categories?.join(", ") || "—"}</p>
-          {synced.description ? (
-            <p className="whitespace-pre-wrap">{synced.description}</p>
-          ) : null}
-        </CardContent>
-      </Card>
+      {!isManualEvent ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Valeurs synchronisées (iCal)</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2 text-sm">
+            <p>
+              {formatEventDate(synced.startAt, synced.endAt, synced.isAllDay)}
+            </p>
+            <p>
+              {synced.organization?.name ?? "—"} ·{" "}
+              {synced.venue?.name ?? synced.locationRaw ?? "—"}
+            </p>
+            <p>{synced.categories?.join(", ") || "—"}</p>
+            {synced.description ? (
+              <p className="whitespace-pre-wrap">{synced.description}</p>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <DuplicateMergePanel
         eventId={synced.id}
@@ -184,26 +191,51 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
         candidates={duplicateCandidates.map(serializeDuplicateEvent)}
       />
 
-      <EventOverrideForm
-        eventId={synced.id}
-        scope="master"
-        synced={{
-          title: synced.title,
-          description: synced.description,
-          organizationId: synced.organizationId,
-          venueId: synced.venueId,
-          categories: synced.categories,
-          status: synced.status,
-          sourceUrl: synced.sourceUrl,
-          offers: eventData.effective.offers ?? null,
-        }}
-        currentPatch={masterOverride?.patch ?? {}}
-        organizations={scopedOrganizations}
-        venues={venues.map(toVenueSelectOption)}
-        venueMatchCandidates={venueMatchCandidates}
-      />
+      {isManualEvent ? (
+        <EventManualEditForm
+          eventId={synced.id}
+          initial={{
+            title: synced.title,
+            description: synced.description,
+            organizationId: synced.organizationId,
+            venueId: synced.venueId,
+            categories: synced.categories,
+            status: synced.status,
+            sourceUrl: synced.sourceUrl,
+            startAt: synced.startAt,
+            endAt: synced.endAt,
+            isAllDay: synced.isAllDay,
+            offers: eventData.effective.offers ?? null,
+            notes: masterOverride?.patch.notes ?? masterOverride?.notes ?? null,
+          }}
+          organizations={scopedOrganizations}
+          venues={venues.map(toVenueSelectOption)}
+          venueMatchCandidates={venueMatchCandidates}
+          lockedOrganizationId={lockedOrganizationId}
+          canPermanentlyDelete={accessScope?.isPlatformAdmin ?? false}
+        />
+      ) : (
+        <EventOverrideForm
+          eventId={synced.id}
+          scope="master"
+          synced={{
+            title: synced.title,
+            description: synced.description,
+            organizationId: synced.organizationId,
+            venueId: synced.venueId,
+            categories: synced.categories,
+            status: synced.status,
+            sourceUrl: synced.sourceUrl,
+            offers: eventData.effective.offers ?? null,
+          }}
+          currentPatch={masterOverride?.patch ?? {}}
+          organizations={scopedOrganizations}
+          venues={venues.map(toVenueSelectOption)}
+          venueMatchCandidates={venueMatchCandidates}
+        />
+      )}
 
-      {synced.recurrenceRule && occurrenceItems.length > 0 ? (
+      {!isManualEvent && synced.recurrenceRule && occurrenceItems.length > 0 ? (
         <OccurrenceOverridePanel
           eventId={synced.id}
           occurrences={occurrenceItems}

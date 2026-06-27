@@ -1,4 +1,4 @@
-import { addDays } from "date-fns";
+import { addDays, subDays } from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 import { siteConfig } from "@/lib/site";
@@ -22,6 +22,37 @@ export function defaultEventScheduleValue(now = new Date()): EventScheduleValue 
     startTime: "20:00",
     endDate: today,
     endTime: "23:00",
+  };
+}
+
+export function scheduleValueFromEvent(event: {
+  startAt: Date;
+  endAt: Date | null;
+  isAllDay: boolean;
+}): EventScheduleValue {
+  if (event.isAllDay) {
+    const startDate = formatInTimeZone(event.startAt, TIMEZONE, "yyyy-MM-dd");
+    const endDate = event.endAt
+      ? formatInTimeZone(subDays(event.endAt, 1), TIMEZONE, "yyyy-MM-dd")
+      : startDate;
+
+    return {
+      isAllDay: true,
+      startDate,
+      startTime: "00:00",
+      endDate,
+      endTime: "00:00",
+    };
+  }
+
+  const endAt = event.endAt ?? event.startAt;
+
+  return {
+    isAllDay: false,
+    startDate: formatInTimeZone(event.startAt, TIMEZONE, "yyyy-MM-dd"),
+    startTime: formatInTimeZone(event.startAt, TIMEZONE, "HH:mm"),
+    endDate: formatInTimeZone(endAt, TIMEZONE, "yyyy-MM-dd"),
+    endTime: formatInTimeZone(endAt, TIMEZONE, "HH:mm"),
   };
 }
 

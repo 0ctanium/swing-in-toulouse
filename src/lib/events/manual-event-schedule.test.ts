@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildScheduleIso,
   defaultEventScheduleValue,
+  scheduleValueFromEvent,
 } from "@/lib/events/manual-event-schedule";
 
 describe("buildScheduleIso", () => {
@@ -44,6 +45,44 @@ describe("buildScheduleIso", () => {
         endTime: "20:00",
       }),
     ).toThrow("La fin doit être postérieure au début.");
+  });
+});
+
+describe("scheduleValueFromEvent", () => {
+  it("round-trips timed events through buildScheduleIso", () => {
+    const initial = defaultEventScheduleValue(
+      new Date("2026-07-01T12:00:00.000Z"),
+    );
+    initial.startTime = "20:30";
+    initial.endTime = "23:15";
+
+    const iso = buildScheduleIso(initial);
+    const restored = scheduleValueFromEvent({
+      startAt: new Date(iso.startAt),
+      endAt: iso.endAt ? new Date(iso.endAt) : null,
+      isAllDay: iso.isAllDay,
+    });
+
+    expect(restored).toEqual(initial);
+  });
+
+  it("round-trips all-day events through buildScheduleIso", () => {
+    const initial = {
+      isAllDay: true,
+      startDate: "2026-07-01",
+      startTime: "00:00",
+      endDate: "2026-07-02",
+      endTime: "00:00",
+    };
+
+    const iso = buildScheduleIso(initial);
+    const restored = scheduleValueFromEvent({
+      startAt: new Date(iso.startAt),
+      endAt: iso.endAt ? new Date(iso.endAt) : null,
+      isAllDay: iso.isAllDay,
+    });
+
+    expect(restored).toEqual(initial);
   });
 });
 

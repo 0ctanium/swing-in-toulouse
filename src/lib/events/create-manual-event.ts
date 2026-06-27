@@ -1,21 +1,22 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { events, organizations, venues } from "@/db/schema";
+import { events, organizations } from "@/db/schema";
 import type { AdminDataScope } from "@/lib/admin/data-scope";
 import { resolveWritableOrganizationId } from "@/lib/admin/data-scope";
 import { generateEventUid } from "@/lib/ical/uid";
-import { rebuildOccurrencesForMaster } from "@/lib/events/occurrence-projector";
-import { getOrCreateManualSource } from "@/lib/events/manual-source";
+import {
+  resolveManualEventOrganizationId,
+  resolveVenueFields,
+} from "@/lib/events/manual-event-helpers";
 import type { ManualEventWriteInput } from "@/lib/events/manual-event-schema";
+import { getOrCreateManualSource } from "@/lib/events/manual-source";
 import { upsertEventOverride } from "@/lib/events/overrides";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
+import { rebuildOccurrencesForMaster } from "@/lib/events/occurrence-projector";
 import { resolveUniqueEventSlug } from "@/lib/events/resolve-unique-event-slug";
 import { generateEventSlug } from "@/lib/slug";
-import { formatVenueAsDefaultLocation } from "@/lib/sources/defaults";
-import { getOrganizationById } from "@/lib/sources/admin";
 import { eventUrl } from "@/lib/site";
-import { resolveVenueForSync } from "@/lib/venues/canonical";
 
 async function resolveManualEventSlugPrefix(organizationId: string | null) {
   if (!organizationId) {
@@ -30,43 +31,14 @@ async function resolveManualEventSlugPrefix(organizationId: string | null) {
   return organization?.slug ?? "manual";
 }
 
-async function resolveVenueFields(venueId: string | null) {
-  if (!venueId) {
-    return { venueId: null, locationRaw: null };
-  }
-
-  const venue = await db.query.venues.findFirst({
-    where: eq(venues.id, venueId),
-  });
-
-  if (!venue) {
-    throw new Error("Lieu introuvable.");
-  }
-
-  const resolved = await resolveVenueForSync(venue);
-
-  return {
-    venueId: resolved?.id ?? venue.id,
-    locationRaw: formatVenueAsDefaultLocation(resolved ?? venue),
-  };
-}
-
 export async function createManualEvent(
   input: ManualEventWriteInput,
   dataScope: AdminDataScope,
 ) {
-  const organizationId = resolveWritableOrganizationId(
+  const organizationId = await resolveManualEventOrganizationId(
     dataScope,
     input.organizationId,
   );
-
-  if (organizationId) {
-    const organization = await getOrganizationById(organizationId);
-
-    if (!organization) {
-      throw new Error("Organisateur introuvable.");
-    }
-  }
 
   const source = await getOrCreateManualSource(organizationId);
   const uid = generateEventUid();
@@ -120,9 +92,9 @@ export async function createManualEvent(
       eventId: event.id,
       patch,
     });
+  } else {
+    await rebuildOccurrencesForMaster(event.id);
   }
-
-  await rebuildOccurrencesForMaster(event.id);
 
   return event;
 }
