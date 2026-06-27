@@ -206,6 +206,8 @@ export function EventOverrideForm({
           <EventCategoryTagsInput
             value={categories}
             onChange={setCategories}
+            title={title}
+            description={description}
             disabled={pending}
           />
         </Field>

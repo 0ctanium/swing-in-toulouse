@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import {
@@ -19,14 +19,21 @@ import {
   ComboboxValue,
   useComboboxAnchor,
 } from "@/components/ui/combobox";
+import { Button } from "@/components/ui/button";
 import { useEventCategoryTagOptions } from "@/lib/admin/use-event-category-tag-options";
-import type { GroupedCategoryFilterOptions } from "@/lib/event-category-tags/grouped-options";
+import {
+  flattenGroupedCategoryFilterOptions,
+  type GroupedCategoryFilterOptions,
+} from "@/lib/event-category-tags/category-filter-options";
+import { suggestCategoryTagsFromText } from "@/lib/event-category-tags/suggest-from-text";
 import { cn } from "@/lib/utils";
 
 type EventCategoryTagsInputProps = {
   value: string[];
   onChange: (value: string[]) => void;
   groups?: GroupedCategoryFilterOptions;
+  title?: string | null;
+  description?: string | null;
   disabled?: boolean;
   placeholder?: string;
   helperText?: string | null;
@@ -64,6 +71,8 @@ export function EventCategoryTagsInput({
   value,
   onChange,
   groups: groupsProp,
+  title,
+  description,
   disabled = false,
   placeholder = "Ajouter une catégorie…",
   helperText = defaultHelperText,
@@ -76,6 +85,23 @@ export function EventCategoryTagsInput({
   });
   const groups = groupsProp ?? loadedGroups ?? [];
   const comboboxGroups = useMemo(() => toComboboxGroups(groups), [groups]);
+  const candidateTags = useMemo(
+    () =>
+      flattenGroupedCategoryFilterOptions(groups).map((option) => option.value),
+    [groups],
+  );
+  const suggestedTags = useMemo(
+    () =>
+      title === undefined && description === undefined
+        ? []
+        : suggestCategoryTagsFromText({
+            title,
+            description,
+            candidateTags,
+            selectedTags: value,
+          }),
+    [title, description, candidateTags, value],
+  );
   const [inputValue, setInputValue] = useState("");
   const [open, setOpen] = useState(false);
 
@@ -191,6 +217,28 @@ export function EventCategoryTagsInput({
       </Combobox>
       {helperText ? (
         <p className="text-muted-foreground text-xs">{helperText}</p>
+      ) : null}
+      {suggestedTags.length > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-muted-foreground text-xs font-medium">
+            Tags suggérés
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {suggestedTags.map((tag) => (
+              <Button
+                key={tag}
+                type="button"
+                variant="outline"
+                size="xs"
+                disabled={disabled}
+                onClick={() => onChange(addTags(value, tag))}
+              >
+                <Plus data-icon="inline-start" />
+                {tag}
+              </Button>
+            ))}
+          </div>
+        </div>
       ) : null}
     </div>
   );

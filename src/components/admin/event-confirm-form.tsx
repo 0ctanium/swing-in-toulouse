@@ -197,6 +197,8 @@ export function EventConfirmForm({
           <EventCategoryTagsInput
             value={categories}
             onChange={setCategories}
+            title={title}
+            description={description}
             disabled={pending}
           />
         </Field>

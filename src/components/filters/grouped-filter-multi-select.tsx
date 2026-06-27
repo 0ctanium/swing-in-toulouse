@@ -10,7 +10,7 @@ import {
 import type {
   CategoryFilterOption,
   GroupedCategoryFilterOptions,
-} from "@/lib/event-category-tags/grouped-options";
+} from "@/lib/event-category-tags/category-filter-options";
 import { cn } from "@/lib/utils";
 
 type GroupedFilterMultiSelectProps = {

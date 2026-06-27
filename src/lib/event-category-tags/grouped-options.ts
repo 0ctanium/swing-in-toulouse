@@ -1,20 +1,18 @@
 import type { EventCategoryTagType } from "@/db/schema";
 import {
+  type CategoryFilterOption,
+  type GroupedCategoryFilterOptions,
+  flattenGroupedCategoryFilterOptions,
+} from "@/lib/event-category-tags/category-filter-options";
+import type { EventCategoryTagMetadataMap } from "@/lib/event-category-tags/metadata";
+import { resolveEventCategoryTagType } from "@/lib/event-category-tags/metadata";
+import {
   eventCategoryTagTypeLabels,
   eventCategoryTagTypeOrder,
 } from "@/lib/event-category-tags/tag-types";
-import type { EventCategoryTagMetadataMap } from "@/lib/event-category-tags/metadata";
-import { resolveEventCategoryTagType } from "@/lib/event-category-tags/metadata";
 
-export type CategoryFilterOption = {
-  value: string;
-  label: string;
-};
-
-export type GroupedCategoryFilterOptions = {
-  groupLabel: string;
-  options: CategoryFilterOption[];
-}[];
+export type { CategoryFilterOption, GroupedCategoryFilterOptions };
+export { flattenGroupedCategoryFilterOptions };
 
 export function buildGroupedCategoryFilterOptions(
   names: Iterable<string>,
@@ -41,10 +39,4 @@ export function buildGroupedCategoryFilterOptions(
       options: buckets.get(tagType) ?? [],
     }))
     .filter((group) => group.options.length > 0);
-}
-
-export function flattenGroupedCategoryFilterOptions(
-  groups: GroupedCategoryFilterOptions,
-): CategoryFilterOption[] {
-  return groups.flatMap((group) => group.options);
 }

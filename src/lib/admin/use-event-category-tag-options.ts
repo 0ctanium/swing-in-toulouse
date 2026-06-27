@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { adminQueryKeys } from "@/lib/admin/query-keys";
 import { fetchJson } from "@/lib/api/fetch-json";
-import type { GroupedCategoryFilterOptions } from "@/lib/event-category-tags/grouped-options";
+import type { GroupedCategoryFilterOptions } from "@/lib/event-category-tags/category-filter-options";
 
 type CategoryTagOptionsResponse = {
   categoryGroups: GroupedCategoryFilterOptions;
