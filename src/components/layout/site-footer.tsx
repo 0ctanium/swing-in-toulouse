@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CalendarSubscribeDialog } from "@/components/calendar/calendar-subscribe-dialog";
+import { FooterSiteNameSecret } from "@/components/layout/footer-site-name-secret";
 import { PwaInstallButton } from "@/components/pwa/pwa-install-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { emptyIcalPayload } from "@/lib/ical/payload";
@@ -11,7 +12,9 @@ export function SiteFooter() {
     <footer className="mt-auto border-t">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground">
         <p>
-          {siteConfig.name} - {siteConfig.description}
+          <FooterSiteNameSecret>{siteConfig.name}</FooterSiteNameSecret>
+          {" - "}
+          {siteConfig.description}
         </p>
         <p>
           Abonnez-vous au calendrier :{" "}
