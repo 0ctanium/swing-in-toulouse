@@ -92,11 +92,11 @@ export default function RootLayout({
               >
                 {children}
               </main>
+              <SiteFooter />
               <Suspense>
                 <AdminModeBanner />
               </Suspense>
             </Providers>
-            <SiteFooter />
           </ThemeProvider>
         </AppClerkProvider>
       </body>
