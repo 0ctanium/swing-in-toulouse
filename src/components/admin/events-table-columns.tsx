@@ -10,8 +10,9 @@ import type {
   AdminEventSortColumn,
   AdminEventSortDir,
 } from "@/lib/events/admin-events-params";
+import type { AdminEventsTableColumnId } from "@/lib/events/admin-events-table-columns";
 import type { AdminEventTableRow } from "@/lib/events/admin-events-table";
-import { formatEventDate } from "@/lib/events/format";
+import { formatAdminEventTableDate } from "@/lib/events/format";
 import { cn } from "@/lib/utils";
 
 type SortableHeaderProps = {
@@ -46,14 +47,19 @@ function SortableHeader({
   );
 }
 
-function formatAdminEventDate(event: AdminEventTableRow) {
+function formatAdminEventDateCell(event: AdminEventTableRow) {
   const startAt = new Date(event.displayStartAt);
 
   if (event.recurrenceRule) {
-    return formatEventDate(startAt, null, event.isAllDay);
+    const { dateLine, timeLine } = formatAdminEventTableDate(
+      startAt,
+      null,
+      event.isAllDay,
+    );
+    return { dateLine, timeLine };
   }
 
-  return formatEventDate(
+  return formatAdminEventTableDate(
     startAt,
     event.endAt ? new Date(event.endAt) : null,
     event.isAllDay,
@@ -64,15 +70,20 @@ type CreateEventsTableColumnsOptions = {
   sort: AdminEventSortColumn | null;
   dir: AdminEventSortDir;
   onSortToggle: (column: AdminEventSortColumn) => void;
+  visibleColumns: AdminEventsTableColumnId[];
 };
 
 export function createEventsTableColumns({
   sort,
   dir,
   onSortToggle,
+  visibleColumns,
 }: CreateEventsTableColumnsOptions): ColumnDef<AdminEventTableRow>[] {
-  return [
+  const visible = new Set(visibleColumns);
+
+  const columns: ColumnDef<AdminEventTableRow>[] = [
     {
+      id: "title",
       accessorKey: "title",
       header: () => (
         <SortableHeader
@@ -87,7 +98,7 @@ export function createEventsTableColumns({
         const event = row.original;
 
         return (
-          <div className="flex min-w-48 flex-col gap-1">
+          <div className="flex min-w-48 flex-col gap-0.5">
             <Link
               href={`/admin/events/${event.id}`}
               className="font-medium hover:underline"
@@ -113,13 +124,19 @@ export function createEventsTableColumns({
           onSortToggle={onSortToggle}
         />
       ),
-      cell: ({ row }) => (
-        <span className="whitespace-normal">
-          {formatAdminEventDate(row.original)}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const { dateLine, timeLine } = formatAdminEventDateCell(row.original);
+
+        return (
+          <div className="flex min-w-28 flex-col gap-0.5 whitespace-normal">
+            <span>{dateLine}</span>
+            <span className="text-xs text-muted-foreground">{timeLine}</span>
+          </div>
+        );
+      },
     },
     {
+      id: "org",
       accessorKey: "organizationName",
       header: () => (
         <SortableHeader
@@ -227,29 +244,13 @@ export function createEventsTableColumns({
               <Eye data-icon="inline-start" />
               Voir
             </Button>
-            {!event.isConfirmed ? (
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={<Link href="/admin/events/confirm" />}
-              >
-                Confirmer
-              </Button>
-            ) : null}
-            <Button
-              variant="ghost"
-              size="sm"
-              nativeButton={false}
-              render={<Link href={`/admin/events/${event.id}`} />}
-            >
-              Modifier
-            </Button>
           </div>
         );
       },
     },
   ];
+
+  return columns.filter((column) => visible.has(column.id as AdminEventsTableColumnId));
 }
 
 export function getEventsTableRowClassName(event: AdminEventTableRow) {

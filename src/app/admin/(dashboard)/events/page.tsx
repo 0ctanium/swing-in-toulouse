@@ -48,9 +48,8 @@ async function AdminEventsPageContent({ searchParams }: AdminEventsPageProps) {
         <div>
           <h1 className="font-heading text-3xl font-semibold">Événements</h1>
           <p className="text-muted-foreground mt-1 max-w-2xl">
-            Événements synchronisés depuis iCal ou créés manuellement. Les
-            événements à venir sont listés en premier, les événements passés en
-            dernier.
+            Événements synchronisés depuis iCal ou créés manuellement. Par
+            défaut, seuls les événements à venir sont affichés.
           </p>
         </div>
         <Button nativeButton={false} render={<Link href="/admin/events/new" />}>

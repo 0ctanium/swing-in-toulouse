@@ -44,8 +44,10 @@ export function getEventScheduling(
   if (event.recurrenceRule) {
     const nextOccurrence = nextOccurrenceById.get(event.id);
     if (nextOccurrence) {
-      return { isUpcoming: true, sortAt: nextOccurrence };
+      return { isUpcoming: nextOccurrence >= today, sortAt: nextOccurrence };
     }
+
+    return { isUpcoming: false, sortAt: event.startAt };
   }
 
   const end = event.endAt ?? event.startAt;

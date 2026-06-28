@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DEFAULT_ADMIN_EVENT_VIEW,
   hasAdminEventsFilters,
   parseAdminEventsSearchParams,
 } from "@/lib/events/admin-events-params";
@@ -15,6 +16,8 @@ describe("parseAdminEventsSearchParams", () => {
       org: [],
       category: [],
       state: [],
+      search: "",
+      view: DEFAULT_ADMIN_EVENT_VIEW,
     });
   });
 
@@ -28,6 +31,8 @@ describe("parseAdminEventsSearchParams", () => {
         org: "swing-club-a,swing-club-b",
         category: "lindy",
         state: ["pending", "confirmed", "invalid"],
+        search: "  swing session  ",
+        view: "pending",
       }),
     ).toEqual({
       page: 2,
@@ -37,6 +42,8 @@ describe("parseAdminEventsSearchParams", () => {
       org: ["swing-club-a", "swing-club-b"],
       category: ["lindy"],
       state: ["pending", "confirmed"],
+      search: "swing session",
+      view: "pending",
     });
   });
 
@@ -46,6 +53,7 @@ describe("parseAdminEventsSearchParams", () => {
         page: "0",
         sort: "unknown",
         dir: "sideways",
+        view: "invalid",
       }),
     ).toEqual({
       page: 1,
@@ -55,6 +63,8 @@ describe("parseAdminEventsSearchParams", () => {
       org: [],
       category: [],
       state: [],
+      search: "",
+      view: DEFAULT_ADMIN_EVENT_VIEW,
     });
   });
 });
@@ -70,6 +80,8 @@ describe("hasAdminEventsFilters", () => {
         org: [],
         category: [],
         state: [],
+        search: "",
+        view: DEFAULT_ADMIN_EVENT_VIEW,
       }),
     ).toBe(false);
 
@@ -82,6 +94,36 @@ describe("hasAdminEventsFilters", () => {
         org: [],
         category: [],
         state: [],
+        search: "",
+        view: DEFAULT_ADMIN_EVENT_VIEW,
+      }),
+    ).toBe(true);
+
+    expect(
+      hasAdminEventsFilters({
+        page: 1,
+        sort: null,
+        dir: "asc",
+        venue: [],
+        org: [],
+        category: [],
+        state: [],
+        search: "bal",
+        view: DEFAULT_ADMIN_EVENT_VIEW,
+      }),
+    ).toBe(true);
+
+    expect(
+      hasAdminEventsFilters({
+        page: 1,
+        sort: null,
+        dir: "asc",
+        venue: [],
+        org: [],
+        category: [],
+        state: [],
+        search: "",
+        view: "all",
       }),
     ).toBe(true);
   });

@@ -9,6 +9,7 @@ import {
   type AdminEventSortColumn,
   type AdminEventSortDir,
   type AdminEventStateFilter,
+  type AdminEventView,
   type AdminEventsQuery,
 } from "@/lib/events/admin-events-params";
 import { mergeMastersWithMasterOverrides } from "@/lib/events/expand-with-overrides";
@@ -201,7 +202,45 @@ function sortTableRows(
   });
 }
 
+function matchesView(row: AdminEventTableRow, view: AdminEventView) {
+  switch (view) {
+    case "upcoming":
+      return row.isUpcoming;
+    case "past":
+      return !row.isUpcoming;
+    case "pending":
+      return row.stateKey === "pending";
+    case "all":
+      return true;
+  }
+}
+
+function matchesSearch(row: AdminEventTableRow, search: string) {
+  const term = search.trim().toLowerCase();
+  if (!term) {
+    return true;
+  }
+
+  const fields = [
+    row.title,
+    row.organizationName,
+    row.venueName,
+    row.sourceName,
+    row.categories?.join(" "),
+  ];
+
+  return fields.some((field) => field?.toLowerCase().includes(term));
+}
+
 function matchesFilters(row: AdminEventTableRow, query: AdminEventsQuery) {
+  if (!matchesView(row, query.view)) {
+    return false;
+  }
+
+  if (!matchesSearch(row, query.search)) {
+    return false;
+  }
+
   if (query.venue.length > 0) {
     const venueKey = row.venueId ?? NONE_FILTER_VALUE;
     if (!query.venue.includes(venueKey)) {

@@ -119,6 +119,46 @@ export function formatEventDate(
   return `${startLabel} → ${format(endZoned, "EEEE d MMMM · HH:mm", { locale: fr })}`;
 }
 
+export function formatAdminEventTableDate(
+  startAt: Date,
+  endAt: Date | null,
+  isAllDay = false,
+) {
+  if (endAt && isAllDayEvent(startAt, endAt, isAllDay)) {
+    return {
+      dateLine: format(toZonedTime(startAt, TIMEZONE), "EEE d MMM yyyy", {
+        locale: fr,
+      }),
+      timeLine: ALL_DAY_LABEL,
+    };
+  }
+
+  const startZoned = toZonedTime(startAt, TIMEZONE);
+  const dateLine = format(startZoned, "EEE d MMM yyyy", { locale: fr });
+
+  if (!endAt) {
+    return {
+      dateLine,
+      timeLine: format(startZoned, "HH:mm", { locale: fr }),
+    };
+  }
+
+  const endZoned = toZonedTime(endAt, TIMEZONE);
+  const sameDay = calendarDayKey(startAt) === calendarDayKey(endAt);
+
+  if (sameDay) {
+    return {
+      dateLine,
+      timeLine: `${format(startZoned, "HH:mm", { locale: fr })} – ${format(endZoned, "HH:mm", { locale: fr })}`,
+    };
+  }
+
+  return {
+    dateLine,
+    timeLine: `${format(startZoned, "HH:mm", { locale: fr })} → ${format(endZoned, "EEE d MMM · HH:mm", { locale: fr })}`,
+  };
+}
+
 export function formatEventChipTime(
   startAt: Date,
   endAt: Date | null,

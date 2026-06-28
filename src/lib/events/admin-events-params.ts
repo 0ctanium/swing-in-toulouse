@@ -21,9 +21,19 @@ export const ADMIN_EVENT_STATE_FILTERS = [
   "confirmed",
 ] as const;
 
+export const ADMIN_EVENT_VIEWS = [
+  "upcoming",
+  "pending",
+  "past",
+  "all",
+] as const;
+
 export type AdminEventSortColumn = (typeof ADMIN_EVENT_SORT_COLUMNS)[number];
 export type AdminEventSortDir = (typeof ADMIN_EVENT_SORT_DIRS)[number];
 export type AdminEventStateFilter = (typeof ADMIN_EVENT_STATE_FILTERS)[number];
+export type AdminEventView = (typeof ADMIN_EVENT_VIEWS)[number];
+
+export const DEFAULT_ADMIN_EVENT_VIEW: AdminEventView = "upcoming";
 
 export type AdminEventsQuery = {
   page: number;
@@ -33,6 +43,8 @@ export type AdminEventsQuery = {
   org: string[];
   category: string[];
   state: AdminEventStateFilter[];
+  search: string;
+  view: AdminEventView;
 };
 
 export const NONE_FILTER_VALUE = "__none__";
@@ -47,6 +59,10 @@ export const adminEventsParsers = {
   state: parseAsArrayOf(
     parseAsStringLiteral(ADMIN_EVENT_STATE_FILTERS),
   ).withDefault([]),
+  search: parseAsString.withDefault(""),
+  view: parseAsStringLiteral(ADMIN_EVENT_VIEWS).withDefault(
+    DEFAULT_ADMIN_EVENT_VIEW,
+  ),
 };
 
 export const adminEventsClientParsers = {
@@ -59,6 +75,10 @@ export const adminEventsClientParsers = {
   state: parseAsArrayOf(
     parseAsStringLiteral(ADMIN_EVENT_STATE_FILTERS),
   ).withDefault([]),
+  search: parseAsString.withDefault(""),
+  view: parseAsStringLiteral(ADMIN_EVENT_VIEWS).withDefault(
+    DEFAULT_ADMIN_EVENT_VIEW,
+  ),
 };
 
 export function parseAdminEventsSearchParams(
@@ -101,6 +121,11 @@ export function parseAdminEventsSearchParams(
     ADMIN_EVENT_STATE_FILTERS.includes(value as AdminEventStateFilter),
   );
 
+  const viewRaw = get("view");
+  const view = ADMIN_EVENT_VIEWS.includes(viewRaw as AdminEventView)
+    ? (viewRaw as AdminEventView)
+    : DEFAULT_ADMIN_EVENT_VIEW;
+
   return {
     page: Number.isFinite(page) && page > 0 ? page : 1,
     sort,
@@ -109,6 +134,8 @@ export function parseAdminEventsSearchParams(
     org: getAll("org"),
     category: getAll("category"),
     state,
+    search: get("search")?.trim() ?? "",
+    view,
   };
 }
 
@@ -117,6 +144,8 @@ export function hasAdminEventsFilters(query: AdminEventsQuery) {
     query.venue.length > 0 ||
     query.org.length > 0 ||
     query.category.length > 0 ||
-    query.state.length > 0
+    query.state.length > 0 ||
+    query.search.length > 0 ||
+    query.view !== DEFAULT_ADMIN_EVENT_VIEW
   );
 }

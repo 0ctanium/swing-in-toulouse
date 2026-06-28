@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ALL_DAY_LABEL,
   calendarDayKey,
+  formatAdminEventTableDate,
   formatEventChipTime,
   formatEventDate,
   formatEventScheduleTime,
@@ -154,5 +155,27 @@ describe("formatEventDate", () => {
 
     expect(label).toContain("20:00");
     expect(label).not.toContain("→");
+  });
+});
+
+describe("formatAdminEventTableDate", () => {
+  it("returns compact date and time lines for same-day events", () => {
+    const formatted = formatAdminEventTableDate(
+      new Date("2026-06-28T20:00:00+02:00"),
+      new Date("2026-06-28T23:00:00+02:00"),
+    );
+
+    expect(formatted.dateLine).toContain("28");
+    expect(formatted.timeLine).toBe("20:00 – 23:00");
+  });
+
+  it("returns the all-day label for all-day events", () => {
+    const formatted = formatAdminEventTableDate(
+      new Date("2026-03-15T00:00:00+01:00"),
+      new Date("2026-03-16T00:00:00+01:00"),
+      true,
+    );
+
+    expect(formatted.timeLine).toBe(ALL_DAY_LABEL);
   });
 });

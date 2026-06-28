@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  buildNextOccurrenceMap,
   getEventDisplayDate,
   getEventScheduling,
   sortEventsForAdmin,
@@ -41,6 +42,22 @@ describe("getEventScheduling", () => {
 
     expect(result.isUpcoming).toBe(true);
     expect(result.sortAt).toEqual(nextOccurrence);
+  });
+
+  it("marks recurring events without a next occurrence as not upcoming", () => {
+    const result = getEventScheduling(
+      {
+        id: "recurring",
+        startAt: new Date("2026-01-01T20:00:00.000Z"),
+        endAt: new Date("2026-01-01T23:00:00.000Z"),
+        recurrenceRule: "RRULE:FREQ=WEEKLY;BYDAY=SU",
+      },
+      today,
+      new Map(),
+    );
+
+    expect(result.isUpcoming).toBe(false);
+    expect(result.sortAt).toEqual(new Date("2026-01-01T20:00:00.000Z"));
   });
 });
 
@@ -104,5 +121,56 @@ describe("getEventDisplayDate", () => {
         new Map(),
       ),
     ).toEqual(startAt);
+  });
+});
+
+describe("buildNextOccurrenceMap", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("finds the next occurrence for a weekly series that started earlier", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-28T10:00:00.000Z"));
+
+    const map = await buildNextOccurrenceMap([
+      {
+        id: "recurring-1",
+        uid: "swing-session@example.com",
+        slug: "swing-session",
+        title: "Swing Session",
+        startAt: new Date("2025-01-05T19:00:00.000Z"),
+        endAt: new Date("2025-01-05T22:00:00.000Z"),
+        isAllDay: false,
+        recurrenceRule: "RRULE:FREQ=WEEKLY;BYDAY=SU",
+        status: "published",
+      } as never,
+    ]);
+
+    expect(map.has("recurring-1")).toBe(true);
+    expect(map.get("recurring-1")?.getTime()).toBeGreaterThanOrEqual(
+      new Date("2026-06-28T10:00:00.000Z").getTime(),
+    );
+  });
+
+  it("finds the next occurrence when the stored rule omits the RRULE prefix", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-28T10:00:00.000Z"));
+
+    const map = await buildNextOccurrenceMap([
+      {
+        id: "recurring-2",
+        uid: "swing-session-2@example.com",
+        slug: "swing-session-2",
+        title: "Swing Session 2",
+        startAt: new Date("2025-01-05T19:00:00.000Z"),
+        endAt: new Date("2025-01-05T22:00:00.000Z"),
+        isAllDay: false,
+        recurrenceRule: "FREQ=WEEKLY;BYDAY=SU",
+        status: "published",
+      } as never,
+    ]);
+
+    expect(map.has("recurring-2")).toBe(true);
   });
 });

@@ -1,17 +1,21 @@
 "use client";
 
-import { Check, ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, Search, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { GroupedFilterMultiSelect } from "@/components/filters/grouped-filter-multi-select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  DEFAULT_ADMIN_EVENT_VIEW,
   hasAdminEventsFilters,
   type AdminEventStateFilter,
+  type AdminEventView,
   type AdminEventsQuery,
 } from "@/lib/events/admin-events-params";
 import type {
@@ -25,6 +29,17 @@ type EventsTableFiltersProps = {
   options: AdminEventsFilterOptions;
   onQueryChange: (query: Partial<AdminEventsQuery>) => void;
 };
+
+const VIEW_TABS: Array<{ value: AdminEventView; label: string }> = [
+  { value: "upcoming", label: "À venir" },
+  { value: "pending", label: "À confirmer" },
+  { value: "past", label: "Passés" },
+  { value: "all", label: "Tous" },
+];
+
+const VIEW_LABELS = Object.fromEntries(
+  VIEW_TABS.map((tab) => [tab.value, tab.label]),
+) as Record<AdminEventView, string>;
 
 function formatSelectedSummary(
   values: string[],
@@ -136,15 +151,100 @@ function FilterMultiSelect({
   );
 }
 
+function ActiveFilterChip({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs transition-colors hover:bg-accent"
+      onClick={onRemove}
+    >
+      {label}
+      <X className="size-3" />
+    </button>
+  );
+}
+
 export function EventsTableFilters({
   query,
   options,
   onQueryChange,
 }: EventsTableFiltersProps) {
+  const [searchInput, setSearchInput] = useState(query.search);
   const activeFilters = hasAdminEventsFilters(query);
+
+  useEffect(() => {
+    setSearchInput(query.search);
+  }, [query.search]);
+
+  function submitSearch(event: React.FormEvent) {
+    event.preventDefault();
+    onQueryChange({ search: searchInput.trim(), page: 1 });
+  }
+
+  function clearAllFilters() {
+    onQueryChange({
+      search: "",
+      view: DEFAULT_ADMIN_EVENT_VIEW,
+      venue: [],
+      org: [],
+      category: [],
+      state: [],
+      page: 1,
+    });
+    setSearchInput("");
+  }
 
   return (
     <div className="flex flex-col gap-3">
+      <form
+        className="flex flex-wrap items-end gap-2"
+        onSubmit={submitSearch}
+      >
+        <div className="flex min-w-56 flex-1 flex-col gap-1.5">
+          <label htmlFor="event-search" className="text-xs font-medium">
+            Rechercher
+          </label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="event-search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Titre, lieu, organisateur…"
+              className="pl-8"
+            />
+          </div>
+        </div>
+        <Button type="submit" variant="secondary" size="sm" className="h-8">
+          Rechercher
+        </Button>
+      </form>
+
+      <div className="flex flex-wrap gap-1.5">
+        {VIEW_TABS.map((tab) => {
+          const active = query.view === tab.value;
+
+          return (
+            <Button
+              key={tab.value}
+              type="button"
+              size="sm"
+              variant={active ? "default" : "outline"}
+              className="h-8"
+              onClick={() => onQueryChange({ view: tab.value, page: 1 })}
+            >
+              {tab.label}
+            </Button>
+          );
+        })}
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <FilterMultiSelect
           label="Lieu"
@@ -180,25 +280,82 @@ export function EventsTableFilters({
           }
         />
       </div>
+
       {activeFilters ? (
-        <div>
+        <div className="flex flex-wrap items-center gap-2">
+          {query.search ? (
+            <ActiveFilterChip
+              label={`Recherche : ${query.search}`}
+              onRemove={() => {
+                setSearchInput("");
+                onQueryChange({ search: "", page: 1 });
+              }}
+            />
+          ) : null}
+          {query.view !== DEFAULT_ADMIN_EVENT_VIEW ? (
+            <ActiveFilterChip
+              label={`Vue : ${VIEW_LABELS[query.view]}`}
+              onRemove={() =>
+                onQueryChange({ view: DEFAULT_ADMIN_EVENT_VIEW, page: 1 })
+              }
+            />
+          ) : null}
+          {query.venue.map((value) => (
+            <ActiveFilterChip
+              key={`venue-${value}`}
+              label={`Lieu : ${options.venues.find((option) => option.value === value)?.label ?? value}`}
+              onRemove={() =>
+                onQueryChange({
+                  venue: query.venue.filter((current) => current !== value),
+                  page: 1,
+                })
+              }
+            />
+          ))}
+          {query.org.map((value) => (
+            <ActiveFilterChip
+              key={`org-${value}`}
+              label={`Organisateur : ${options.organizations.find((option) => option.value === value)?.label ?? value}`}
+              onRemove={() =>
+                onQueryChange({
+                  org: query.org.filter((current) => current !== value),
+                  page: 1,
+                })
+              }
+            />
+          ))}
+          {query.category.map((value) => (
+            <ActiveFilterChip
+              key={`category-${value}`}
+              label={`Catégorie : ${options.categories.find((option) => option.value === value)?.label ?? value}`}
+              onRemove={() =>
+                onQueryChange({
+                  category: query.category.filter((current) => current !== value),
+                  page: 1,
+                })
+              }
+            />
+          ))}
+          {query.state.map((value) => (
+            <ActiveFilterChip
+              key={`state-${value}`}
+              label={`État : ${options.states.find((option) => option.value === value)?.label ?? value}`}
+              onRemove={() =>
+                onQueryChange({
+                  state: query.state.filter((current) => current !== value),
+                  page: 1,
+                })
+              }
+            />
+          ))}
           <Button
             type="button"
             variant="ghost"
             size="sm"
             className="h-8 px-2 text-muted-foreground"
-            onClick={() =>
-              onQueryChange({
-                venue: [],
-                org: [],
-                category: [],
-                state: [],
-                page: 1,
-              })
-            }
+            onClick={clearAllFilters}
           >
-            <X data-icon="inline-start" />
-            Effacer les filtres
+            Tout effacer
           </Button>
         </div>
       ) : null}

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { DuplicateMergePanel } from "@/components/admin/duplicate-merge-panel";
 import { EventManualEditForm } from "@/components/admin/event-manual-edit-form";
 import { EventOverrideForm } from "@/components/admin/event-override-form";
+import { EventUnconfirmedBanner } from "@/components/admin/event-unconfirmed-banner";
 import {
   OccurrenceOverridePanel,
   type AdminOccurrenceItem,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/events/queries";
 import { toVenueSelectOption } from "@/lib/venues/select-options";
 import { formatEventDate } from "@/lib/events/format";
+import { isEventConfirmed } from "@/lib/events/confirmation";
 import type { EventMaster } from "@/db/schema";
 import { adminMetadata } from "@/lib/metadata";
 import { requireAdminDataScope, getAdminAccessScope } from "@/lib/admin/access";
@@ -84,6 +86,7 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
 
   const { synced, masterOverride } = eventData;
   const isManualEvent = synced.source.type === "manual";
+  const needsConfirmation = !isManualEvent && !isEventConfirmed(synced);
   const lockedOrganizationId = isOrgScoped(dataScope)
     ? dataScope.organizationId
     : null;
@@ -156,6 +159,8 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
           {synced.recurrenceRule ? " · événement récurrent" : ""}
         </p>
       </div>
+
+      {needsConfirmation ? <EventUnconfirmedBanner eventId={synced.id} /> : null}
 
       {!isManualEvent ? (
         <Card>

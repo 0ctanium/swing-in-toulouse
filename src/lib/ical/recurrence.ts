@@ -125,6 +125,26 @@ function toText(value: unknown) {
   return undefined;
 }
 
+function appendRecurrenceLine(lines: string[], rawLine: string) {
+  const trimmed = rawLine.trim();
+  if (!trimmed) {
+    return;
+  }
+
+  if (
+    trimmed.startsWith("RRULE:") ||
+    trimmed.startsWith("EXDATE") ||
+    trimmed.startsWith("RDATE")
+  ) {
+    lines.push(trimmed);
+    return;
+  }
+
+  if (trimmed.startsWith("FREQ=")) {
+    lines.push(`RRULE:${trimmed}`);
+  }
+}
+
 function masterToVEvent(
   ical: NodeIcalModule,
   master: Event,
@@ -156,14 +176,7 @@ function masterToVEvent(
   }
 
   for (const line of master.recurrenceRule.split("\n")) {
-    const trimmed = line.trim();
-    if (
-      trimmed.startsWith("RRULE:") ||
-      trimmed.startsWith("EXDATE") ||
-      trimmed.startsWith("RDATE")
-    ) {
-      lines.push(trimmed);
-    }
+    appendRecurrenceLine(lines, line);
   }
 
   lines.push("END:VEVENT");
