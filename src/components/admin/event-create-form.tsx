@@ -13,6 +13,10 @@ import {
   resolveInitialOffersFormState,
 } from "@/components/admin/event-offers-input";
 import { EventScheduleInput } from "@/components/admin/event-schedule-input";
+import {
+  defaultRecurrenceFormValue,
+  EventRecurrenceInput,
+} from "@/components/admin/event-recurrence-input";
 import { OrganizationSelect } from "@/components/admin/organization-select";
 import {
   appendCreatedVenueOption,
@@ -30,6 +34,7 @@ import {
   defaultEventScheduleValue,
   type EventScheduleValue,
 } from "@/lib/events/manual-event-schedule";
+import type { RecurrenceFormValue } from "@/lib/events/recurrence-rule";
 import { parseOfferDrafts } from "@/lib/events/offers";
 import { suggestNamedEntitiesFromText } from "@/lib/proper-names/match-in-text";
 import type { VenueSelectOption } from "@/lib/venues/select-options";
@@ -70,6 +75,9 @@ export function EventCreateForm({
   const [notes, setNotes] = useState("");
   const [schedule, setSchedule] = useState<EventScheduleValue>(
     defaultEventScheduleValue,
+  );
+  const [recurrence, setRecurrence] = useState<RecurrenceFormValue>(() =>
+    defaultRecurrenceFormValue(),
   );
   const initialOffersState = resolveInitialOffersFormState({
     currentPatchOffers: undefined,
@@ -180,6 +188,7 @@ export function EventCreateForm({
         sourceUrl: sourceUrl.trim() || null,
         offers,
         notes: notes.trim() || null,
+        recurrence,
       });
 
       toast.success("Événement créé.");
@@ -249,6 +258,20 @@ export function EventCreateForm({
           <EventScheduleInput
             value={schedule}
             onChange={setSchedule}
+            disabled={pending}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Répétition</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EventRecurrenceInput
+            value={recurrence}
+            onChange={setRecurrence}
+            schedule={schedule}
             disabled={pending}
           />
         </CardContent>

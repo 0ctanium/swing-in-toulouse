@@ -207,6 +207,7 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
             isAllDay: synced.isAllDay,
             offers: eventData.effective.offers ?? null,
             notes: masterOverride?.patch.notes ?? masterOverride?.notes ?? null,
+            recurrenceRule: synced.recurrenceRule,
           }}
           organizations={scopedOrganizations}
           venues={venues.map(toVenueSelectOption)}
@@ -235,7 +236,7 @@ async function AdminEventPageContent({ params }: AdminEventPageProps) {
         />
       )}
 
-      {!isManualEvent && synced.recurrenceRule && occurrenceItems.length > 0 ? (
+      {synced.recurrenceRule && occurrenceItems.length > 0 ? (
         <OccurrenceOverridePanel
           eventId={synced.id}
           occurrences={occurrenceItems}

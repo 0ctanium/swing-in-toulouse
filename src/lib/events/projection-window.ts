@@ -10,8 +10,10 @@ export type ProjectionWindow = {
 };
 
 export function getProjectionWindow(now = new Date()): ProjectionWindow {
+  const monthsAhead = Number(env.PROJECTION_MONTHS_AHEAD) || 18;
+
   return {
     from: getArchiveLookbackStart(now),
-    to: addMonths(getDefaultFromDate(now), env.PROJECTION_MONTHS_AHEAD),
+    to: addMonths(getDefaultFromDate(now), monthsAhead),
   };
 }

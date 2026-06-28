@@ -146,4 +146,77 @@ describe("POST /api/admin/events", () => {
 
     expect(manualSource?.organizationId).toBeNull();
   });
+
+  it("creates a recurring manual event and projects multiple occurrences", async () => {
+    setClerkAuth({
+      userId: "user_platform_admin",
+      role: "admin",
+    });
+
+    const schedule = futureEventRange(7);
+
+    const response = await createManualEventRoute(
+      createJsonPostRequest("/api/admin/events", {
+        title: "Cours hebdomadaire",
+        startAt: schedule.startAt,
+        endAt: schedule.endAt,
+        organizationId: FIXTURE_IDS.orgA,
+        status: "published",
+        recurrence: {
+          enabled: true,
+          frequency: "weekly",
+          interval: 1,
+          byWeekday: ["TH"],
+          monthlyMode: "day_of_month",
+          end: { type: "count", count: 8 },
+        },
+      }),
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.event.recurrenceRule).toBe(
+      "RRULE:FREQ=WEEKLY;BYDAY=TH;COUNT=8",
+    );
+
+    const testDb = await setupIntegrationDb();
+    const occurrences = await testDb.db.query.eventOccurrences.findMany({
+      where: eq(eventOccurrences.masterEventId, body.event.id),
+    });
+
+    expect(occurrences.length).toBeGreaterThan(1);
+  });
+
+  it("creates a never-ending recurring manual event", async () => {
+    setClerkAuth({
+      userId: "user_platform_admin",
+      role: "admin",
+    });
+
+    const schedule = futureEventRange(10);
+
+    const response = await createManualEventRoute(
+      createJsonPostRequest("/api/admin/events", {
+        title: "Jam hebdomadaire",
+        startAt: schedule.startAt,
+        endAt: schedule.endAt,
+        organizationId: FIXTURE_IDS.orgA,
+        status: "published",
+        recurrence: {
+          enabled: true,
+          frequency: "weekly",
+          interval: 1,
+          byWeekday: ["TH"],
+          monthlyMode: "day_of_month",
+          end: { type: "never" },
+        },
+      }),
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.event.recurrenceRule).toBe("RRULE:FREQ=WEEKLY;BYDAY=TH");
+  });
 });

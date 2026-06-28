@@ -72,6 +72,7 @@ export async function createManualEvent(
       sourceUrl: input.sourceUrl,
       status: input.status,
       categories: input.categories,
+      recurrenceRule: input.recurrenceRule ?? null,
       confirmedAt: now,
       lastModified: now,
     })
@@ -92,9 +93,9 @@ export async function createManualEvent(
       eventId: event.id,
       patch,
     });
-  } else {
-    await rebuildOccurrencesForMaster(event.id);
   }
+
+  await rebuildOccurrencesForMaster(event.id);
 
   return event;
 }

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { eventOfferSchema } from "@/lib/events/offers";
+import { buildRecurrenceRule } from "@/lib/events/recurrence-rule";
 
 function normalizeOptionalUrl(value: string | null | undefined) {
   const trimmed = value?.trim();
@@ -16,6 +17,27 @@ function normalizeCategories(categories: string[] | null | undefined) {
   return normalized.length > 0 ? normalized : null;
 }
 
+export const recurrenceEndSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("never") }),
+  z.object({
+    type: z.literal("until"),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  }),
+  z.object({
+    type: z.literal("count"),
+    count: z.number().int().min(1).max(999),
+  }),
+]);
+
+export const recurrenceFormSchema = z.object({
+  enabled: z.boolean(),
+  frequency: z.enum(["daily", "weekly", "monthly", "yearly"]),
+  interval: z.number().int().min(1).max(99),
+  byWeekday: z.array(z.enum(["MO", "TU", "WE", "TH", "FR", "SA", "SU"])),
+  monthlyMode: z.enum(["day_of_month", "nth_weekday"]),
+  end: recurrenceEndSchema,
+});
+
 export const manualEventWriteSchema = z
   .object({
     title: z.string().trim().min(1, "Le titre est requis."),
@@ -30,6 +52,7 @@ export const manualEventWriteSchema = z
     sourceUrl: z.string().nullable().optional(),
     offers: z.array(eventOfferSchema).nullable().optional(),
     notes: z.string().nullable().optional(),
+    recurrence: recurrenceFormSchema.optional(),
   })
   .superRefine((value, ctx) => {
     if (value.endAt) {
@@ -45,15 +68,23 @@ export const manualEventWriteSchema = z
       }
     }
   })
-  .transform((value) => ({
-    ...value,
-    title: value.title.trim(),
-    description: value.description?.trim() || null,
-    organizationId: value.organizationId ?? null,
-    venueId: value.venueId ?? null,
-    categories: normalizeCategories(value.categories),
-    sourceUrl: normalizeOptionalUrl(value.sourceUrl),
-    notes: value.notes?.trim() || null,
-  }));
+  .transform((value) => {
+    const startAt = new Date(value.startAt);
+
+    return {
+      ...value,
+      title: value.title.trim(),
+      description: value.description?.trim() || null,
+      organizationId: value.organizationId ?? null,
+      venueId: value.venueId ?? null,
+      categories: normalizeCategories(value.categories),
+      sourceUrl: normalizeOptionalUrl(value.sourceUrl),
+      notes: value.notes?.trim() || null,
+      recurrenceRule:
+        value.recurrence !== undefined
+          ? buildRecurrenceRule(value.recurrence, startAt, value.isAllDay)
+          : undefined,
+    };
+  });
 
 export type ManualEventWriteInput = z.infer<typeof manualEventWriteSchema>;

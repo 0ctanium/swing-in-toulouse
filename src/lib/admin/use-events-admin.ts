@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { fetchJson, fetchJsonVoid } from "@/lib/api/fetch-json";
 import { adminQueryKeys } from "@/lib/admin/query-keys";
 import type { EventOffer } from "@/lib/events/offers";
+import type { RecurrenceFormValue } from "@/lib/events/recurrence-rule";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
 
 type SaveEventOverrideInput = {
@@ -171,6 +172,7 @@ export type CreateManualEventInput = {
   sourceUrl?: string | null;
   offers?: EventOffer[] | null;
   notes?: string | null;
+  recurrence?: RecurrenceFormValue;
 };
 
 async function createManualEventRequest(input: CreateManualEventInput) {

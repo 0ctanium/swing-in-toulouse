@@ -95,6 +95,10 @@ export async function updateManualEvent(
       sourceUrl: input.sourceUrl,
       status: input.status,
       categories: input.categories,
+      recurrenceRule:
+        input.recurrenceRule !== undefined
+          ? input.recurrenceRule
+          : undefined,
       lastModified: now,
     })
     .where(eq(events.id, eventId))

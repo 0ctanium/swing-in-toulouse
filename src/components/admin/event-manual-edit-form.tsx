@@ -12,6 +12,7 @@ import {
   resolveInitialOffersFormState,
 } from "@/components/admin/event-offers-input";
 import { EventScheduleInput } from "@/components/admin/event-schedule-input";
+import { EventRecurrenceInput } from "@/components/admin/event-recurrence-input";
 import { OrganizationSelect } from "@/components/admin/organization-select";
 import {
   appendCreatedVenueOption,
@@ -35,6 +36,10 @@ import {
   type EventScheduleValue,
 } from "@/lib/events/manual-event-schedule";
 import { parseOfferDrafts } from "@/lib/events/offers";
+import {
+  parseRecurrenceRule,
+  type RecurrenceFormValue,
+} from "@/lib/events/recurrence-rule";
 import { suggestNamedEntitiesFromText } from "@/lib/proper-names/match-in-text";
 import type { VenueSelectOption } from "@/lib/venues/select-options";
 import {
@@ -57,6 +62,7 @@ export type ManualEventEditInitialValues = {
   isAllDay: boolean;
   offers: EventOffer[] | null;
   notes: string | null;
+  recurrenceRule: string | null;
 };
 
 type EventManualEditFormProps = {
@@ -97,6 +103,9 @@ export function EventManualEditForm({
   const [notes, setNotes] = useState(initial.notes ?? "");
   const [schedule, setSchedule] = useState<EventScheduleValue>(() =>
     scheduleValueFromEvent(initial),
+  );
+  const [recurrence, setRecurrence] = useState<RecurrenceFormValue>(() =>
+    parseRecurrenceRule(initial.recurrenceRule, initial.startAt),
   );
   const initialOffersState = resolveInitialOffersFormState({
     currentPatchOffers: initial.offers,
@@ -206,6 +215,7 @@ export function EventManualEditForm({
       sourceUrl: sourceUrl.trim() || null,
       offers,
       notes: notes.trim() || null,
+      recurrence,
     };
   }
 
@@ -334,6 +344,20 @@ export function EventManualEditForm({
           <EventScheduleInput
             value={schedule}
             onChange={setSchedule}
+            disabled={pending}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Répétition</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EventRecurrenceInput
+            value={recurrence}
+            onChange={setRecurrence}
+            schedule={schedule}
             disabled={pending}
           />
         </CardContent>

@@ -95,6 +95,63 @@ describe("manual event mutations", () => {
     expect(body.event.title).toBe("Atelier mis à jour");
   });
 
+  it("clears recurrence when disabled on update", async () => {
+    const created = await createManualEventForTests();
+    const schedule = futureEventRange(21);
+
+    setClerkAuth({
+      userId: "user_platform_admin",
+      role: "admin",
+    });
+
+    const withRecurrence = await updateManualEventRoute(
+      createJsonRequest(`/api/admin/events/${created.id}`, "PATCH", {
+        title: "Atelier mis à jour",
+        startAt: schedule.startAt,
+        endAt: schedule.endAt,
+        organizationId: FIXTURE_IDS.orgA,
+        venueId: FIXTURE_IDS.venue,
+        status: "published",
+        recurrence: {
+          enabled: true,
+          frequency: "weekly",
+          interval: 1,
+          byWeekday: ["TH"],
+          monthlyMode: "day_of_month",
+          end: { type: "never" },
+        },
+      }),
+      { params: Promise.resolve({ id: created.id }) },
+    );
+
+    expect(withRecurrence.status).toBe(200);
+
+    const withoutRecurrence = await updateManualEventRoute(
+      createJsonRequest(`/api/admin/events/${created.id}`, "PATCH", {
+        title: "Atelier mis à jour",
+        startAt: schedule.startAt,
+        endAt: schedule.endAt,
+        organizationId: FIXTURE_IDS.orgA,
+        venueId: FIXTURE_IDS.venue,
+        status: "published",
+        recurrence: {
+          enabled: false,
+          frequency: "weekly",
+          interval: 1,
+          byWeekday: ["TH"],
+          monthlyMode: "day_of_month",
+          end: { type: "never" },
+        },
+      }),
+      { params: Promise.resolve({ id: created.id }) },
+    );
+
+    const body = await withoutRecurrence.json();
+
+    expect(withoutRecurrence.status).toBe(200);
+    expect(body.event.recurrenceRule).toBeNull();
+  });
+
   it("rejects updates to synced events", async () => {
     setClerkAuth({
       userId: "user_platform_admin",
