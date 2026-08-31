@@ -1,6 +1,9 @@
 import { env, isGoogleMapsConfigured } from "@/env";
-
-import { GooglePlacesError } from "./places";
+import {
+  GOOGLE_MAPS_CACHE_MS,
+  googlePlaceDisplayCacheKey,
+} from "@/lib/cache/google";
+import { rememberCache } from "@/lib/cache/store";
 
 const MAX_PHOTOS = 4;
 const PHOTO_MAX_HEIGHT = 480;
@@ -28,14 +31,6 @@ export type PlaceDisplayData = {
   photos: PlaceDisplayPhoto[];
 };
 
-function assertGoogleConfigured() {
-  if (!isGoogleMapsConfigured()) {
-    throw new GooglePlacesError(
-      "Google Maps API non configurée (GOOGLE_MAPS_API_KEY manquante).",
-    );
-  }
-}
-
 function placePhotoProxySrc(photoName: string) {
   return `/api/maps/photo?${new URLSearchParams({ name: photoName }).toString()}`;
 }
@@ -52,16 +47,9 @@ function mapAttributions(
   }));
 }
 
-/** Uncached Places API fetch - use {@link getPlaceDisplayData} in application code. */
-export async function fetchPlaceDisplayDataUncached(
+async function fetchPlaceDisplayDataFromGoogle(
   placeId: string,
 ): Promise<PlaceDisplayData | null> {
-  if (!isGoogleMapsConfigured()) {
-    return null;
-  }
-
-  assertGoogleConfigured();
-
   const resourceName = placeId.startsWith("places/")
     ? placeId
     : `places/${placeId}`;
@@ -117,4 +105,20 @@ export async function fetchPlaceDisplayDataUncached(
     openingHours: data.regularOpeningHours?.weekdayDescriptions ?? null,
     photos,
   };
+}
+
+/** Postgres-backed Places display fetch. Misses hit the Places API. */
+export async function fetchPlaceDisplayDataUncached(
+  placeId: string,
+): Promise<PlaceDisplayData | null> {
+  if (!isGoogleMapsConfigured()) {
+    return null;
+  }
+
+  return rememberCache(
+    googlePlaceDisplayCacheKey(placeId),
+    GOOGLE_MAPS_CACHE_MS,
+    () => fetchPlaceDisplayDataFromGoogle(placeId),
+    { persist: (value) => value != null },
+  );
 }

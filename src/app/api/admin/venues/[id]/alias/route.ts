@@ -21,7 +21,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
   try {
     await clearVenueAlias(id);
-    invalidatePublicVenueCache();
+    await invalidatePublicVenueCache();
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof VenueCanonicalError) {

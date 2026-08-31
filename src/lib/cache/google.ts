@@ -3,6 +3,8 @@ import { cacheLife } from "next/cache";
 /** ~30 days - Google Places / Static Maps are costly; traffic must not drive API usage. */
 export const GOOGLE_MAPS_CACHE_SECONDS = 60 * 60 * 24 * 30;
 
+export const GOOGLE_MAPS_CACHE_MS = GOOGLE_MAPS_CACHE_SECONDS * 1000;
+
 /** ~90 days - hard expiration for cached Google payloads. */
 export const GOOGLE_MAPS_CACHE_EXPIRE_SECONDS = 60 * 60 * 24 * 90;
 
@@ -28,6 +30,14 @@ export function applyGoogleMapsCacheLife() {
 
 export function googlePlaceCacheKey(placeId: string) {
   return placeId.replace(/^places\//, "");
+}
+
+export function googlePlaceDetailsCacheKey(placeId: string) {
+  return `google:place:details:${googlePlaceCacheKey(placeId)}`;
+}
+
+export function googlePlaceDisplayCacheKey(placeId: string) {
+  return `google:place:display:${googlePlaceCacheKey(placeId)}`;
 }
 
 export function googleStaticMapCacheKey(

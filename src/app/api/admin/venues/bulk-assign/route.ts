@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (response.updated > 0) {
-      invalidatePublicVenueCache();
+      await invalidatePublicVenueCache();
     }
 
     venueMatchingLog("bulk-assign response", {

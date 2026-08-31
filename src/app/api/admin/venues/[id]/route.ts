@@ -93,8 +93,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     .where(eq(venues.id, id))
     .returning();
 
-  invalidateGoogleCachesForVenue(existing);
-  invalidatePublicVenueCache(updated);
+  await invalidateGoogleCachesForVenue(existing);
+  await invalidatePublicVenueCache(updated);
 
   return NextResponse.json({ venue: updated });
 }

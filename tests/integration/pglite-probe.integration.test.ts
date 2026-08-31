@@ -19,6 +19,7 @@ describe("PGLite probe", () => {
 
     expect(tables.rows.map((row) => row.tablename)).toContain("events");
     expect(tables.rows.map((row) => row.tablename)).toContain("organizations");
+    expect(tables.rows.map((row) => row.tablename)).toContain("cache_entries");
   });
 
   it("supports gen_random_uuid defaults used by the current schema", async () => {

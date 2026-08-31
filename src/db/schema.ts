@@ -392,6 +392,17 @@ export const syncLogs = pgTable(
   (table) => [index("sync_logs_created_at_idx").on(table.createdAt)],
 );
 
+/** Generic durable KV. `ttl` is the expiry timestamp, not a duration. */
+export const cacheEntries = pgTable(
+  "cache_entries",
+  {
+    key: text("key").primaryKey(),
+    value: jsonb("value").$type<unknown>().notNull(),
+    ttl: timestamp("ttl", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("cache_entries_ttl_idx").on(table.ttl)],
+);
+
 export const venuesRelations = relations(venues, ({ many, one }) => ({
   events: many(events),
   canonicalVenue: one(venues, {
@@ -507,6 +518,8 @@ export type NewEventOverride = typeof eventOverrides.$inferInsert;
 export type EventOccurrenceRow = typeof eventOccurrences.$inferSelect;
 export type NewEventOccurrenceRow = typeof eventOccurrences.$inferInsert;
 export type SyncLog = typeof syncLogs.$inferSelect;
+export type CacheEntry = typeof cacheEntries.$inferSelect;
+export type NewCacheEntry = typeof cacheEntries.$inferInsert;
 
 export type SourceWithOrganization = Source & {
   organization: Organization | null;

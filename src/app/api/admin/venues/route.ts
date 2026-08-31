@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     })
     .returning();
 
-  invalidatePublicVenueCache();
+  await invalidatePublicVenueCache();
 
   return NextResponse.json({ venue: created }, { status: 201 });
 }

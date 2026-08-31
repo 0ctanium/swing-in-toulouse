@@ -1,4 +1,9 @@
 import { env, isGoogleMapsConfigured } from "@/env";
+import {
+  GOOGLE_MAPS_CACHE_MS,
+  googlePlaceDetailsCacheKey,
+} from "@/lib/cache/google";
+import { rememberCache } from "@/lib/cache/store";
 
 const TOULOUSE_CENTER = { latitude: 43.604652, longitude: 1.444209 };
 const AUTocomplete_RADIUS_METERS = 50_000;
@@ -324,10 +329,12 @@ function streetAddressFromComponents(
   return route ?? null;
 }
 
-export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
-  assertGoogleConfigured();
-
-  const resourceName = placeId.startsWith("places/") ? placeId : `places/${placeId}`;
+async function fetchPlaceDetailsFromGoogle(
+  placeId: string,
+): Promise<PlaceDetails> {
+  const resourceName = placeId.startsWith("places/")
+    ? placeId
+    : `places/${placeId}`;
   const response = await fetch(
     `https://places.googleapis.com/v1/${resourceName}`,
     {
@@ -336,6 +343,7 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
         "X-Goog-FieldMask":
           "id,displayName,formattedAddress,location,addressComponents,shortFormattedAddress",
       },
+      cache: "no-store",
     },
   );
 
@@ -385,6 +393,16 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
     latitude,
     longitude,
   };
+}
+
+export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
+  assertGoogleConfigured();
+
+  return rememberCache(
+    googlePlaceDetailsCacheKey(placeId),
+    GOOGLE_MAPS_CACHE_MS,
+    () => fetchPlaceDetailsFromGoogle(placeId),
+  );
 }
 
 export async function geocodeAddress(query: string): Promise<PlaceDetails> {
