@@ -30,6 +30,10 @@ export function organizerUrl(slug: string) {
   return absoluteUrl(`/organisateur/${slug}`);
 }
 
+export function embedAgendaUrl(integrationId: string) {
+  return absoluteUrl(`/embed/${integrationId}`);
+}
+
 /** @deprecated Use organizerUrl */
 export function organizationUrl(slug: string) {
   return organizerUrl(slug);

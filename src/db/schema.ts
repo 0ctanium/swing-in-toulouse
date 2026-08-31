@@ -15,6 +15,7 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
+import type { IntegrationTheme } from "@/lib/integrations/theme";
 import type { IcalStoredData } from "@/lib/ical/types";
 import type { EventOffer } from "@/lib/events/offers";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
@@ -41,6 +42,17 @@ export const sourceTypeEnum = pgEnum("source_type", [
 export const organizationCategoryEnum = pgEnum("organization_category", [
   "school",
   "association",
+]);
+
+export const customDomainStatusEnum = pgEnum("custom_domain_status", [
+  "none",
+  "pending",
+  "verified",
+  "failed",
+]);
+
+export const integrationTypeEnum = pgEnum("integration_type", [
+  "agenda_embed",
 ]);
 
 export const venueCategoryEnum = pgEnum("venue_category", [
@@ -137,6 +149,7 @@ export const organizations = pgTable(
     dances: text("dances").array().$type<OrganizationDance[]>(),
     socialLinks: jsonb("social_links").$type<OrganizationSocialLinks>(),
     isActive: boolean("is_active").notNull().default(true),
+    integrationsQuota: integer("integrations_quota").notNull().default(0),
     clerkOrganizationId: text("clerk_organization_id").unique(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -153,6 +166,53 @@ export const organizations = pgTable(
     index("organizations_clerk_organization_id_idx").on(
       table.clerkOrganizationId,
     ),
+  ],
+);
+
+export type { IntegrationTheme } from "@/lib/integrations/theme";
+
+export type IntegrationBaseFilters = {
+  category?: string[];
+  venue?: string[];
+  org?: string[];
+};
+
+export const integrations = pgTable(
+  "integrations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    type: integrationTypeEnum("type").notNull().default("agenda_embed"),
+    isActive: boolean("is_active").notNull().default(true),
+    customDomain: text("custom_domain"),
+    customDomainStatus: customDomainStatusEnum("custom_domain_status")
+      .notNull()
+      .default("none"),
+    customDomainVerifiedAt: timestamp("custom_domain_verified_at", {
+      withTimezone: true,
+    }),
+    customDomainAddedAt: timestamp("custom_domain_added_at", {
+      withTimezone: true,
+    }),
+    theme: jsonb("theme").$type<IntegrationTheme>(),
+    baseFilters: jsonb("base_filters").$type<IntegrationBaseFilters>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("integrations_organization_id_idx").on(table.organizationId),
+    index("integrations_active_idx").on(table.isActive),
+    uniqueIndex("integrations_custom_domain_idx")
+      .on(table.customDomain)
+      .where(sql`${table.customDomain} is not null`),
   ],
 );
 
@@ -409,6 +469,14 @@ export const organizationsRelations = relations(organizations, ({ one, many }) =
   }),
   sources: many(sources),
   events: many(events),
+  integrations: many(integrations),
+}));
+
+export const integrationsRelations = relations(integrations, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [integrations.organizationId],
+    references: [organizations.id],
+  }),
 }));
 
 export const sourcesRelations = relations(sources, ({ one, many }) => ({
@@ -488,6 +556,12 @@ export type Organization = typeof organizations.$inferSelect;
 export type NewOrganization = typeof organizations.$inferInsert;
 export type OrganizationCategory =
   (typeof organizationCategoryEnum.enumValues)[number];
+export type CustomDomainStatus =
+  (typeof customDomainStatusEnum.enumValues)[number];
+export type Integration = typeof integrations.$inferSelect;
+export type NewIntegration = typeof integrations.$inferInsert;
+export type IntegrationType =
+  (typeof integrationTypeEnum.enumValues)[number];
 export type Source = typeof sources.$inferSelect;
 export type NewSource = typeof sources.$inferInsert;
 export type SourceType = (typeof sourceTypeEnum.enumValues)[number];

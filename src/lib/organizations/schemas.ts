@@ -44,6 +44,7 @@ export const organizationWriteSchema = z.object({
     .nullable()
     .optional(),
   isActive: z.boolean().optional(),
+  integrationsQuota: z.number().int().min(0).max(20).optional(),
 });
 
 export const organizationPatchSchema = organizationWriteSchema.partial();

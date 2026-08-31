@@ -9,6 +9,51 @@ export type AgendaFilters = {
   org: string[];
 };
 
+export type AgendaBaseFilters = Partial<AgendaFilters>;
+
+export const emptyAgendaFilters: AgendaFilters = {
+  category: [],
+  venue: [],
+  org: [],
+};
+
+export function isFilterDimensionLocked(
+  key: keyof AgendaFilters,
+  baseFilters?: AgendaBaseFilters,
+) {
+  const values = baseFilters?.[key];
+  return Array.isArray(values) && values.length > 0;
+}
+
+export function mergeAgendaFilters(
+  userFilters: AgendaFilters,
+  baseFilters?: AgendaBaseFilters,
+): AgendaFilters {
+  if (!baseFilters) {
+    return userFilters;
+  }
+
+  return {
+    category: baseFilters.category ?? userFilters.category,
+    venue: baseFilters.venue ?? userFilters.venue,
+    org: baseFilters.org ?? userFilters.org,
+  };
+}
+
+export function applyAgendaFilterPatch(
+  userFilters: AgendaFilters,
+  patch: Partial<AgendaFilters>,
+  baseFilters?: AgendaBaseFilters,
+): AgendaFilters {
+  const nextFilters = { ...userFilters, ...patch };
+
+  if (!baseFilters) {
+    return nextFilters;
+  }
+
+  return mergeAgendaFilters(nextFilters, baseFilters);
+}
+
 export const agendaFilterParsers = {
   category: parseAsArrayOf(parseAsString),
   venue: parseAsArrayOf(parseAsString),

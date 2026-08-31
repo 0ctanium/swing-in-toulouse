@@ -87,6 +87,7 @@ function emptyFormState() {
     socialLinks: emptySocialLinks(),
     venueId: "",
     isActive: true,
+    integrationsQuota: 0,
   };
 }
 
@@ -101,6 +102,7 @@ function formStateFromOrganization(organization: AdminOrganizationRow) {
     socialLinks: socialLinksFromOrganization(organization.socialLinks),
     venueId: organization.venueId ?? "",
     isActive: organization.isActive,
+    integrationsQuota: organization.integrationsQuota,
   };
 }
 
@@ -217,6 +219,7 @@ export function OrganizationFormDialog({
   const [socialLinks, setSocialLinks] = useState(emptySocialLinks());
   const [venueId, setVenueId] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [integrationsQuota, setIntegrationsQuota] = useState(0);
 
   const pending = createOrganization.isPending || updateOrganization.isPending;
   const canSubmit = Boolean(name.trim() && slug.trim());
@@ -230,15 +233,28 @@ export function OrganizationFormDialog({
     const nextState = organization
       ? formStateFromOrganization(organization)
       : emptyFormState();
-    setName(nextState.name);
-    setSlug(nextState.slug);
-    setDescription(nextState.description);
-    setWebsite(nextState.website);
-    setCategory(nextState.category);
-    setDances(nextState.dances);
-    setSocialLinks(nextState.socialLinks);
-    setVenueId(nextState.venueId);
-    setIsActive(nextState.isActive);
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+
+      setName(nextState.name);
+      setSlug(nextState.slug);
+      setDescription(nextState.description);
+      setWebsite(nextState.website);
+      setCategory(nextState.category);
+      setDances(nextState.dances);
+      setSocialLinks(nextState.socialLinks);
+      setVenueId(nextState.venueId);
+      setIsActive(nextState.isActive);
+      setIntegrationsQuota(nextState.integrationsQuota);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [open, organization]);
 
   function handleNameChange(nextName: string) {
@@ -277,6 +293,7 @@ export function OrganizationFormDialog({
       },
       venueId: venueId || null,
       isActive,
+      integrationsQuota,
     };
 
     try {
@@ -446,6 +463,29 @@ export function OrganizationFormDialog({
               onCheckedChange={setIsActive}
               disabled={pending}
             />
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-lg border px-3 py-3">
+            <Label htmlFor="organization-integrations-quota">
+              Quota d&apos;intégrations
+            </Label>
+            <Input
+              id="organization-integrations-quota"
+              type="number"
+              min={0}
+              max={20}
+              value={integrationsQuota}
+              onChange={(event) =>
+                setIntegrationsQuota(
+                  Math.max(0, Math.min(20, Number(event.target.value) || 0)),
+                )
+              }
+              disabled={pending}
+            />
+            <p className="text-muted-foreground text-xs">
+              Nombre maximum d&apos;intégrations (agenda embarqué, domaine
+              personnalisé). Mettez 0 pour désactiver l&apos;option payante.
+            </p>
           </div>
 
           <DialogFooter>

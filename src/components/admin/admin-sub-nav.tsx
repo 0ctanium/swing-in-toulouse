@@ -29,6 +29,11 @@ const navItems: NavItem[] = [
   },
   { href: "/admin/sources", label: "Sources", prefix: "/admin/sources" },
   {
+    href: "/admin/integration",
+    label: "Intégration",
+    prefix: "/admin/integration",
+  },
+  {
     href: "/admin/settings",
     label: "Réglages",
     prefix: "/admin/settings",

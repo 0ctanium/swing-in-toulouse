@@ -16,7 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import {
   agendaFilterClientParsers,
-  hasActiveAgendaFilters,
+  applyAgendaFilterPatch,
+  isFilterDimensionLocked,
+  mergeAgendaFilters,
+  type AgendaBaseFilters,
   type AgendaFilters,
 } from "@/lib/events/agenda-filters";
 import type { AgendaFilterOptions } from "@/lib/events/agenda-filter-options";
@@ -25,12 +28,20 @@ import { useAgendaFilterOptions } from "@/lib/events/use-agenda-filter-options";
 type AgendaFiltersBarProps = {
   filters: AgendaFilters;
   onFiltersChange: (filters: Partial<AgendaFilters>) => void;
+  baseFilters?: AgendaBaseFilters;
 };
 
-function countActiveFilterDimensions(filters: AgendaFilters) {
-  return [filters.category, filters.venue, filters.org].filter(
-    (values) => values.length > 0,
-  ).length;
+function countActiveFilterDimensions(
+  filters: AgendaFilters,
+  baseFilters?: AgendaBaseFilters,
+) {
+  return (["category", "venue", "org"] as const).filter((key) => {
+    if (isFilterDimensionLocked(key, baseFilters)) {
+      return false;
+    }
+
+    return filters[key].length > 0;
+  }).length;
 }
 
 type AgendaFiltersFieldsProps = {
@@ -38,6 +49,7 @@ type AgendaFiltersFieldsProps = {
   data: AgendaFilterOptions;
   isLoading?: boolean;
   onFiltersChange: (filters: Partial<AgendaFilters>) => void;
+  baseFilters?: AgendaBaseFilters;
 };
 
 function AgendaFiltersFields({
@@ -45,54 +57,61 @@ function AgendaFiltersFields({
   data,
   isLoading = false,
   onFiltersChange,
+  baseFilters,
 }: AgendaFiltersFieldsProps) {
-  const activeFilters = hasActiveAgendaFilters(filters);
+  const activeFilters = countActiveFilterDimensions(filters, baseFilters) > 0;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="grid gap-3 sm:grid-cols-3">
-        <GroupedFilterMultiSelect
-          label="Catégorie"
-          values={filters.category}
-          placeholder="Toutes les catégories"
-          groups={data.categoryGroups}
-          isLoading={isLoading}
-          onChange={(category) => {
-            onFiltersChange({ category });
-            posthog.capture("agenda_filter_applied", {
-              filter_type: "category",
-              values: category,
-            });
-          }}
-        />
-        <GroupedFilterMultiSelect
-          label="Lieu"
-          values={filters.venue}
-          placeholder="Tous les lieux"
-          options={data.venues}
-          isLoading={isLoading}
-          onChange={(venue) => {
-            onFiltersChange({ venue });
-            posthog.capture("agenda_filter_applied", {
-              filter_type: "venue",
-              values: venue,
-            });
-          }}
-        />
-        <GroupedFilterMultiSelect
-          label="Organisateur"
-          values={filters.org}
-          placeholder="Tous les organisateurs"
-          options={data.organizations}
-          isLoading={isLoading}
-          onChange={(org) => {
-            onFiltersChange({ org });
-            posthog.capture("agenda_filter_applied", {
-              filter_type: "organizer",
-              values: org,
-            });
-          }}
-        />
+        {isFilterDimensionLocked("category", baseFilters) ? null : (
+          <GroupedFilterMultiSelect
+            label="Catégorie"
+            values={filters.category}
+            placeholder="Toutes les catégories"
+            groups={data.categoryGroups}
+            isLoading={isLoading}
+            onChange={(category) => {
+              onFiltersChange({ category });
+              posthog.capture("agenda_filter_applied", {
+                filter_type: "category",
+                values: category,
+              });
+            }}
+          />
+        )}
+        {isFilterDimensionLocked("venue", baseFilters) ? null : (
+          <GroupedFilterMultiSelect
+            label="Lieu"
+            values={filters.venue}
+            placeholder="Tous les lieux"
+            options={data.venues}
+            isLoading={isLoading}
+            onChange={(venue) => {
+              onFiltersChange({ venue });
+              posthog.capture("agenda_filter_applied", {
+                filter_type: "venue",
+                values: venue,
+              });
+            }}
+          />
+        )}
+        {isFilterDimensionLocked("org", baseFilters) ? null : (
+          <GroupedFilterMultiSelect
+            label="Organisateur"
+            values={filters.org}
+            placeholder="Tous les organisateurs"
+            options={data.organizations}
+            isLoading={isLoading}
+            onChange={(org) => {
+              onFiltersChange({ org });
+              posthog.capture("agenda_filter_applied", {
+                filter_type: "organizer",
+                values: org,
+              });
+            }}
+          />
+        )}
       </div>
       {activeFilters ? (
         <Button
@@ -101,7 +120,19 @@ function AgendaFiltersFields({
           size="sm"
           className="h-8 w-fit px-2 text-muted-foreground"
           onClick={() => {
-            onFiltersChange({ category: [], venue: [], org: [] });
+            const cleared: Partial<AgendaFilters> = {};
+
+            if (!isFilterDimensionLocked("category", baseFilters)) {
+              cleared.category = [];
+            }
+            if (!isFilterDimensionLocked("venue", baseFilters)) {
+              cleared.venue = [];
+            }
+            if (!isFilterDimensionLocked("org", baseFilters)) {
+              cleared.org = [];
+            }
+
+            onFiltersChange(cleared);
             posthog.capture("agenda_filter_cleared");
           }}
         >
@@ -131,6 +162,7 @@ export function useAgendaFiltersState() {
 export function AgendaFiltersBar({
   filters,
   onFiltersChange,
+  baseFilters,
 }: AgendaFiltersBarProps) {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const { data, isPending, isError, refetch } = useAgendaFilterOptions();
@@ -150,7 +182,7 @@ export function AgendaFiltersBar({
     );
   }
 
-  const activeFilterCount = countActiveFilterDimensions(filters);
+  const activeFilterCount = countActiveFilterDimensions(filters, baseFilters);
 
   return (
     <>
@@ -179,6 +211,7 @@ export function AgendaFiltersBar({
               filters={filters}
               data={filterData}
               isLoading={isLoading}
+              baseFilters={baseFilters}
               onFiltersChange={(nextFilters) => {
                 onFiltersChange(nextFilters);
               }}
@@ -192,6 +225,7 @@ export function AgendaFiltersBar({
           filters={filters}
           data={filterData}
           isLoading={isLoading}
+          baseFilters={baseFilters}
           onFiltersChange={onFiltersChange}
         />
       </div>
@@ -199,7 +233,11 @@ export function AgendaFiltersBar({
   );
 }
 
-export function AgendaFiltersBarSkeleton() {
+export function AgendaFiltersBarSkeleton({
+  baseFilters,
+}: {
+  baseFilters?: AgendaBaseFilters;
+}) {
   return (
     <>
       <div className="sm:hidden">
@@ -215,6 +253,7 @@ export function AgendaFiltersBarSkeleton() {
           filters={{ category: [], venue: [], org: [] }}
           data={emptyFilterOptions}
           isLoading={true}
+          baseFilters={baseFilters}
           onFiltersChange={() => void 0}
         />
       </div>
@@ -222,14 +261,17 @@ export function AgendaFiltersBarSkeleton() {
   );
 }
 
-export function useAgendaFilterContext() {
+export function useAgendaFilterContext(baseFilters?: AgendaBaseFilters) {
   const [filters, setFilters] = useAgendaFiltersState();
   const { data: filterOptions } = useAgendaFilterOptions();
+  const effectiveFilters = mergeAgendaFilters(filters, baseFilters);
 
   return {
-    filters,
-    setFilters,
+    filters: effectiveFilters,
+    setFilters: (nextFilters: Partial<AgendaFilters>) =>
+      setFilters(applyAgendaFilterPatch(filters, nextFilters, baseFilters)),
     filterOptions,
     venueSlugById: filterOptions?.venueSlugById ?? {},
+    baseFilters,
   };
 }

@@ -33,6 +33,9 @@ export const env = createEnv({
     QSTASH_NEXT_SIGNING_KEY: z.string(),
     GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
     BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
+    VERCEL_TOKEN: z.string().min(1).optional(),
+    VERCEL_PROJECT_ID: z.string().min(1).optional(),
+    VERCEL_TEAM_ID: z.string().min(1).optional(),
     CLERK_SECRET_KEY: z.string().min(1),
     PROJECTION_MONTHS_AHEAD: z
       .number()
@@ -60,6 +63,9 @@ export const env = createEnv({
     QSTASH_NEXT_SIGNING_KEY: process.env.QSTASH_NEXT_SIGNING_KEY,
     GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
+    VERCEL_TOKEN: process.env.VERCEL_TOKEN,
+    VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID,
+    VERCEL_TEAM_ID: process.env.VERCEL_TEAM_ID,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:

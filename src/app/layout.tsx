@@ -3,17 +3,11 @@ import { DM_Sans, Fraunces } from "next/font/google";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AppClerkProvider } from "@/components/clerk-provider";
-import { SiteFooter } from "@/components/layout/site-footer";
 import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
-import { AdminModeBanner } from "@/components/admin/admin-mode-banner";
-import { SiteHeader } from "@/components/layout/site-header";
-import { JsonLd } from "@/components/seo/json-ld";
-import { siteWebSiteJsonLd } from "@/lib/seo/structured-data";
 import { siteConfig } from "@/lib/site";
 
 import "./globals.css";
-import { Suspense } from "react";
 
 const dmSans = DM_Sans({
   variable: "--font-sans",
@@ -80,23 +74,10 @@ export default function RootLayout({
         className="flex min-h-full flex-col antialiased"
         suppressHydrationWarning
       >
-        <JsonLd data={siteWebSiteJsonLd()} />
         <SpeedInsights />
         <AppClerkProvider>
           <ThemeProvider>
-            <Providers>
-              <SiteHeader />
-              <main
-                className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10"
-                suppressHydrationWarning
-              >
-                {children}
-              </main>
-              <SiteFooter />
-              <Suspense>
-                <AdminModeBanner />
-              </Suspense>
-            </Providers>
+            <Providers>{children}</Providers>
           </ThemeProvider>
         </AppClerkProvider>
       </body>

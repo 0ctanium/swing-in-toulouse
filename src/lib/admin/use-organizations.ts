@@ -17,6 +17,7 @@ export type OrganizationMutationInput = {
   category?: OrganizationCategory | null;
   venueId?: string;
   isActive?: boolean;
+  integrationsQuota?: number;
 };
 
 async function createOrganization(input: OrganizationWriteInput) {

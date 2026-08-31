@@ -1,12 +1,11 @@
 import { and, asc, count, eq, isNull, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { organizations, sources, venues } from "@/db/schema";
+import { integrations, organizations, sources, venues } from "@/db/schema";
 import type { OrganizationCategory } from "@/db/schema";
 import type { OrganizationDance } from "@/lib/organizations/dances";
 import type { OrganizationSocialLinks } from "@/lib/organizations/social-links";
 import { computeEffectiveOrganizationEventCounts } from "@/lib/organizations/effective-organization";
-import { generateOrganizationSlug } from "@/lib/slug";
 
 export type AdminOrganizationRow = {
   id: string;
@@ -21,6 +20,8 @@ export type AdminOrganizationRow = {
   venueName: string | null;
   venueSlug: string | null;
   isActive: boolean;
+  integrationsQuota: number;
+  integrationCount: number;
   sourceCount: number;
   eventCount: number;
 };
@@ -59,7 +60,8 @@ export async function resolveUniqueOrganizationSlug(
 }
 
 export async function listAdminOrganizations(): Promise<AdminOrganizationRow[]> {
-  const [organizationRows, sourceCountRows, eventCounts] = await Promise.all([
+  const [organizationRows, sourceCountRows, integrationCountRows, eventCounts] =
+    await Promise.all([
     db.query.organizations.findMany({
       orderBy: asc(organizations.name),
       with: {
@@ -79,11 +81,21 @@ export async function listAdminOrganizations(): Promise<AdminOrganizationRow[]> 
       .from(sources)
       .where(sql`${sources.organizationId} is not null`)
       .groupBy(sources.organizationId),
+    db
+      .select({
+        organizationId: integrations.organizationId,
+        value: count(),
+      })
+      .from(integrations)
+      .groupBy(integrations.organizationId),
     computeEffectiveOrganizationEventCounts(),
   ]);
 
   const sourceCounts = new Map(
     sourceCountRows.map((row) => [row.organizationId!, Number(row.value)]),
+  );
+  const integrationCounts = new Map(
+    integrationCountRows.map((row) => [row.organizationId, Number(row.value)]),
   );
 
   return organizationRows.map((organization) => ({
@@ -99,6 +111,8 @@ export async function listAdminOrganizations(): Promise<AdminOrganizationRow[]> 
     venueName: organization.venue?.name ?? null,
     venueSlug: organization.venue?.slug ?? null,
     isActive: organization.isActive,
+    integrationsQuota: organization.integrationsQuota,
+    integrationCount: integrationCounts.get(organization.id) ?? 0,
     sourceCount: sourceCounts.get(organization.id) ?? 0,
     eventCount: eventCounts.get(organization.id) ?? 0,
   }));

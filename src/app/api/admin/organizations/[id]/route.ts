@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { organizations } from "@/db/schema";
 import { assertPlatformAdminApi } from "@/lib/admin/auth";
 import { invalidatePublicOrganizerCache } from "@/lib/cache/invalidate";
+import { clearOrganizationIntegrationDomains } from "@/lib/integrations/teardown";
 import {
   getSelectableVenueById,
   resolveUniqueOrganizationSlug,
@@ -64,6 +65,15 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     slug = await resolveUniqueOrganizationSlug(parsed.data.slug.trim(), id);
   }
 
+  const revokesIntegrations =
+    parsed.data.integrationsQuota !== undefined &&
+    parsed.data.integrationsQuota === 0 &&
+    existing.integrationsQuota > 0;
+
+  if (revokesIntegrations) {
+    await clearOrganizationIntegrationDomains(id);
+  }
+
   const [updated] = await db
     .update(organizations)
     .set({
@@ -95,6 +105,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         : {}),
       ...(parsed.data.isActive !== undefined
         ? { isActive: parsed.data.isActive }
+        : {}),
+      ...(parsed.data.integrationsQuota !== undefined
+        ? { integrationsQuota: parsed.data.integrationsQuota }
         : {}),
     })
     .where(eq(organizations.id, id))

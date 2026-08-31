@@ -23,7 +23,7 @@ import {
 import { normalizeOrganizationDances } from "@/lib/organizations/dances";
 import { normalizeOrganizationSocialLinks } from "@/lib/organizations/social-links";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;
@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
         normalizeOrganizationSocialLinks(parsed.data.socialLinks) ?? null,
       venueId,
       isActive: parsed.data.isActive ?? true,
+      integrationsQuota: parsed.data.integrationsQuota ?? 0,
     })
     .returning();
 

@@ -6,7 +6,6 @@ import posthog from "posthog-js";
 import {
   AgendaCalendar,
   AgendaCalendarSkeleton,
-  CalendarSkeleton,
 } from "@/components/events/agenda-calendar";
 import {
   AgendaFiltersBar,
@@ -16,7 +15,19 @@ import {
 import { CompactPlanningView } from "@/components/events/compact-planning-view";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  clampAgendaMode,
+  clampViewMode,
+  getAgendaModeToggleOptions,
+  getViewModeToggleOptions,
+  mergeAgendaDisplayConfig,
+  resolveAgendaPreferencesForDisplay,
+  shouldShowAgendaModeToggle,
+  shouldShowViewModeToggle,
+  type AgendaDisplayConfig,
+} from "@/lib/events/agenda-display-config";
 import { filterAgendaOccurrences } from "@/lib/events/agenda-filters";
+import type { AgendaBaseFilters } from "@/lib/events/agenda-filters";
 import {
   defaultAgendaPreferences,
   type AgendaMode,
@@ -121,56 +132,99 @@ function PlanningList({ filters, venueSlugById }: PlanningListProps) {
 
 type AgendaViewProps = {
   initialPreferences?: AgendaPreferences;
+  baseFilters?: AgendaBaseFilters;
+  displayConfig?: Partial<AgendaDisplayConfig>;
+  persistPreferences?: boolean;
 };
 
 export function AgendaView({
   initialPreferences = defaultAgendaPreferences,
+  baseFilters,
+  displayConfig: displayConfigInput,
+  persistPreferences = true,
 }: AgendaViewProps) {
-  const { filters, setFilters, venueSlugById } = useAgendaFilterContext();
+  const displayConfig = useMemo(
+    () => mergeAgendaDisplayConfig(displayConfigInput),
+    [displayConfigInput],
+  );
+  const resolvedInitialPreferences = useMemo(
+    () =>
+      resolveAgendaPreferencesForDisplay(initialPreferences, displayConfig),
+    [initialPreferences, displayConfig],
+  );
+  const viewModeOptions = useMemo(
+    () => getViewModeToggleOptions(displayConfig),
+    [displayConfig],
+  );
+  const agendaModeOptions = useMemo(
+    () => getAgendaModeToggleOptions(displayConfig),
+    [displayConfig],
+  );
+  const showViewModeToggle = shouldShowViewModeToggle(displayConfig);
+  const showAgendaModeToggle = shouldShowAgendaModeToggle(displayConfig);
+
+  const { filters, setFilters, venueSlugById } =
+    useAgendaFilterContext(baseFilters);
   const [viewMode, setViewMode] = useState<ViewMode>(
-    initialPreferences.viewMode,
+    resolvedInitialPreferences.viewMode,
   );
   const [agendaMode, setAgendaMode] = useState<AgendaMode>(
-    initialPreferences.agendaMode,
+    resolvedInitialPreferences.agendaMode,
   );
 
   useEffect(() => {
+    if (!persistPreferences) {
+      return;
+    }
+
     writeAgendaPreferencesCookie({ viewMode, agendaMode });
-  }, [viewMode, agendaMode]);
+  }, [viewMode, agendaMode, persistPreferences]);
+
+  useEffect(() => {
+    setViewMode((current) => clampViewMode(current, displayConfig));
+    setAgendaMode((current) => clampAgendaMode(current, displayConfig));
+  }, [displayConfig]);
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      <AgendaFiltersBar
-        filters={filters}
-        onFiltersChange={(nextFilters) => {
-          void setFilters(nextFilters);
-        }}
-      />
-
-      <div className="flex flex-wrap items-center gap-2">
-        <ViewToggle
-          value={viewMode}
-          options={[
-            { value: "agenda", label: "Agenda" },
-            { value: "planning", label: "Planning" },
-          ]}
-          onChange={(value) => {
-            setViewMode(value as ViewMode);
-            posthog.capture("agenda_view_changed", { view: value });
+      {displayConfig.showFilters ? (
+        <AgendaFiltersBar
+          filters={filters}
+          baseFilters={baseFilters}
+          onFiltersChange={(nextFilters) => {
+            void setFilters(nextFilters);
           }}
         />
+      ) : null}
 
-        {viewMode === "agenda" ? (
-          <ViewToggle
-            value={agendaMode}
-            options={[
-              { value: "month", label: "Mois" },
-              { value: "4-weeks", label: "4 sem." },
-            ]}
-            onChange={(value) => setAgendaMode(value as AgendaMode)}
-          />
-        ) : null}
-      </div>
+      {showViewModeToggle || showAgendaModeToggle ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {showViewModeToggle ? (
+            <ViewToggle
+              value={viewMode}
+              options={viewModeOptions}
+              onChange={(value) => {
+                const nextViewMode = clampViewMode(
+                  value as ViewMode,
+                  displayConfig,
+                );
+                setViewMode(nextViewMode);
+                posthog.capture("agenda_view_changed", { view: nextViewMode });
+              }}
+            />
+          ) : null}
+
+          {viewMode === "agenda" && showAgendaModeToggle ? (
+            <ViewToggle
+              value={agendaMode}
+              options={agendaModeOptions}
+              onChange={(value) =>
+                setAgendaMode(clampAgendaMode(value as AgendaMode, displayConfig))
+              }
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       {viewMode === "planning" ? (
         <PlanningList filters={filters} venueSlugById={venueSlugById} />
@@ -187,46 +241,60 @@ export function AgendaView({
 
 export function AgendaViewSkeleton({
   preferences,
+  baseFilters,
+  displayConfig: displayConfigInput,
 }: {
   preferences?: AgendaPreferences | null;
+  baseFilters?: AgendaBaseFilters;
+  displayConfig?: Partial<AgendaDisplayConfig>;
 }) {
+  const displayConfig = mergeAgendaDisplayConfig(displayConfigInput);
+  const resolvedPreferences = preferences
+    ? resolveAgendaPreferencesForDisplay(preferences, displayConfig)
+    : null;
+  const viewModeOptions = getViewModeToggleOptions(displayConfig);
+  const agendaModeOptions = getAgendaModeToggleOptions(displayConfig);
+  const showViewModeToggle = shouldShowViewModeToggle(displayConfig);
+  const showAgendaModeToggle = shouldShowAgendaModeToggle(displayConfig);
+
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      <AgendaFiltersBarSkeleton />
+      {displayConfig.showFilters ? (
+        <AgendaFiltersBarSkeleton baseFilters={baseFilters} />
+      ) : null}
 
-      {preferences ? (
+      {resolvedPreferences ? (
         <>
-          <div className="flex flex-wrap items-center gap-2">
-            <ViewToggle
-              value={preferences.viewMode}
-              options={[
-                { value: "agenda", label: "Agenda" },
-                { value: "planning", label: "Planning" },
-              ]}
-              onChange={() => void 0}
-            />
+          {showViewModeToggle || showAgendaModeToggle ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {showViewModeToggle ? (
+                <ViewToggle
+                  value={resolvedPreferences.viewMode}
+                  options={viewModeOptions}
+                  onChange={() => void 0}
+                />
+              ) : null}
 
-            {preferences.viewMode === "agenda" ? (
-              <ViewToggle
-                value={preferences.agendaMode}
-                options={[
-                  { value: "month", label: "Mois" },
-                  { value: "4-weeks", label: "4 sem." },
-                ]}
-                onChange={() => void 0}
-              />
-            ) : null}
-          </div>
+              {resolvedPreferences.viewMode === "agenda" &&
+              showAgendaModeToggle ? (
+                <ViewToggle
+                  value={resolvedPreferences.agendaMode}
+                  options={agendaModeOptions}
+                  onChange={() => void 0}
+                />
+              ) : null}
+            </div>
+          ) : null}
 
-          {preferences.viewMode === "planning" ? (
+          {resolvedPreferences.viewMode === "planning" ? (
             <PlanningListSkeleton />
           ) : (
-            <AgendaCalendarSkeleton mode={preferences.agendaMode} />
+            <AgendaCalendarSkeleton mode={resolvedPreferences.agendaMode} />
           )}
         </>
       ) : (
         <div className="flex flex-col gap-4">
-          <Skeleton className="h-10 w-48" />
+          {showViewModeToggle ? <Skeleton className="h-10 w-48" /> : null}
           <Skeleton className="h-24 w-full" />
         </div>
       )}

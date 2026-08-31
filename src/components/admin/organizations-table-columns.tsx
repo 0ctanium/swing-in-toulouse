@@ -173,6 +173,25 @@ export function createOrganizationsTableColumns({
         ),
     },
     {
+      accessorKey: "integrationsQuota",
+      header: "Intégrations",
+      cell: ({ row }) => {
+        const { integrationsQuota, integrationCount } = row.original;
+
+        if (integrationsQuota <= 0) {
+          return <Badge variant="secondary">Désactivées</Badge>;
+        }
+
+        return (
+          <div className="flex flex-col gap-1">
+            <Badge variant="outline">
+              {integrationCount}/{integrationsQuota}
+            </Badge>
+          </div>
+        );
+      },
+    },
+    {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => {
