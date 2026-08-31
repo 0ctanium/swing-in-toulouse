@@ -21,6 +21,10 @@ import {
 } from "@/lib/events/confirmation";
 import { eventUrl } from "@/lib/site";
 import { rebuildOccurrencesForMasters } from "@/lib/events/occurrence-projector";
+import {
+  invalidatePublicCacheForChangedEvents,
+  sourceSyncHasPublicChanges,
+} from "@/lib/cache/invalidate";
 
 import { hasIcalDataChanges, hasIcalRevisionChanges } from "./changes";
 import { fetchAndParseIcalFeed, parseIcalContent } from "./parser";
@@ -59,11 +63,13 @@ async function resolveUniqueSlug(baseSlug: string, uid: string) {
   return `${baseSlug}-${suffix}`;
 }
 
+type ChangedEvent = { masterId: string; slug: string };
+
 async function upsertEvent(
   source: SourceWithOrganization,
   normalized: NormalizedEvent,
   stats: UpsertStats,
-): Promise<string | undefined> {
+): Promise<ChangedEvent | undefined> {
   const uid = resolveEventUid(normalized.uid);
   const sourceUid = normalized.uid;
   const baseSlug = generateEventSlug(
@@ -154,14 +160,15 @@ async function upsertEvent(
       .where(eq(events.id, existing.id));
 
     stats.updated += 1;
-    return existing.id;
+    return { masterId: existing.id, slug: existing.slug };
   }
 
   const [created] = await db.insert(events).values(values).returning({
     id: events.id,
+    slug: events.slug,
   });
   stats.created += 1;
-  return created.id;
+  return { masterId: created.id, slug: created.slug };
 }
 
 async function cancelMissingEvents(
@@ -169,7 +176,7 @@ async function cancelMissingEvents(
   activeSourceUids: string[],
   stats: UpsertStats,
 ) {
-  const cancelledMasterIds: string[] = [];
+  const cancelledMasterIds: ChangedEvent[] = [];
 
   if (activeSourceUids.length === 0) {
     return cancelledMasterIds;
@@ -182,7 +189,13 @@ async function cancelMissingEvents(
       isNotNull(events.sourceUid),
       eq(events.status, "published"),
     ),
-    columns: { id: true, sourceUid: true, sequence: true, confirmedAt: true },
+    columns: {
+      id: true,
+      slug: true,
+      sourceUid: true,
+      sequence: true,
+      confirmedAt: true,
+    },
   });
 
   const now = new Date();
@@ -204,10 +217,24 @@ async function cancelMissingEvents(
       .where(eq(events.id, event.id));
 
     stats.cancelled += 1;
-    cancelledMasterIds.push(event.id);
+    cancelledMasterIds.push({ masterId: event.id, slug: event.slug });
   }
 
   return cancelledMasterIds;
+}
+
+async function persistIcalHttpValidators(
+  sourceId: string,
+  etag: string | null,
+  lastModified: string | null,
+) {
+  await db
+    .update(sources)
+    .set({
+      icalHttpEtag: etag,
+      icalHttpLastModified: lastModified,
+    })
+    .where(eq(sources.id, sourceId));
 }
 
 async function loadSourceEvents(source: SourceWithOrganization) {
@@ -216,7 +243,10 @@ async function loadSourceEvents(source: SourceWithOrganization) {
       throw new Error("URL iCal manquante pour cette source.");
     }
 
-    return fetchAndParseIcalFeed(source.url);
+    return fetchAndParseIcalFeed(source.url, {
+      etag: source.icalHttpEtag,
+      lastModified: source.icalHttpLastModified,
+    });
   }
 
   if (source.type === "ical-file") {
@@ -225,7 +255,10 @@ async function loadSourceEvents(source: SourceWithOrganization) {
     }
 
     const content = await readIcalBlob(source.icalBlobUrl);
-    return parseIcalContent(content);
+    return {
+      status: "ok" as const,
+      events: await parseIcalContent(content),
+    };
   }
 
   if (source.type === "manual") {
@@ -244,30 +277,55 @@ export async function syncSource(source: SourceWithOrganization) {
   };
 
   try {
-    const parsedEvents = await loadSourceEvents(source);
+    const feed = await loadSourceEvents(source);
+
+    if (feed.status === "not-modified") {
+      await db.insert(syncLogs).values({
+        sourceId: source.id,
+        status: "success",
+        message: `Feed unchanged (304) for ${source.name}`,
+        eventsCreated: 0,
+        eventsUpdated: 0,
+        eventsCancelled: 0,
+      });
+
+      return stats;
+    }
+
+    const parsedEvents = feed.events;
     const activeSourceUids: string[] = [];
-    const changedMasterIds = new Set<string>();
+    const changedEvents: ChangedEvent[] = [];
 
     for (const parsedEvent of parsedEvents) {
       activeSourceUids.push(parsedEvent.uid);
-      const masterId = await upsertEvent(source, parsedEvent, stats);
-      if (masterId) {
-        changedMasterIds.add(masterId);
+      const changed = await upsertEvent(source, parsedEvent, stats);
+      if (changed) {
+        changedEvents.push(changed);
       }
     }
 
-    const cancelledMasterIds = await cancelMissingEvents(
+    const cancelledEvents = await cancelMissingEvents(
       source.id,
       activeSourceUids,
       stats,
     );
 
-    for (const masterId of cancelledMasterIds) {
-      changedMasterIds.add(masterId);
+    changedEvents.push(...cancelledEvents);
+
+    if (changedEvents.length > 0) {
+      await rebuildOccurrencesForMasters(
+        changedEvents.map((event) => event.masterId),
+      );
     }
 
-    if (changedMasterIds.size > 0) {
-      await rebuildOccurrencesForMasters([...changedMasterIds]);
+    if (sourceSyncHasPublicChanges(stats)) {
+      invalidatePublicCacheForChangedEvents(
+        [...new Set(changedEvents.map((event) => event.slug))],
+      );
+    }
+
+    if (source.type === "ical" && "etag" in feed) {
+      await persistIcalHttpValidators(source.id, feed.etag, feed.lastModified);
     }
 
     await db.insert(syncLogs).values({

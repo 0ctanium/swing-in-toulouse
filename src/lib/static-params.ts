@@ -1,7 +1,7 @@
 import { isNull } from "drizzle-orm";
 
 import { db } from "@/db";
-import { events, organizations, venues } from "@/db/schema";
+import { organizations, venues } from "@/db/schema";
 import { listPublishedDanceTagsUncached } from "@/lib/event-category-tags/dance-pages";
 import { TIME_PRESET_SLUGS } from "@/lib/event-collections/time-presets";
 import { listPublishedTagCollectionsUncached } from "@/lib/event-collections/tag-pages";
@@ -10,15 +10,6 @@ import { listEventArchiveMonthsUncached } from "@/lib/events/queries";
 /** Cache Components require at least one param at build time. */
 function withBuildPlaceholder<T>(params: T[], placeholder: T): T[] {
   return params.length > 0 ? params : [placeholder];
-}
-
-export async function listStaticEventSlugs(): Promise<string[]> {
-  const rows = await db
-    .select({ slug: events.slug })
-    .from(events)
-    .where(isNull(events.canonicalEventId));
-
-  return rows.map((row) => row.slug);
 }
 
 export async function listStaticOrganizerSlugs(): Promise<string[]> {
@@ -50,14 +41,6 @@ export async function listStaticArchiveMonthParams(): Promise<
     year: String(year),
     month: String(month).padStart(2, "0"),
   }));
-}
-
-export async function generateEventStaticParams() {
-  const slugs = await listStaticEventSlugs();
-  return withBuildPlaceholder(
-    slugs.map((slug) => ({ slug })),
-    { slug: "__build_placeholder__" },
-  );
 }
 
 export async function generateOrganizerStaticParams() {

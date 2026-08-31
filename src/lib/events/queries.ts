@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm";
 
 import { db } from "@/db";
-import { CACHE_TAGS } from "@/lib/cache/tags";
+import { CACHE_TAGS, eventSlugCacheTag, relatedEventsCacheTag } from "@/lib/cache/tags";
 import {
   PUBLIC_PAGE_REVALIDATE,
   SITEMAP_REVALIDATE,
@@ -545,7 +545,7 @@ async function resolveEventBySlugCached(slug: string) {
     stale: PUBLIC_PAGE_REVALIDATE,
     revalidate: PUBLIC_PAGE_REVALIDATE,
   });
-  cacheTag(CACHE_TAGS.events, `event-slug-${slug}`);
+  cacheTag(eventSlugCacheTag(slug));
 
   return resolveEventBySlugUncached(slug);
 }
@@ -583,7 +583,7 @@ async function getEventBySlugCached(slug: string) {
     stale: PUBLIC_PAGE_REVALIDATE,
     revalidate: PUBLIC_PAGE_REVALIDATE,
   });
-  cacheTag(CACHE_TAGS.events, `event-slug-${slug}`);
+  cacheTag(eventSlugCacheTag(slug));
 
   return getEventBySlugUncached(slug);
 }
@@ -828,7 +828,7 @@ async function getRelatedEventsCached(
     stale: PUBLIC_PAGE_REVALIDATE,
     revalidate: PUBLIC_PAGE_REVALIDATE,
   });
-  cacheTag(CACHE_TAGS.events, `related-events-${slug}`);
+  cacheTag(CACHE_TAGS.events, relatedEventsCacheTag(slug));
 
   return getRelatedEventsUncached(slug, organizationSlug, venueSlug, limit);
 }

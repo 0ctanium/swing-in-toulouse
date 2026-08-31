@@ -3,20 +3,16 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/db";
 import { sources } from "@/db/schema";
-import { invalidateAllPublicCache } from "@/lib/cache/invalidate";
 import type { SourceSyncStats } from "@/lib/ical/sync";
 import { syncSource, syncSourceById } from "@/lib/ical/sync";
 
 export async function runSourceSync(sourceId: string) {
   try {
     const stats = await syncSourceById(sourceId);
-    invalidateAllPublicCache();
     return { stats, error: null as null };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Synchronisation impossible.";
-
-    invalidateAllPublicCache();
 
     return {
       stats: null,
@@ -60,13 +56,10 @@ export async function syncSourceRecord(
 ) {
   try {
     const stats = await syncSource(source);
-    invalidateAllPublicCache();
     return { stats, error: null as null };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Synchronisation impossible.";
-
-    invalidateAllPublicCache();
 
     return {
       stats: null,

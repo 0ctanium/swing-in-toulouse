@@ -169,6 +169,8 @@ export const sources = pgTable(
     icalFileSize: integer("ical_file_size"),
     icalContentHash: text("ical_content_hash"),
     icalUploadedAt: timestamp("ical_uploaded_at", { withTimezone: true }),
+    icalHttpEtag: text("ical_http_etag"),
+    icalHttpLastModified: text("ical_http_last_modified"),
     organizationId: uuid("organization_id").references(() => organizations.id, {
       onDelete: "set null",
     }),

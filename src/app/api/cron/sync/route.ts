@@ -2,7 +2,6 @@ import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { NextResponse } from "next/server";
 
 import { env, isQStashConfigured } from "@/env";
-import { invalidateAllPublicCache } from "@/lib/cache/invalidate";
 import { syncAllSources } from "@/lib/ical/sync";
 import { asyncGeneratorToArray } from "@/lib/utils";
 
@@ -10,7 +9,6 @@ export const maxDuration = 300;
 
 async function runSync() {
   const results = await asyncGeneratorToArray(syncAllSources());
-  invalidateAllPublicCache();
 
   return NextResponse.json({
     syncedAt: new Date().toISOString(),

@@ -9,3 +9,11 @@ export const CACHE_TAGS = {
   /** Google Static Maps + Places photo media bytes. */
   googleMapsMedia: "google-maps-media",
 } as const;
+
+export function eventSlugCacheTag(slug: string) {
+  return `event-slug-${slug}`;
+}
+
+export function relatedEventsCacheTag(slug: string) {
+  return `related-events-${slug}`;
+}

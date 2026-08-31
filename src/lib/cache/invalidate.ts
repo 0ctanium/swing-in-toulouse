@@ -8,7 +8,11 @@ import {
 } from "@/lib/cache/google";
 import { deleteCacheKeys } from "@/lib/cache/store";
 import { DEFAULT_STATIC_MAP_ZOOM } from "@/lib/google/static-map";
-import { CACHE_TAGS } from "@/lib/cache/tags";
+import {
+  CACHE_TAGS,
+  eventSlugCacheTag,
+  relatedEventsCacheTag,
+} from "@/lib/cache/tags";
 
 const REVALIDATE_PROFILE = "max";
 
@@ -58,6 +62,28 @@ export async function invalidateGoogleCachesForVenue(venue: {
 export function invalidatePublicEventCache() {
   revalidateTag(CACHE_TAGS.events, REVALIDATE_PROFILE);
   revalidateTag(CACHE_TAGS.agendaFilters, REVALIDATE_PROFILE);
+}
+
+export function sourceSyncHasPublicChanges(stats: {
+  created: number;
+  updated: number;
+  cancelled: number;
+}) {
+  return stats.created + stats.updated + stats.cancelled > 0;
+}
+
+/** Listings plus only the event pages that actually changed. */
+export function invalidatePublicCacheForChangedEvents(slugs: string[]) {
+  if (slugs.length === 0) {
+    return;
+  }
+
+  invalidatePublicEventCache();
+
+  for (const slug of slugs) {
+    revalidateTag(eventSlugCacheTag(slug), REVALIDATE_PROFILE);
+    revalidateTag(relatedEventsCacheTag(slug), REVALIDATE_PROFILE);
+  }
 }
 
 export function invalidatePublicOrganizerCache() {

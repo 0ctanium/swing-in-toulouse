@@ -106,6 +106,46 @@ describe("iCal sync workflow", () => {
     expect(blues?.status).toBe("cancelled");
   });
 
+  it("skips parse and public cache invalidation when the feed returns 304", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockImplementationOnce(async () =>
+      new Response(await readFixtureIcs(), {
+        status: 200,
+        headers: {
+          "content-type": "text/calendar",
+          etag: '"feed-v1"',
+        },
+      }),
+    );
+
+    await syncSourceById(FIXTURE_IDS.sourceA);
+
+    const { revalidateTag } = await import("next/cache");
+    vi.mocked(revalidateTag).mockClear();
+
+    fetchMock.mockImplementationOnce(async () => new Response(null, { status: 304 }));
+
+    const stats = await syncSourceById(FIXTURE_IDS.sourceA);
+
+    expect(stats).toEqual({
+      created: 0,
+      updated: 0,
+      unchanged: 0,
+      cancelled: 0,
+    });
+    expect(revalidateTag).not.toHaveBeenCalled();
+
+    const requestInit = fetchMock.mock.calls.at(-1)?.[1] as RequestInit;
+    const headers = new Headers(requestInit.headers);
+    expect(headers.get("If-None-Match")).toBe('"feed-v1"');
+
+    const { db } = await setupIntegrationDb();
+    const importedEvents = await db.query.events.findMany({
+      where: eq(events.sourceId, FIXTURE_IDS.sourceA),
+    });
+    expect(importedEvents).toHaveLength(2);
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
   });

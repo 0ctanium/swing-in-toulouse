@@ -41,14 +41,45 @@ export async function parseIcalContent(content: string): Promise<NormalizedEvent
   return events;
 }
 
-export async function fetchAndParseIcalFeed(calendarUrl: string) {
+export type IcalHttpValidators = {
+  etag?: string | null;
+  lastModified?: string | null;
+};
+
+export type IcalFeedFetchResult =
+  | { status: "not-modified" }
+  | {
+      status: "ok";
+      events: NormalizedEvent[];
+      etag: string | null;
+      lastModified: string | null;
+    };
+
+export async function fetchAndParseIcalFeed(
+  calendarUrl: string,
+  validators: IcalHttpValidators = {},
+): Promise<IcalFeedFetchResult> {
+  const headers: Record<string, string> = {
+    Accept: "text/calendar,text/plain,*/*",
+    "User-Agent": "SwingToulouse/1.0 (calendar-sync)",
+  };
+
+  if (validators.etag) {
+    headers["If-None-Match"] = validators.etag;
+  }
+
+  if (validators.lastModified) {
+    headers["If-Modified-Since"] = validators.lastModified;
+  }
+
   const response = await fetch(calendarUrl, {
-    headers: {
-      Accept: "text/calendar,text/plain,*/*",
-      "User-Agent": "SwingToulouse/1.0 (calendar-sync)",
-    },
+    headers,
     next: { revalidate: 0 },
   });
+
+  if (response.status === 304) {
+    return { status: "not-modified" };
+  }
 
   if (!response.ok) {
     throw new Error(
@@ -57,7 +88,13 @@ export async function fetchAndParseIcalFeed(calendarUrl: string) {
   }
 
   const content = await response.text();
-  return parseIcalContent(content);
+
+  return {
+    status: "ok",
+    events: await parseIcalContent(content),
+    etag: response.headers.get("etag"),
+    lastModified: response.headers.get("last-modified"),
+  };
 }
 
 export { mapVEventToNormalized } from "./extract";
