@@ -58,7 +58,7 @@ export function formatLlmsTxtContent(dances: PublishedDanceTag[]) {
     llmsLink(
       "Contact",
       "/contact",
-      "Formulaire et coordonnées pour signaler une erreur ou contacter l'éditeur.",
+      "Formulaire pour signaler une erreur ou contacter l'éditeur.",
     ),
     "",
     "## Danses à Toulouse",

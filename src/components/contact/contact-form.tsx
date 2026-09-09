@@ -38,6 +38,7 @@ export function ContactForm({ pageContext }: ContactFormProps) {
 
   const nameId = `${formId}-name`;
   const emailId = `${formId}-email`;
+  const phoneId = `${formId}-phone`;
   const organizationId = `${formId}-organization`;
   const topicId = `${formId}-topic`;
   const messageId = `${formId}-message`;
@@ -81,6 +82,19 @@ export function ContactForm({ pageContext }: ContactFormProps) {
           type="email"
           required
           autoComplete="email"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={phoneId}>Téléphone</Label>
+        <Input
+          id={phoneId}
+          name="phone"
+          type="tel"
+          required
+          autoComplete="tel"
+          inputMode="tel"
+          placeholder="06 12 34 56 78"
         />
       </div>
 

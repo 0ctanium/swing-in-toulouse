@@ -16,6 +16,7 @@ function formData(entries: Record<string, string>) {
 const valid = {
   name: "Alice",
   email: "alice@example.com",
+  phone: "06 12 34 56 78",
   topic: "erreur",
   message: "Il manque un événement vendredi au Bikini.",
 };
@@ -28,6 +29,7 @@ describe("parseContactFormData", () => {
       expect(result.data).toEqual({
         name: "Alice",
         email: "alice@example.com",
+        phone: "+33612345678",
         topic: "erreur",
         message: "Il manque un événement vendredi au Bikini.",
       });
@@ -64,6 +66,13 @@ describe("parseContactFormData", () => {
   it("rejects an invalid email", () => {
     const result = parseContactFormData(
       formData({ ...valid, email: "not-an-email" }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an invalid phone number", () => {
+    const result = parseContactFormData(
+      formData({ ...valid, phone: "123" }),
     );
     expect(result.success).toBe(false);
   });

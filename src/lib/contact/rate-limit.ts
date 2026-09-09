@@ -32,9 +32,3 @@ export const contactRateLimiter = createRateLimiter({
   limit: 3,
   windowMs: 10 * 60 * 1000,
 });
-
-/** Phone reveal — a bit looser, still slows naive scrapers. */
-export const phoneRevealRateLimiter = createRateLimiter({
-  limit: 12,
-  windowMs: 10 * 60 * 1000,
-});

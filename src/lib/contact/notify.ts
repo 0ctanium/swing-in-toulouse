@@ -6,7 +6,7 @@ import { siteConfig } from "@/lib/site";
 import { EDITOR_EMAIL } from "./channels";
 import { getEditorPhoneE164 } from "./editor";
 import { escapeHtml, escapeHtmlMultiline } from "./html";
-import { normalizePhoneNumber } from "./phone";
+import { formatPhoneForDisplay, normalizePhoneNumber } from "./phone";
 import { contactTopicLabel, type ContactMessage } from "./schema";
 
 const WHATSAPP_GRAPH_VERSION = "v22.0";
@@ -66,6 +66,7 @@ export function buildContactEmail(message: ContactMessage) {
     `Sujet : ${topic}`,
     `Nom : ${message.name}`,
     `Email : ${message.email}`,
+    `Téléphone : ${formatPhoneForDisplay(message.phone)}`,
     `Organisation : ${organizationLine}`,
     `Page : ${pageLine}`,
     "",
@@ -78,6 +79,7 @@ export function buildContactEmail(message: ContactMessage) {
       <li><strong>Sujet :</strong> ${escapeHtml(topic)}</li>
       <li><strong>Nom :</strong> ${escapeHtml(message.name)}</li>
       <li><strong>Email :</strong> ${escapeHtml(message.email)}</li>
+      <li><strong>Téléphone :</strong> ${escapeHtml(formatPhoneForDisplay(message.phone))}</li>
       <li><strong>Organisation :</strong> ${escapeHtml(organizationLine)}</li>
       <li><strong>Page :</strong> ${escapeHtml(pageLine)}</li>
     </ul>
@@ -94,12 +96,16 @@ export function buildContactEmail(message: ContactMessage) {
   };
 }
 
-/** Message body for WhatsApp template variable {{4}} (newlines flattened). */
+/** WhatsApp template variable {{4}}: caller phone prepended, then the message. */
 export function buildContactNotifyPreview(message: ContactMessage) {
-  return sanitizeWhatsappTemplateParam(
+  const prefix = `Tél. ${formatPhoneForDisplay(message.phone)} — `;
+  const remaining = Math.max(1, 1024 - prefix.length);
+  const body = sanitizeWhatsappTemplateParam(
     message.message.replace(/\s+/g, " "),
-    1024,
+    remaining,
   );
+
+  return sanitizeWhatsappTemplateParam(`${prefix}${body}`, 1024);
 }
 
 /** WhatsApp template variables reject newlines, tabs, empty values, and 4+ spaces. */

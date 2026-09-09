@@ -33,6 +33,7 @@ Si vous utilisez le [formulaire de contact](/contact), les données suivantes so
 
 - nom ;
 - adresse email (pour vous répondre) ;
+- numéro de téléphone (pour vous rappeler) ;
 - organisation, le cas échéant ;
 - sujet et contenu du message ;
 - page du site depuis laquelle vous avez ouvert le formulaire, le cas échéant.

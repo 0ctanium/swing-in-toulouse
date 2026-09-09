@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { ContactChannels } from "@/components/contact/contact-channels";
 import { ContactForm } from "@/components/contact/contact-form";
 import { Skeleton } from "@/components/ui/skeleton";
-import { listPublicContactChannels } from "@/lib/contact/channels";
-import { hasEditorPhone } from "@/lib/contact/editor";
 import { publicMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
 
@@ -41,9 +38,6 @@ async function ContactFormSection({ searchParams }: ContactPageProps) {
 }
 
 export default function ContactPage(props: ContactPageProps) {
-  const channels = listPublicContactChannels();
-  const canRevealPhone = hasEditorPhone();
-
   return (
     <div className="flex flex-col gap-10">
       <div className="max-w-2xl">
@@ -57,31 +51,16 @@ export default function ContactPage(props: ContactPageProps) {
         </p>
       </div>
 
-      <div className="grid gap-10 md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] md:items-start">
-        <section className="flex flex-col gap-3">
-          <h2 className="font-heading text-lg font-semibold">Me joindre</h2>
-          <p className="text-muted-foreground text-sm">
-            {canRevealPhone
-              ? "WhatsApp et le téléphone sont les plus rapides. Le numéro s'affiche seulement si vous le demandez."
-              : "Un email, Instagram, Facebook ou le formulaire à côté suffisent."}
-          </p>
-          <ContactChannels
-            channels={channels}
-            canRevealPhone={canRevealPhone}
-          />
-        </section>
-
-        <section className="flex max-w-xl flex-col gap-3">
-          <h2 className="font-heading text-lg font-semibold">Formulaire</h2>
-          <p className="text-muted-foreground text-sm">
-            Nom, email et message suffisent. Je vous réponds sur l&apos;adresse
-            indiquée.
-          </p>
-          <Suspense fallback={<ContactFormFallback />}>
-            <ContactFormSection {...props} />
-          </Suspense>
-        </section>
-      </div>
+      <section className="flex max-w-xl flex-col gap-3">
+        <h2 className="font-heading text-lg font-semibold">Formulaire</h2>
+        <p className="text-muted-foreground text-sm">
+          Nom, email, téléphone et message suffisent. Je vous réponds sur
+          l&apos;adresse ou le numéro indiqués.
+        </p>
+        <Suspense fallback={<ContactFormFallback />}>
+          <ContactFormSection {...props} />
+        </Suspense>
+      </section>
     </div>
   );
 }

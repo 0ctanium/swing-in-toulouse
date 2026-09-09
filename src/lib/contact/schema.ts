@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { normalizePhoneNumber } from "./phone";
+
 export const CONTACT_TOPICS = [
   { value: "erreur", label: "Une erreur dans l'agenda" },
   { value: "ajout", label: "Ajouter un événement ou une source" },
@@ -25,6 +27,14 @@ export const contactMessageSchema = z.object({
     .trim()
     .min(1, "Indiquez votre email.")
     .email("Email invalide."),
+  phone: z
+    .string()
+    .trim()
+    .min(1, "Indiquez votre numéro de téléphone.")
+    .refine((value) => normalizePhoneNumber(value) !== null, {
+      message: "Numéro de téléphone invalide.",
+    })
+    .transform((value) => normalizePhoneNumber(value)!),
   organization: z
     .string()
     .trim()
@@ -56,6 +66,7 @@ export function parseContactFormData(formData: FormData) {
   return contactMessageSchema.safeParse({
     name: String(formData.get("name") ?? ""),
     email: String(formData.get("email") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
     organization: organization || undefined,
     topic: String(formData.get("topic") ?? ""),
     message: String(formData.get("message") ?? ""),

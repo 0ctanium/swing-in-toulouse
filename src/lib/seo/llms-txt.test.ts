@@ -33,7 +33,7 @@ describe("formatLlmsTxtContent", () => {
     expect(content).not.toContain("](/");
     expect(content).toContain("Langue : fr-FR");
     expect(content).toContain(
-      "- [Contact](http://localhost:3000/contact): Formulaire et coordonnées pour signaler une erreur ou contacter l'éditeur.",
+      "- [Contact](http://localhost:3000/contact): Formulaire pour signaler une erreur ou contacter l'éditeur.",
     );
   });
 });

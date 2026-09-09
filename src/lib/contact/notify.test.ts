@@ -14,6 +14,7 @@ import type { ContactMessage } from "@/lib/contact/schema";
 const message: ContactMessage = {
   name: "Alice <script>",
   email: "alice@example.com",
+  phone: "+33612345678",
   organization: "Swing Club",
   topic: "erreur",
   message: "Le lieu est faux.\nMerci.",
@@ -35,16 +36,19 @@ describe("buildContactEmail", () => {
     expect(email.subject).toContain("Alice <script>");
     expect(email.html).toContain("Alice &lt;script&gt;");
     expect(email.html).not.toContain("<script>");
+    expect(email.html).toContain("alice@example.com");
+    expect(email.html).toContain("06 12 34 56 78");
     expect(email.html).toContain("Le lieu est faux.<br />Merci.");
     expect(email.text).toContain("http://localhost:3000/evenement/bal");
     expect(email.text).toContain("Swing Club");
+    expect(email.text).toContain("06 12 34 56 78");
   });
 });
 
 describe("buildContactNotifyPreview", () => {
-  it("keeps a short single-line preview", () => {
+  it("prepends the caller phone to a single-line message", () => {
     const preview = buildContactNotifyPreview(message);
-    expect(preview).toContain("Le lieu est faux. Merci.");
+    expect(preview).toBe("Tél. 06 12 34 56 78 — Le lieu est faux. Merci.");
     expect(preview).not.toMatch(/[\r\n]/);
   });
 });
@@ -83,7 +87,10 @@ describe("buildWhatsappCloudPayload", () => {
               { type: "text", text: "Alice <script>" },
               { type: "text", text: "Une erreur dans l'agenda" },
               { type: "text", text: "alice@example.com" },
-              { type: "text", text: "Le lieu est faux. Merci." },
+              {
+                type: "text",
+                text: "Tél. 06 12 34 56 78 — Le lieu est faux. Merci.",
+              },
             ],
           },
         ],
