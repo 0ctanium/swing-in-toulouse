@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { GET as getAdminVenues } from "@/app/api/admin/venues/route";
 import { POST as confirmEventRoute } from "@/app/api/admin/events/[id]/confirm/route";
 import { GET as getPublicEvents } from "@/app/api/events/route";
+import { eventOverrides, events } from "@/db/schema";
 
 import { createJsonPostRequest, createTestRequest } from "../helpers/api";
 import {
@@ -149,6 +150,47 @@ describe("admin API auth matrix", () => {
 
       expect(allowed.status).toBe(200);
       expect(denied.status).toBe(401);
+    });
+
+    it("confirms an event assigned to the org only via override", async () => {
+      const overrideEventId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+      const { db } = await setupIntegrationDb();
+
+      await db.insert(events).values({
+        id: overrideEventId,
+        sourceId: FIXTURE_IDS.sourceB,
+        organizationId: null,
+        venueId: FIXTURE_IDS.venue,
+        uid: "override-assigned@swing-toulouse.fr",
+        sourceUid: "override-assigned",
+        slug: "bal-connexion-override",
+        title: "Bal Connexion override",
+        startAt: new Date("2026-06-22T18:00:00.000Z"),
+        endAt: new Date("2026-06-22T21:00:00.000Z"),
+        status: "published",
+      });
+      await db.insert(eventOverrides).values({
+        eventId: overrideEventId,
+        patch: { organizationId: FIXTURE_IDS.orgA },
+      });
+
+      setClerkAuth({
+        userId: "user_org_a",
+        orgId: FIXTURE_CLERK_ORGS.orgA,
+      });
+
+      const response = await confirmEventRoute(
+        createJsonPostRequest(
+          `/api/admin/events/${overrideEventId}/confirm`,
+          {},
+        ),
+        { params: Promise.resolve({ id: overrideEventId }) },
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.event.id).toBe(overrideEventId);
+      expect(body.event.confirmedAt).not.toBeNull();
     });
   });
 

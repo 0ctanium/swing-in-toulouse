@@ -1,10 +1,11 @@
 import { startOfDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { events } from "@/db/schema";
 import type { AdminDataScope } from "@/lib/admin/data-scope";
+import { ownedMasterEventsWhere } from "@/lib/organizations/effective-organization";
 import { isEventConfirmed } from "@/lib/events/confirmation";
 import { loadOverridesForEvents } from "@/lib/events/overrides";
 import type { EventOverridePatch } from "@/lib/events/overrides.types";
@@ -53,9 +54,8 @@ export async function getEventConfirmQueue(
     where:
       scope.mode === "org"
         ? and(
-            isNull(events.canonicalEventId),
+            await ownedMasterEventsWhere(scope.organizationId),
             isNull(events.confirmedAt),
-            eq(events.organizationId, scope.organizationId),
           )
         : and(isNull(events.canonicalEventId), isNull(events.confirmedAt)),
     with: {
@@ -113,10 +113,7 @@ export async function getEventConfirmQueueStats(scope: AdminDataScope) {
   const masters = await db.query.events.findMany({
     where:
       scope.mode === "org"
-        ? and(
-            isNull(events.canonicalEventId),
-            eq(events.organizationId, scope.organizationId),
-          )
+        ? await ownedMasterEventsWhere(scope.organizationId)
         : isNull(events.canonicalEventId),
     columns: {
       id: true,

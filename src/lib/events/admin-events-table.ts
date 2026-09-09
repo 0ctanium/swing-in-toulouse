@@ -1,8 +1,9 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { events } from "@/db/schema";
 import type { AdminDataScope } from "@/lib/admin/data-scope";
+import { ownedMasterEventsWhere } from "@/lib/organizations/effective-organization";
 import { isEventConfirmed } from "@/lib/events/confirmation";
 import {
   NONE_FILTER_VALUE,
@@ -273,10 +274,7 @@ async function loadMasterEvents(scope: AdminDataScope) {
   return db.query.events.findMany({
     where:
       scope.mode === "org"
-        ? and(
-            isNull(events.canonicalEventId),
-            eq(events.organizationId, scope.organizationId),
-          )
+        ? await ownedMasterEventsWhere(scope.organizationId)
         : isNull(events.canonicalEventId),
     with: {
       source: true,
@@ -291,10 +289,17 @@ async function loadMergedMasterEvents(
   scope: AdminDataScope,
 ): Promise<AdminEventRow[]> {
   const rows = (await loadMasterEvents(scope)) as AdminEventRow[];
-  const merged = await mergeMastersWithMasterOverrides(
+  const merged = (await mergeMastersWithMasterOverrides(
     rows as unknown as EventMaster[],
+  )) as unknown as AdminEventRow[];
+
+  if (scope.mode !== "org") {
+    return merged;
+  }
+
+  return merged.filter(
+    (event) => event.organizationId === scope.organizationId,
   );
-  return merged as unknown as AdminEventRow[];
 }
 
 export async function getAdminEventsFilterOptions(

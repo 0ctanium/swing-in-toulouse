@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
-import { events, sources } from "@/db/schema";
+import { sources } from "@/db/schema";
 import {
   getAdminAccessScope,
   getAdminDataScopeOrNull,
@@ -14,6 +14,7 @@ import {
   resolveAdminDataScope,
 } from "@/lib/admin/data-scope";
 import { isPlatformAdmin } from "@/lib/admin/roles";
+import { getEffectiveMasterOrganizationId } from "@/lib/organizations/effective-organization";
 
 export async function isAuthenticated() {
   const scope = await getAdminAccessScope();
@@ -87,12 +88,7 @@ export async function assertOrgScopedApi(): Promise<OrgScopedApiResult> {
 }
 
 export async function getEventOrganizationId(eventId: string) {
-  const event = await db.query.events.findFirst({
-    where: eq(events.id, eventId),
-    columns: { organizationId: true },
-  });
-
-  return event?.organizationId ?? null;
+  return getEffectiveMasterOrganizationId(eventId);
 }
 
 export async function getSourceOrganizationId(sourceId: string) {

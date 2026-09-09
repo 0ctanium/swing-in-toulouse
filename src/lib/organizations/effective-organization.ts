@@ -33,28 +33,57 @@ export async function getEventIdsOverriddenToOrganization(
   return [...eventIds];
 }
 
+/** Master events owned directly or assigned via override to this organization. */
+export async function ownedMasterEventsWhere(organizationId: string) {
+  const overriddenEventIds =
+    await getEventIdsOverriddenToOrganization(organizationId);
+
+  const ownershipFilter =
+    overriddenEventIds.length > 0
+      ? or(
+          eq(events.organizationId, organizationId),
+          inArray(events.id, overriddenEventIds),
+        )
+      : eq(events.organizationId, organizationId);
+
+  return and(isNull(events.canonicalEventId), ownershipFilter);
+}
+
+export async function getEffectiveMasterOrganizationId(eventId: string) {
+  const [event, override] = await Promise.all([
+    db.query.events.findFirst({
+      where: eq(events.id, eventId),
+      columns: { id: true, organizationId: true },
+    }),
+    db.query.eventOverrides.findFirst({
+      where: and(
+        eq(eventOverrides.eventId, eventId),
+        isNull(eventOverrides.occurrenceStartAt),
+      ),
+      columns: { patch: true },
+    }),
+  ]);
+
+  if (!event) {
+    return null;
+  }
+
+  const overrides = new Map<string, string | null>();
+  if (override && override.patch.organizationId !== undefined) {
+    overrides.set(eventId, override.patch.organizationId);
+  }
+
+  return effectiveOrganizationIdForEvent(event, overrides);
+}
+
 export async function fetchMastersForOrganization(
   organizationId: string,
   options?: { includeCancelled?: boolean },
 ) {
-  const overriddenEventIds =
-    await getEventIdsOverriddenToOrganization(organizationId);
-
-  const filters = [isNull(events.canonicalEventId)];
+  const filters = [await ownedMasterEventsWhere(organizationId)];
 
   if (!options?.includeCancelled) {
     filters.push(eq(events.status, "published"));
-  }
-
-  if (overriddenEventIds.length > 0) {
-    filters.push(
-      or(
-        eq(events.organizationId, organizationId),
-        inArray(events.id, overriddenEventIds),
-      )!,
-    );
-  } else {
-    filters.push(eq(events.organizationId, organizationId));
   }
 
   return db.query.events.findMany({
