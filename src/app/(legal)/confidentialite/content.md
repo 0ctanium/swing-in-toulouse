@@ -1,4 +1,4 @@
-*Dernière mise à jour : 31 mai 2026*
+*Dernière mise à jour : 9 septembre 2026*
 
 # Politique de confidentialité et cookies
 
@@ -27,6 +27,18 @@ Lors de votre visite, des données techniques peuvent être enregistrées automa
 
 Aucune donnée permettant de vous identifier directement (nom, email, téléphone) n'est collectée lors d'une navigation standard.
 
+### Formulaire de contact
+
+Si vous utilisez le [formulaire de contact](/contact), les données suivantes sont collectées afin de traiter votre message :
+
+- nom ;
+- adresse email (pour vous répondre) ;
+- organisation, le cas échéant ;
+- sujet et contenu du message ;
+- page du site depuis laquelle vous avez ouvert le formulaire, le cas échéant.
+
+Ces informations sont transmises par email à l'éditeur. Elles ne sont pas enregistrées dans la base de données du site.
+
 ### Préférences d'affichage (agenda)
 
 Si vous personnalisez l'agenda (mode d'affichage, vue calendrier), vos préférences sont mémorisées localement via un cookie fonctionnel (`agenda_preferences`).
@@ -41,12 +53,14 @@ L'accès à l'interface d'administration est réservé à l'éditeur. Un cookie 
 - mesurer l'audience et améliorer le service (statistiques anonymes) ;
 - tester et améliorer la page d'accueil (tests A/B sur la présentation du hero) ;
 - mémoriser vos préférences d'affichage sur l'agenda ;
+- traiter les messages envoyés via le formulaire de contact ;
 - gérer l'accès à l'espace d'administration.
 
 ## 4. Base légale
 
 - **Intérêt légitime** (article 6.1.f du RGPD) : mesure d'audience anonyme, sécurité et amélioration du service ;
 - **Exécution d'une fonctionnalité demandée** : mémorisation des préférences d'affichage ;
+- **Mesures précontractuelles / exécution de votre demande** (article 6.1.b du RGPD) : traitement des messages de contact ;
 - **Intérêt légitime** : protection de l'espace d'administration.
 
 ## 5. Durée de conservation
@@ -54,7 +68,8 @@ L'accès à l'interface d'administration est réservé à l'éditeur. Un cookie 
 - Données de mesure d'audience : 13 mois maximum (recommandation CNIL) ;
 - Cookie identifiant PostHog (`ph_distinct_id`) : 24 mois ;
 - Cookie de préférences agenda : 12 mois ;
-- Cookie de session admin : durée de la session de navigation.
+- Cookie de session admin : durée de la session de navigation ;
+- Messages de contact : conservés dans la messagerie de l'éditeur le temps nécessaire pour y répondre, puis selon les pratiques habituelles de conservation des emails.
 
 ## 6. Destinataires et sous-traitants
 
@@ -62,13 +77,15 @@ Les données peuvent être traitées par les prestataires suivants, agissant en 
 
 - **Vercel Inc.** — hébergement du site web ;
 - **Neon Inc.** — hébergement de la base de données ;
-- **PostHog Inc.** (Union européenne, eu.posthog.com) — mesure d'audience via PostHog.
+- **PostHog Inc.** (Union européenne, eu.posthog.com) — mesure d'audience via PostHog ;
+- **Resend** — envoi des emails du formulaire de contact ;
+- éventuellement **Meta Platforms Ireland Limited** (WhatsApp Cloud API) — notification WhatsApp à l'éditeur lorsqu'un message est reçu.
 
 Ces prestataires n'utilisent vos données que pour fournir leurs services et sont contractuellement tenus de les protéger.
 
 ## 7. Transferts hors Union européenne
 
-Vercel Inc. et Neon Inc. sont établis aux États-Unis. Les données hébergées peuvent faire l'objet de transferts hors UE, encadrés par les clauses contractuelles types de la Commission européenne ou des garanties équivalentes.
+Vercel Inc., Neon Inc. et Resend sont établis hors Union européenne. Les données hébergées ou transmises peuvent faire l'objet de transferts hors UE, encadrés par les clauses contractuelles types de la Commission européenne ou des garanties équivalentes. Les notifications WhatsApp, le cas échéant, sont traitées par Meta Platforms Ireland Limited.
 
 La mesure d'audience est traitée via l'infrastructure européenne de PostHog (Union européenne, eu.posthog.com).
 

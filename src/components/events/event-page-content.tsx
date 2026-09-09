@@ -10,6 +10,7 @@ import {
 import { EventPageActions } from "@/components/events/event-page-actions";
 import { EventListSkeleton } from "@/components/events/event-list-skeleton";
 import { EventRelatedEvents } from "@/components/events/event-related-events";
+import { ContactErrorLink } from "@/components/contact/contact-error-link";
 import { VenueDetailsSection } from "@/components/venues/venue-details-section";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { breadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
@@ -84,6 +85,8 @@ async function EventPageContent({ params }: EventPageContentProps) {
         {event.venue ? (
           <VenueDetailsSection venue={event.venue} linkToVenuePage />
         ) : null}
+
+        <ContactErrorLink page={`/evenement/${event.slug}`} />
 
         <Suspense fallback={<EventListSkeleton cards={2} />}>
           <EventRelatedEvents

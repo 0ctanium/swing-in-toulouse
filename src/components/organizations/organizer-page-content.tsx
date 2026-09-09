@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
+import { ContactErrorLink } from "@/components/contact/contact-error-link";
 import { OrganizerHeader } from "@/components/organizations/organizer-header";
 import { OrganizerUpcomingEvents } from "@/components/organizations/organizer-upcoming-events";
 import { VenueDetailsSection } from "@/components/venues/venue-details-section";
@@ -58,6 +59,8 @@ export async function OrganizerPageContent({
         <Suspense fallback={<EventListSkeleton />}>
           <OrganizerUpcomingEvents slug={slug} />
         </Suspense>
+
+        <ContactErrorLink page={`/organisateur/${organizer.slug}`} />
       </div>
     </>
   );

@@ -55,6 +55,11 @@ export function formatLlmsTxtContent(dances: PublishedDanceTag[]) {
       "/danse",
       "Index des styles de danse swing couverts par l'agenda (Lindy Hop, Blues, Balboa, etc.).",
     ),
+    llmsLink(
+      "Contact",
+      "/contact",
+      "Formulaire et coordonnées pour signaler une erreur ou contacter l'éditeur.",
+    ),
     "",
     "## Danses à Toulouse",
     ...dances.map((dance) =>

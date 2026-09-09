@@ -1,4 +1,4 @@
-*Dernière mise à jour : 31 mai 2026*
+*Dernière mise à jour : 9 septembre 2026*
 
 # Mentions légales
 
@@ -10,7 +10,7 @@ Le site est édité par **Benjamin Lepas-Garguilo**, personne physique, à Toulo
 
 Activité : projet à titre non professionnel — service gratuit, sans vente ni publicité.
 
-Contact : [mail@benjaminlepas.fr](mailto:mail@benjaminlepas.fr)
+Contact : [mail@benjaminlepas.fr](mailto:mail@benjaminlepas.fr) — ou via le [formulaire de contact](/contact).
 
 Conformément à l'article 6-III de la LCEN, en tant qu'activité non professionnelle, l'identification de l'éditeur se limite à son identité et à son adresse de messagerie électronique.
 

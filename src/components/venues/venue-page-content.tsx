@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 
+import { ContactErrorLink } from "@/components/contact/contact-error-link";
 import { EventListSkeleton } from "@/components/events/event-list-skeleton";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { breadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
@@ -60,6 +61,8 @@ export async function VenuePageContent({ params }: VenuePageContentProps) {
         <Suspense fallback={<EventListSkeleton />}>
           <VenueUpcomingEvents slug={venue.slug} />
         </Suspense>
+
+        <ContactErrorLink page={`/lieu/${venue.slug}`} />
       </div>
     </>
   );

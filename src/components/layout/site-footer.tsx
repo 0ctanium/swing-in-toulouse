@@ -28,46 +28,56 @@ export function SiteFooter() {
           </CalendarSubscribeDialog>
         </p>
         <PwaInstallButton />
-        <nav className="flex flex-wrap gap-x-4 gap-y-1">
-          <Link
-            href="/evenements"
-            className="text-foreground underline hover:no-underline"
-          >
-            Événements
-          </Link>
-          <Link
-            href="/organisateurs"
-            className="text-foreground underline hover:no-underline"
-          >
-            Organisateurs
-          </Link>
-          <Link
-            href="/lieux"
-            className="text-foreground underline hover:no-underline"
-          >
-            Lieux
-          </Link>
-          <Link
-            href="/agenda"
-            className="text-foreground underline hover:no-underline"
-          >
-            Agenda
-          </Link>
-          <Link
-            href="/mentions-legales"
-            className="text-foreground underline hover:no-underline"
-          >
-            Mentions légales
-          </Link>
-          <Link
-            href="/confidentialite"
-            className="text-foreground underline hover:no-underline"
-          >
-            Confidentialité
-          </Link>
+        <nav className="flex flex-col gap-1">
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link
+              href="/evenements"
+              className="text-foreground underline hover:no-underline"
+            >
+              Événements
+            </Link>
+            <Link
+              href="/organisateurs"
+              className="text-foreground underline hover:no-underline"
+            >
+              Organisateurs
+            </Link>
+            <Link
+              href="/lieux"
+              className="text-foreground underline hover:no-underline"
+            >
+              Lieux
+            </Link>
+            <Link
+              href="/agenda"
+              className="text-foreground underline hover:no-underline"
+            >
+              Agenda
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link
+              href="/contact"
+              className="text-foreground underline hover:no-underline"
+            >
+              Une erreur ? Contactez-moi
+            </Link>
+            <Link
+              href="/mentions-legales"
+              className="text-foreground underline hover:no-underline"
+            >
+              Mentions légales
+            </Link>
+            <Link
+              href="/confidentialite"
+              className="text-foreground underline hover:no-underline"
+            >
+              Confidentialité
+            </Link>
+          </div>
         </nav>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-foreground">Apparence</span>
+        <div className="flex items-center justify-end gap-3">
+          <span className="sr-only">Apparence</span>
           <ThemeSwitcher />
         </div>
       </div>
