@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { isAuthenticated } from "@/lib/admin/auth";
 import { Suspense } from "react";
+import Link from "next/link";
 
 type AdminLoginPageProps = {
   searchParams: Promise<{ redirect_url?: string }>;
@@ -30,8 +31,14 @@ export default function AdminLoginPage({ searchParams }: AdminLoginPageProps) {
       <div className="text-center">
         <h1 className="font-heading text-2xl font-semibold">Connexion</h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Accès sur invitation uniquement. Contactez l&apos;équipe si vous avez
-          reçu une invitation.
+          Accès sur invitation uniquement.{" "}
+          <Link
+            href="/contact"
+            className="text-primary underline hover:no-underline"
+          >
+            Contactez l&apos;équipe
+          </Link>{" "}
+          si vous avez reçu une invitation.
         </p>
       </div>
       <Suspense>

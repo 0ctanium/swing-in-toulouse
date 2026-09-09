@@ -74,6 +74,13 @@ export function SiteFooter() {
             >
               Confidentialité
             </Link>
+
+            <Link
+              href="/admin"
+              className="text-foreground underline hover:no-underline"
+            >
+              Espace d&apos;administration
+            </Link>
           </div>
         </nav>
         <div className="flex items-center justify-end gap-3">
