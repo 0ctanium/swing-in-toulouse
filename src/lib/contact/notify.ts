@@ -94,11 +94,11 @@ export function buildContactEmail(message: ContactMessage) {
   };
 }
 
-/** Short preview for WhatsApp template variable {{3}}. */
+/** Message body for WhatsApp template variable {{4}} (newlines flattened). */
 export function buildContactNotifyPreview(message: ContactMessage) {
   return sanitizeWhatsappTemplateParam(
     message.message.replace(/\s+/g, " "),
-    120,
+    1024,
   );
 }
 
@@ -142,6 +142,10 @@ export function buildWhatsappCloudPayload(
                 contactTopicLabel(message.topic),
                 80,
               ),
+            },
+            {
+              type: "text",
+              text: sanitizeWhatsappTemplateParam(message.email, 80),
             },
             {
               type: "text",

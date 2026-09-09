@@ -60,7 +60,7 @@ describe("sanitizeWhatsappTemplateParam", () => {
 });
 
 describe("buildWhatsappCloudPayload", () => {
-  it("sends a Cloud API template with name, topic and preview", () => {
+  it("sends a Cloud API template with name, topic, email and message", () => {
     const payload = buildWhatsappCloudPayload(
       message,
       "+33648436020",
@@ -82,6 +82,7 @@ describe("buildWhatsappCloudPayload", () => {
             parameters: [
               { type: "text", text: "Alice <script>" },
               { type: "text", text: "Une erreur dans l'agenda" },
+              { type: "text", text: "alice@example.com" },
               { type: "text", text: "Le lieu est faux. Merci." },
             ],
           },
