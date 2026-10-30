@@ -12,15 +12,63 @@ config:
   scaleway:region: fr-par
   scaleway:zone: fr-par-1
   # swing-toulouse's own Scaleway project (the iCal bucket). Not the platform project.
-  scaleway:projectId: 00000000-0000-0000-0000-000000000000
+  scaleway:projectId: 79620135-0c6a-4dbd-951c-b172f1cdf311
   swing:platformStack: organization/platform/prod
   swing:host: swing-toulouse.fr
-  swing:cloudflareZoneId: '0000000000000000'
+  swing:cloudflareZoneId: "4494575c84d1318b6c82a682429fef68"
   # Grey cloud at first (Traefik sees the real client address). Set true once
   # platform:proxyProtocolTrustedIps / forwardedHeaders cover Cloudflare's ranges.
-  swing:cloudflareProxied: false
+  swing:cloudflareProxied: "false"
   # DNS records are created once this is true: the cut-over step of docs/runbook.md.
-  swing:dns: false
+  swing:dns: "false"
   swing:postgres:
     storageGi: 10
     maxConnections: 30
+  cloudflare:apiToken:
+    secure: v1:5h6Vlb8mj+20hyKX:Fw7ltjw54Qf2kFtTMsUd5MYn0a8E0GFpnjg5+R2boX9jQcsu3NbqQ66ZtG8lGSWuoV8WVL3ratgYpsbga+Nx+P8AoLZH
+  swing-toulouse:env:
+    NEXT_PUBLIC_SITE_URL:
+      secure: v1:owG7XBZ1kMARdh0A:uJ4zmIm+rcsc5h7vqaYVIoQ5FKkHw7o5R8YeB2i4H56IKRaNcnyzr7Q=
+    CRON_SYNC_URL:
+      secure: v1:8rSwF660drd6UJN0:sRiWPXpUGmP9fZsX2T3tdSAiJ5u4kq8RJt5IOc9WnYwJeCrHJsVJ03KPZkcp0B8UrY6KiOD82g==
+    CRON_PROJECT_OCCURRENCES_URL:
+      secure: v1:Wa4f7Th4UaIzSI9x:tVGJhu9eznVWvwaqH2GNddknt2Tlcka0IwFR1kknZuBdYy+Gja4SvClRSST/Wi4DbCPi3Uth2qevu31jmBNXfT6486zMiw==
+    QSTASH_CURRENT_SIGNING_KEY:
+      secure: v1:P8ZPjO1AHRM5mKOU:OJr7HgB1Y0vtf4bG9XiuFCNHMH/jVBD9CTNTKml6cDdSfO9PTdbayCZMG2p0o6B8
+    QSTASH_NEXT_SIGNING_KEY:
+      secure: v1:aR/e2d5C/alc3ca8:e6nQz6+pzvzf6bEuqci54SulAjQk9lP5v0tBQi/rTt2ikj+DYcILNL7gjTWzJeGc
+    QSTASH_TOKEN:
+      secure: v1:JWpsUk/d/Kp7/Drr:NHCtCwcyXQ2/TomKDt7ffdn1ESZNEl7qxFHi6qNu6W/14qAAS6FgqPQsKREUzvKeMhlaDC/CpqiCkM46lHW5Qt5VBwwhWPiwKb7fAW88HzIyOANcNm0/ztSMIPZLz7WQ46ES2C3px92fPRvY8OK4KYXP0PG/RbdVxkqi7t79xQOM79CnJMByC9gXabDvlO+B
+    QSTASH_URL:
+      secure: v1:Pse8LLKxO4fPg8A3:nYhuhQmyqtlubRP5B6Fd0yfFwywoR5NAg5/TfdTQbc/qMw8iSmBMjSABro7x+y7VcxI2
+    GOOGLE_MAPS_API_KEY:
+      secure: v1:ELVtR485JHRE/V7H:QXUfjqy7ZErNGGyDH9QLIGQvNhv6rv7lqW06K/ekmOfvF2KAPskpnXcJ+YIqEi1zIf7h6KrMdQ==
+    NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN:
+      secure: v1:M9cbpR5vXEZeXcIb:6wdh5TJ0j/3mvDm8lkK+4edi4kNndD4WPdnw8UnVja4egfo02iubXvv74qDAdrR4ugLbYC5bEtfayHcN1DdvMw==
+    NEXT_PUBLIC_POSTHOG_HOST:
+      secure: v1:oTbz3wxcwSuzlxWt:/nrmZIa7OZJujRXLoJ6sXMqkQu3nNn6/GVVj/JkSbGD3sxfuMcrf3Q==
+    POSTHOG_API_KEY:
+      secure: v1:XxB8i3giphIxSg4K:ibhkHp6A21PXrxR3z/d8F9uOt4sjZkihvZOgb53nDRtg8C8KuzQLZWo7bsSpTlJn05Eqo/8IHx6rAkH3BKcLqQlSTcY=
+    BLOB_STORE_ID:
+      secure: v1:SGE2oD1bmk6kJ3oO:ByBhnmOPKS5veCjOD8ZmfS5P07XE1KUoPbPWdUaCnyNb4zlp7rY=
+    BLOB_READ_WRITE_TOKEN:
+      secure: v1:Vw+lFEOslS2QF8Vg:YQAcupUPARPsES5uXnRnSnmQ9f2RrfF9uP3za9OUEX6DOdwSd56AytZBfcNMaUtGJMfPibGQo5ZnekjOpzqv/+1OF5gwcEzPt41Yq735
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+      secure: v1:HJdm5aCDAKysWLw5:9XantpfI86fOJ/dAbukZs/GAvOIGuM/cL32roy3AK+GmAf68jBsK9m5xHfYWM8ZhU6pb2rLFTDU=
+    CLERK_SECRET_KEY:
+      secure: v1:9lVz+KnAmiKj7uWj:sm0owurK2sfYP2Vvp2AJWYwJqgiEY6GbNTf2BaGkjAxMWhyy5GKvciINNQpwRkQFgVyacx9Q1xuEi2LrHR9rN88Y
+    RESEND_API_KEY:
+      secure: v1:tMKSA6p92iPIqJBY:rw3+eL9TF9F6E6VYrL7SS1gYmWHA0HQO8cKKLl/teRjZ4wTfuG/C8fctwGPHgCVoN0pEuA==
+    WHATSAPP_WEBHOOK_SECRET:
+      secure: v1:elFR/LaK+fAF1B01:nqhYlz+2YiQ3gpEWybe44lA044TTUC1Bh/6q6fz7yJEx1oLMwVT8lUCMhof+OZ91
+    WHATSAPP_ACCESS_TOKEN:
+      secure: v1:XMpUzeAy0cZ8OYu4:uCZYdsgOSfzfcj9tKUuLuQ51G9bPqGLhC+AtueqfdVsNaoDXQIRdh/eaXP9CzH9AmENHW5K2La3W6/K/JCXXVQdv59H8YN5T+XX1J9FH6P4OhwyVpvBLj9qcopo6nLtaoMUIfcLaUSDs6eOzsmJCqY+tP808Wzhuh8IvV3IHZUqmbsmspLF5cA0RHpqR8jHGLyrM2KF619WwnxMteK67Usa3y852U7yB3w6cDlO3buPq0ZNk2Wx73elfyy/Q4g4BJi7XQmA00ZGO01NZxzYGC2MOrJJ8
+    WHATSAPP_PHONE_NUMBER_ID:
+      secure: v1:pxkCWfF7k/RxbJ8p:jrELoXFt0qsIsxPk2NkRA7RBlmdHQdKOa2+pppRl5zs=
+    WHATSAPP_TEMPLATE_NAME:
+      secure: v1:4mKZdKanQUTZpdDk:jmyfjfwffuo2I8saqFdRSQ2sA5CKtKGBh9Vo8ekbrTjr6A==
+    WHATSAPP_TEMPLATE_LANGUAGE:
+      secure: v1:5XGqGm/unVKX4dQV:lPY9ntgf5qlBawJ3v4z9RhRx
+    CONTACT_NOTIFY_PHONE:
+      secure: v1:AxZLxzWBqbMcpdCN:KcOBYz+H198OP4hNVsylxI6sSOeLhr+x1v+cLQ==
+encryptionsalt: v1:zMt/5tF+Mts=:v1:j8XyHPv5EZvEFmEr:c5AaHQjr3dY800Oaqb1MlK2mmrKp0g==
