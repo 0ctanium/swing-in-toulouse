@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -67,34 +67,53 @@ export function VenueFormDialog({
   onCreated,
 }: VenueFormDialogProps) {
   const isEdit = venue !== null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "Modifier le lieu" : "Nouveau lieu"}</DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Les changements de nom ou d'adresse réinitialisent la confirmation Google. Utilisez Confirmer ou Adresse Google dans le tableau pour valider via Places."
+              : "Créez un lieu principal. Confirmez l'adresse Google ensuite depuis le tableau si le lieu est utilisé par des événements."}
+          </DialogDescription>
+        </DialogHeader>
+        {/* Mounted with the content, so each opening starts from the venue it is given. */}
+        <VenueForm
+          venue={venue}
+          onOpenChange={onOpenChange}
+          onCreated={onCreated}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function VenueForm({
+  onOpenChange,
+  venue,
+  onCreated,
+}: Omit<VenueFormDialogProps, "open">) {
+  const isEdit = venue !== null;
   const createVenue = useCreateVenue();
   const updateVenue = useUpdateVenue(venue?.id ?? "");
   const slugManuallyEdited = useRef(false);
 
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("Toulouse");
-  const [category, setCategory] = useState("");
-  const [locationKind, setLocationKind] = useState<VenueLocationKind>("place");
+  const [initial] = useState(() =>
+    venue ? formStateFromVenue(venue) : emptyFormState(),
+  );
+  const [name, setName] = useState(initial.name);
+  const [slug, setSlug] = useState(initial.slug);
+  const [address, setAddress] = useState(initial.address);
+  const [city, setCity] = useState(initial.city);
+  const [category, setCategory] = useState(initial.category);
+  const [locationKind, setLocationKind] = useState<VenueLocationKind>(
+    initial.locationKind,
+  );
 
   const pending = createVenue.isPending || updateVenue.isPending;
   const canSubmit = Boolean(name.trim() && slug.trim() && city.trim());
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    slugManuallyEdited.current = false;
-    const nextState = venue ? formStateFromVenue(venue) : emptyFormState();
-    setName(nextState.name);
-    setSlug(nextState.slug);
-    setAddress(nextState.address);
-    setCity(nextState.city);
-    setCategory(nextState.category);
-    setLocationKind(nextState.locationKind);
-  }, [open, venue]);
 
   function handleNameChange(nextName: string) {
     setName(nextName);
@@ -135,123 +154,110 @@ export function VenueFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Modifier le lieu" : "Nouveau lieu"}</DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? "Les changements de nom ou d'adresse réinitialisent la confirmation Google. Utilisez Confirmer ou Adresse Google dans le tableau pour valider via Places."
-              : "Créez un lieu principal. Confirmez l'adresse Google ensuite depuis le tableau si le lieu est utilisé par des événements."}
-          </DialogDescription>
-        </DialogHeader>
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="venue-name">Nom</Label>
+        <Input
+          id="venue-name"
+          value={name}
+          onChange={(event) => handleNameChange(event.target.value)}
+          required
+          disabled={pending}
+        />
+      </div>
 
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="venue-name">Nom</Label>
-            <Input
-              id="venue-name"
-              value={name}
-              onChange={(event) => handleNameChange(event.target.value)}
-              required
-              disabled={pending}
-            />
-          </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="venue-slug">Slug</Label>
+        <Input
+          id="venue-slug"
+          value={slug}
+          onChange={(event) => {
+            slugManuallyEdited.current = true;
+            setSlug(event.target.value);
+          }}
+          required
+          disabled={pending || isEdit}
+          placeholder="ex. trac-ecole"
+        />
+        <p className="text-muted-foreground text-xs">
+          URL publique : /lieu/{slug || "…"}
+        </p>
+      </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="venue-slug">Slug</Label>
-            <Input
-              id="venue-slug"
-              value={slug}
-              onChange={(event) => {
-                slugManuallyEdited.current = true;
-                setSlug(event.target.value);
-              }}
-              required
-              disabled={pending || isEdit}
-              placeholder="ex. trac-ecole"
-            />
-            <p className="text-muted-foreground text-xs">
-              URL publique : /lieu/{slug || "…"}
-            </p>
-          </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="venue-address">Adresse</Label>
+        <Input
+          id="venue-address"
+          value={address}
+          onChange={(event) => setAddress(event.target.value)}
+          disabled={pending}
+        />
+      </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="venue-address">Adresse</Label>
-            <Input
-              id="venue-address"
-              value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              disabled={pending}
-            />
-          </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="venue-city">Ville</Label>
+        <Input
+          id="venue-city"
+          value={city}
+          onChange={(event) => setCity(event.target.value)}
+          required
+          disabled={pending}
+        />
+      </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="venue-city">Ville</Label>
-            <Input
-              id="venue-city"
-              value={city}
-              onChange={(event) => setCity(event.target.value)}
-              required
-              disabled={pending}
-            />
-          </div>
+      <div className="flex flex-col gap-2">
+        <Label>Catégorie</Label>
+        <EntitySelect
+          value={category}
+          onChange={setCategory}
+          allowEmpty
+          emptyLabel="— Non catégorisé —"
+          placeholder="Choisir une catégorie…"
+          disabled={pending}
+          options={venueCategoryOptions().map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+        />
+      </div>
 
-          <div className="flex flex-col gap-2">
-            <Label>Catégorie</Label>
-            <EntitySelect
-              value={category}
-              onChange={setCategory}
-              allowEmpty
-              emptyLabel="— Non catégorisé —"
-              placeholder="Choisir une catégorie…"
-              disabled={pending}
-              options={venueCategoryOptions().map((option) => ({
-                value: option.value,
-                label: option.label,
-              }))}
-            />
-          </div>
+      <div className="flex flex-col gap-2">
+        <Label>Type de lieu</Label>
+        <EntitySelect
+          value={locationKind}
+          onChange={(value) =>
+            setLocationKind((value || "place") as VenueLocationKind)
+          }
+          placeholder="Type de lieu…"
+          disabled={pending}
+          options={venueLocationKindOptions().map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+        />
+        <p className="text-muted-foreground text-xs">
+          Lieu précis : adresse Google. Zone : quartier ou ville sans point
+          GPS. Sans adresse : libellé seul.
+        </p>
+      </div>
 
-          <div className="flex flex-col gap-2">
-            <Label>Type de lieu</Label>
-            <EntitySelect
-              value={locationKind}
-              onChange={(value) =>
-                setLocationKind((value || "place") as VenueLocationKind)
-              }
-              placeholder="Type de lieu…"
-              disabled={pending}
-              options={venueLocationKindOptions().map((option) => ({
-                value: option.value,
-                label: option.label,
-              }))}
-            />
-            <p className="text-muted-foreground text-xs">
-              Lieu précis : adresse Google. Zone : quartier ou ville sans point
-              GPS. Sans adresse : libellé seul.
-            </p>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => onOpenChange(false)}
-            >
-              Annuler
-            </Button>
-            <Button type="submit" disabled={pending || !canSubmit}>
-              {pending
-                ? "Enregistrement…"
-                : isEdit
-                  ? "Enregistrer"
-                  : "Créer"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={pending}
+          onClick={() => onOpenChange(false)}
+        >
+          Annuler
+        </Button>
+        <Button type="submit" disabled={pending || !canSubmit}>
+          {pending
+            ? "Enregistrement…"
+            : isEdit
+              ? "Enregistrer"
+              : "Créer"}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }

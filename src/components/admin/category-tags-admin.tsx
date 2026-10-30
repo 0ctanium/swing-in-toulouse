@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 
 import { CategoryTagAliasesDialog } from "@/components/admin/category-tag-aliases-dialog";
 import { CategoryTagPageDialog } from "@/components/admin/category-tag-page-dialog";
@@ -33,9 +33,13 @@ export function CategoryTagsAdmin({ data }: CategoryTagsAdminProps) {
   const [aliasesDialogRow, setAliasesDialogRow] =
     useState<AdminCategoryTagsListResult["rows"][number] | null>(null);
 
-  useEffect(() => {
+  // The URL is the source of truth: a new page's search replaces what was typed. Adjusted during
+  // render rather than in an effect, so the stale input is never shown.
+  const [syncedSearch, setSyncedSearch] = useState(data.search);
+  if (syncedSearch !== data.search) {
+    setSyncedSearch(data.search);
     setSearchInput(data.search);
-  }, [data.search]);
+  }
 
   const pushQuery = useCallback(
     (next: { page?: number; search?: string }) => {

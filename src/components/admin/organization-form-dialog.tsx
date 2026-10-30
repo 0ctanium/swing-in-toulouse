@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
@@ -204,42 +204,56 @@ export function OrganizationFormDialog({
   venues,
 }: OrganizationFormDialogProps) {
   const isEdit = organization !== null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            {isEdit ? "Modifier l'organisateur" : "Nouvel organisateur"}
+          </DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Mettez à jour les informations publiques et le lieu associé."
+              : "Créez un organisateur. Le lieu peut être renseigné plus tard."}
+          </DialogDescription>
+        </DialogHeader>
+        {/* Mounted with the content, so each opening starts from the organization it is given. */}
+        <OrganizationForm
+          organization={organization}
+          venues={venues}
+          onOpenChange={onOpenChange}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function OrganizationForm({
+  onOpenChange,
+  organization,
+  venues,
+}: Omit<OrganizationFormDialogProps, "open">) {
+  const isEdit = organization !== null;
   const createOrganization = useCreateOrganization();
   const updateOrganization = useUpdateOrganization(organization?.id ?? "");
   const slugManuallyEdited = useRef(false);
 
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [website, setWebsite] = useState("");
-  const [category, setCategory] = useState("");
-  const [dances, setDances] = useState<OrganizationDance[]>([]);
-  const [socialLinks, setSocialLinks] = useState(emptySocialLinks());
-  const [venueId, setVenueId] = useState("");
-  const [isActive, setIsActive] = useState(true);
+  const [initial] = useState(() =>
+    organization ? formStateFromOrganization(organization) : emptyFormState(),
+  );
+  const [name, setName] = useState(initial.name);
+  const [slug, setSlug] = useState(initial.slug);
+  const [description, setDescription] = useState(initial.description);
+  const [website, setWebsite] = useState(initial.website);
+  const [category, setCategory] = useState(initial.category);
+  const [dances, setDances] = useState<OrganizationDance[]>(initial.dances);
+  const [socialLinks, setSocialLinks] = useState(initial.socialLinks);
+  const [venueId, setVenueId] = useState(initial.venueId);
+  const [isActive, setIsActive] = useState(initial.isActive);
 
   const pending = createOrganization.isPending || updateOrganization.isPending;
   const canSubmit = Boolean(name.trim() && slug.trim());
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    slugManuallyEdited.current = false;
-    const nextState = organization
-      ? formStateFromOrganization(organization)
-      : emptyFormState();
-    setName(nextState.name);
-    setSlug(nextState.slug);
-    setDescription(nextState.description);
-    setWebsite(nextState.website);
-    setCategory(nextState.category);
-    setDances(nextState.dances);
-    setSocialLinks(nextState.socialLinks);
-    setVenueId(nextState.venueId);
-    setIsActive(nextState.isActive);
-  }, [open, organization]);
 
   function handleNameChange(nextName: string) {
     setName(nextName);
@@ -297,176 +311,161 @@ export function OrganizationFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {isEdit ? "Modifier l'organisateur" : "Nouvel organisateur"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? "Mettez à jour les informations publiques et le lieu associé."
-              : "Créez un organisateur. Le lieu peut être renseigné plus tard."}
-          </DialogDescription>
-        </DialogHeader>
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="organization-name">Nom</Label>
+        <Input
+          id="organization-name"
+          value={name}
+          onChange={(event) => handleNameChange(event.target.value)}
+          required
+          disabled={pending}
+        />
+      </div>
 
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="organization-name">Nom</Label>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="organization-slug">Slug</Label>
+        <Input
+          id="organization-slug"
+          value={slug}
+          onChange={(event) => {
+            slugManuallyEdited.current = true;
+            setSlug(event.target.value);
+          }}
+          required
+          disabled={pending}
+          placeholder="ex. trac-lecole"
+        />
+        <p className="text-muted-foreground text-xs">
+          URL publique : /organisateur/{slug || "…"}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="organization-description">Description</Label>
+        <Textarea
+          id="organization-description"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          disabled={pending}
+          rows={3}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="organization-website">Site web</Label>
+        <Input
+          id="organization-website"
+          type="url"
+          value={website}
+          onChange={(event) => setWebsite(event.target.value)}
+          disabled={pending}
+          placeholder="https://…"
+        />
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-lg border px-3 py-3">
+        <div className="flex flex-col gap-0.5">
+          <Label>Réseaux sociaux</Label>
+          <p className="text-muted-foreground text-xs">
+            Liens optionnels vers les profils publics.
+          </p>
+        </div>
+        {organizationSocialPlatformOptions().map((platform) => (
+          <div key={platform.value} className="flex flex-col gap-2">
+            <Label htmlFor={`organization-social-${platform.value}`}>
+              {platform.label}
+            </Label>
             <Input
-              id="organization-name"
-              value={name}
-              onChange={(event) => handleNameChange(event.target.value)}
-              required
-              disabled={pending}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="organization-slug">Slug</Label>
-            <Input
-              id="organization-slug"
-              value={slug}
-              onChange={(event) => {
-                slugManuallyEdited.current = true;
-                setSlug(event.target.value);
-              }}
-              required
-              disabled={pending}
-              placeholder="ex. trac-lecole"
-            />
-            <p className="text-muted-foreground text-xs">
-              URL publique : /organisateur/{slug || "…"}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="organization-description">Description</Label>
-            <Textarea
-              id="organization-description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              disabled={pending}
-              rows={3}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="organization-website">Site web</Label>
-            <Input
-              id="organization-website"
+              id={`organization-social-${platform.value}`}
               type="url"
-              value={website}
-              onChange={(event) => setWebsite(event.target.value)}
+              value={socialLinks[platform.value]}
+              onChange={(event) =>
+                handleSocialLinkChange(platform.value, event.target.value)
+              }
               disabled={pending}
               placeholder="https://…"
             />
           </div>
+        ))}
+      </div>
 
-          <div className="flex flex-col gap-3 rounded-lg border px-3 py-3">
-            <div className="flex flex-col gap-0.5">
-              <Label>Réseaux sociaux</Label>
-              <p className="text-muted-foreground text-xs">
-                Liens optionnels vers les profils publics.
-              </p>
-            </div>
-            {organizationSocialPlatformOptions().map((platform) => (
-              <div key={platform.value} className="flex flex-col gap-2">
-                <Label htmlFor={`organization-social-${platform.value}`}>
-                  {platform.label}
-                </Label>
-                <Input
-                  id={`organization-social-${platform.value}`}
-                  type="url"
-                  value={socialLinks[platform.value]}
-                  onChange={(event) =>
-                    handleSocialLinkChange(platform.value, event.target.value)
-                  }
-                  disabled={pending}
-                  placeholder="https://…"
-                />
-              </div>
-            ))}
-          </div>
+      <div className="flex flex-col gap-2">
+        <Label>Catégorie</Label>
+        <EntitySelect
+          value={category}
+          onChange={setCategory}
+          allowEmpty
+          emptyLabel="— Non catégorisé —"
+          placeholder="Choisir une catégorie…"
+          disabled={pending}
+          options={organizationCategoryOptions().map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+        />
+      </div>
 
-          <div className="flex flex-col gap-2">
-            <Label>Catégorie</Label>
-            <EntitySelect
-              value={category}
-              onChange={setCategory}
-              allowEmpty
-              emptyLabel="— Non catégorisé —"
-              placeholder="Choisir une catégorie…"
-              disabled={pending}
-              options={organizationCategoryOptions().map((option) => ({
-                value: option.value,
-                label: option.label,
-              }))}
-            />
-          </div>
+      <div className="flex flex-col gap-2">
+        <Label>Danses</Label>
+        <DanceMultiSelect
+          values={dances}
+          onChange={setDances}
+          disabled={pending}
+        />
+        <p className="text-muted-foreground text-xs">
+          Styles enseignés ou proposés par l&apos;organisateur.
+        </p>
+      </div>
 
-          <div className="flex flex-col gap-2">
-            <Label>Danses</Label>
-            <DanceMultiSelect
-              values={dances}
-              onChange={setDances}
-              disabled={pending}
-            />
-            <p className="text-muted-foreground text-xs">
-              Styles enseignés ou proposés par l&apos;organisateur.
-            </p>
-          </div>
+      <div className="flex flex-col gap-2">
+        <Label>Lieu</Label>
+        <VenueSelect
+          venues={venues}
+          value={venueId}
+          onChange={setVenueId}
+          allowEmpty
+          placeholder="Choisir un lieu…"
+          disabled={pending}
+        />
+        <p className="text-muted-foreground text-xs">
+          Seuls les lieux principaux (non alias) peuvent être associés.
+        </p>
+      </div>
 
-          <div className="flex flex-col gap-2">
-            <Label>Lieu</Label>
-            <VenueSelect
-              venues={venues}
-              value={venueId}
-              onChange={setVenueId}
-              allowEmpty
-              placeholder="Choisir un lieu…"
-              disabled={pending}
-            />
-            <p className="text-muted-foreground text-xs">
-              Seuls les lieux principaux (non alias) peuvent être associés.
-            </p>
-          </div>
+      <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
+        <div className="flex flex-col gap-0.5">
+          <Label htmlFor="organization-active">Actif</Label>
+          <p className="text-muted-foreground text-xs">
+            Les organisateurs inactifs restent en base mais peuvent être
+            masqués côté public.
+          </p>
+        </div>
+        <Switch
+          id="organization-active"
+          checked={isActive}
+          onCheckedChange={setIsActive}
+          disabled={pending}
+        />
+      </div>
 
-          <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
-            <div className="flex flex-col gap-0.5">
-              <Label htmlFor="organization-active">Actif</Label>
-              <p className="text-muted-foreground text-xs">
-                Les organisateurs inactifs restent en base mais peuvent être
-                masqués côté public.
-              </p>
-            </div>
-            <Switch
-              id="organization-active"
-              checked={isActive}
-              onCheckedChange={setIsActive}
-              disabled={pending}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => onOpenChange(false)}
-            >
-              Annuler
-            </Button>
-            <Button type="submit" disabled={pending || !canSubmit}>
-              {pending
-                ? "Enregistrement…"
-                : isEdit
-                  ? "Enregistrer"
-                  : "Créer"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={pending}
+          onClick={() => onOpenChange(false)}
+        >
+          Annuler
+        </Button>
+        <Button type="submit" disabled={pending || !canSubmit}>
+          {pending
+            ? "Enregistrement…"
+            : isEdit
+              ? "Enregistrer"
+              : "Créer"}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }

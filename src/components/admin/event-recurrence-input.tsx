@@ -71,6 +71,13 @@ export function EventRecurrenceInput({
     Array<{ startAt: string; endAt: string | null }>
   >([]);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  // Toggling the recurrence clears the preview at once; the effect below fetches the next one.
+  const [previewEnabled, setPreviewEnabled] = useState(value.enabled);
+  if (previewEnabled !== value.enabled) {
+    setPreviewEnabled(value.enabled);
+    setPreview([]);
+    setPreviewError(null);
+  }
 
   const anchorStartAt = useMemo(() => {
     try {
@@ -86,8 +93,6 @@ export function EventRecurrenceInput({
 
   useEffect(() => {
     if (!value.enabled) {
-      setPreview([]);
-      setPreviewError(null);
       return;
     }
 

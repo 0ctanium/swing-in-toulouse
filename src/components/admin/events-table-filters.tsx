@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronDown, Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { GroupedFilterMultiSelect } from "@/components/filters/grouped-filter-multi-select";
 import { Button } from "@/components/ui/button";
@@ -178,9 +178,13 @@ export function EventsTableFilters({
   const [searchInput, setSearchInput] = useState(query.search);
   const activeFilters = hasAdminEventsFilters(query);
 
-  useEffect(() => {
+  // The query is the source of truth: a new search from the URL replaces what was typed.
+  // Adjusted during render rather than in an effect, so the stale input is never shown.
+  const [syncedSearch, setSyncedSearch] = useState(query.search);
+  if (syncedSearch !== query.search) {
+    setSyncedSearch(query.search);
     setSearchInput(query.search);
-  }, [query.search]);
+  }
 
   function submitSearch(event: React.FormEvent) {
     event.preventDefault();

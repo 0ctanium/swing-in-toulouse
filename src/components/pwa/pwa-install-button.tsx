@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { ShareIcon } from "lucide-react";
 
 import {
@@ -29,20 +34,29 @@ function isIos() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
+// Facts about the browser that do not change while the page is open.
+function subscribeToNothing() {
+  return () => {};
+}
+
 export function PwaInstallButton() {
-  const [visible, setVisible] = useState(false);
+  // Hidden on the server and during hydration; the client value is read right after.
+  const standalone = useSyncExternalStore(
+    subscribeToNothing,
+    isStandalone,
+    () => true,
+  );
+  const ios = useSyncExternalStore(subscribeToNothing, isIos, () => false);
+  const [installed, setInstalled] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [instructionsOpen, setInstructionsOpen] = useState(false);
-  const [ios, setIos] = useState(false);
+  const visible = !standalone && !installed;
 
   useEffect(() => {
-    if (isStandalone()) {
+    if (standalone) {
       return;
     }
-
-    setVisible(true);
-    setIos(isIos());
 
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
@@ -50,7 +64,7 @@ export function PwaInstallButton() {
     };
 
     const onAppInstalled = () => {
-      setVisible(false);
+      setInstalled(true);
       setDeferredPrompt(null);
     };
 
@@ -60,7 +74,7 @@ export function PwaInstallButton() {
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
       window.removeEventListener("appinstalled", onAppInstalled);
     };
-  }, []);
+  }, [standalone]);
 
   const handleClick = useCallback(async () => {
     if (deferredPrompt) {
