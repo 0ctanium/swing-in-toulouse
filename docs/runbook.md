@@ -176,6 +176,7 @@ Rollback: Actions → CI → re-run the `deploy` job of the previous green commi
 | Logs                 | `kubectl -n swing-toulouse logs -f deploy/swing-web`                                      |
 | Restart              | `kubectl -n swing-toulouse rollout restart deploy/swing-web`                              |
 | Database shell       | `kubectl -n swing-toulouse exec -it swing-db-1 -- psql -U postgres swing`                 |
+| Drizzle Studio       | `pnpm db:studio:prod` (port-forward to the cluster database, then the studio)                |
 | Run the sync by hand | `curl -X POST https://swing-toulouse.fr/api/cron/sync` is refused (QStash signature); trigger the schedule from the Upstash console |
 | What changed by hand | `cd infra && pnpm preview -c swing:imageTag=<current sha>`                               |
 

@@ -11,6 +11,7 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
+    "db:studio:prod": "bash scripts/db-studio-prod.sh",
     "db:seed": "tsx scripts/seed-data.ts",
     "db:backfill-clerk-organizations": "tsx scripts/backfill-clerk-organizations.ts",
     "sync": "tsx scripts/sync-once.ts",
