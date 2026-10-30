@@ -1,0 +1,26 @@
+# The only stack. Secrets (`pulumi config set --secret`):
+#   cloudflare:apiToken     Zone:DNS:Edit on swing-toulouse.fr
+#   swing:env               the whole runtime environment of the app (see docs/runbook.md § 2.2):
+#                           CLERK_SECRET_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, QSTASH_URL,
+#                           QSTASH_TOKEN, QSTASH_CURRENT_SIGNING_KEY, QSTASH_NEXT_SIGNING_KEY,
+#                           GOOGLE_MAPS_API_KEY, RESEND_API_KEY, CONTACT_*, WHATSAPP_*,
+#                           NEXT_PUBLIC_POSTHOG_HOST, NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN, ...
+#                           DATABASE_URL, DATABASE_DRIVER, S3_* and NEXT_PUBLIC_SITE_URL are added
+#                           by the program.
+# `swing:imageTag` is never committed: CI passes the commit SHA.
+config:
+  scaleway:region: fr-par
+  scaleway:zone: fr-par-1
+  # swing-toulouse's own Scaleway project (the iCal bucket). Not the platform project.
+  scaleway:projectId: 00000000-0000-0000-0000-000000000000
+  swing:platformStack: organization/platform/prod
+  swing:host: swing-toulouse.fr
+  swing:cloudflareZoneId: '0000000000000000'
+  # Grey cloud at first (Traefik sees the real client address). Set true once
+  # platform:proxyProtocolTrustedIps / forwardedHeaders cover Cloudflare's ranges.
+  swing:cloudflareProxied: false
+  # DNS records are created once this is true: the cut-over step of docs/runbook.md.
+  swing:dns: false
+  swing:postgres:
+    storageGi: 10
+    maxConnections: 30

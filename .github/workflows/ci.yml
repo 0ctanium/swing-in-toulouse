@@ -1,0 +1,202 @@
+name: CI
+
+# Tests on every push and pull request. On main, once the repository variable `SCW_REGISTRY`
+# is set (docs/runbook.md § 1), the images are built and pushed to the shared registry and
+# production is deployed with `pulumi up` (infra/).
+#
+# `next build` prerenders pages from the database, so the image build needs one: the images job
+# port-forwards to the cluster's Postgres (kubeconfig from the stack) and hands the URL to the
+# build as a secret over `--network host`. Before the cluster database exists, the repository
+# secret BUILD_DATABASE_URL (Neon, today) is used instead.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PULUMI_VERSION: 3.272.0
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm test:unit
+      - run: pnpm test:component
+      - run: pnpm test:integration
+
+  infra-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+  images:
+    needs: [test, infra-check]
+    if: github.event_name == 'push' && vars.SCW_REGISTRY != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+    env:
+      PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.SCW_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SCW_SECRET_KEY }}
+      AWS_REGION: fr-par
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: infra
+      - uses: pulumi/setup-pulumi@v2
+        with:
+          pulumi-version: ${{ env.PULUMI_VERSION }}
+      - uses: azure/setup-kubectl@v4
+
+      # The cluster database when the stack has been applied once, BUILD_DATABASE_URL otherwise.
+      - name: Database for the build
+        id: db
+        working-directory: infra
+        env:
+          BUILD_DATABASE_URL: ${{ secrets.BUILD_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if pulumi stack output kubeconfig --stack prod --show-secrets > "$RUNNER_TEMP/kubeconfig" 2>/dev/null \
+             && [ -s "$RUNNER_TEMP/kubeconfig" ]; then
+            export KUBECONFIG="$RUNNER_TEMP/kubeconfig"
+            password="$(kubectl -n swing-toulouse get secret swing-db-owner -o jsonpath='{.data.password}' | base64 -d)"
+            echo "::add-mask::$password"
+            kubectl -n swing-toulouse port-forward svc/swing-db-rw 5433:5432 >"$RUNNER_TEMP/port-forward.log" 2>&1 &
+            for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/5433) 2>/dev/null && break; sleep 1; done
+            echo "url=postgresql://swing:${password}@127.0.0.1:5433/swing" >> "$GITHUB_OUTPUT"
+            echo "Building against the cluster database"
+          elif [ -n "$BUILD_DATABASE_URL" ]; then
+            echo "url=$BUILD_DATABASE_URL" >> "$GITHUB_OUTPUT"
+            echo "Building against BUILD_DATABASE_URL"
+          else
+            echo "No database for the build: apply the stack once, or set BUILD_DATABASE_URL" >&2
+            exit 1
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --allow-insecure-entitlement network.host
+      - uses: docker/login-action@v3
+        with:
+          registry: rg.fr-par.scw.cloud
+          username: nologin
+          password: ${{ secrets.SCW_REGISTRY_PUSH_SECRET_KEY }}
+      - name: Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: web
+          platforms: linux/amd64
+          push: true
+          # The build step reaches the port-forward on the runner.
+          allow: network.host
+          network: host
+          tags: |
+            ${{ vars.SCW_REGISTRY }}/swing-in-toulouse:${{ github.sha }}
+            ${{ vars.SCW_REGISTRY }}/swing-in-toulouse:main
+          # Public variables are inlined into the client bundle at build time.
+          build-args: |
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL }}
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_POSTHOG_HOST=${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+            NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=${{ vars.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN }}
+          secrets: |
+            DATABASE_URL=${{ steps.db.outputs.url }}
+            POSTHOG_API_KEY=${{ secrets.POSTHOG_API_KEY }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Schema image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: schema
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ vars.SCW_REGISTRY }}/swing-in-toulouse-schema:${{ github.sha }}
+            ${{ vars.SCW_REGISTRY }}/swing-in-toulouse-schema:main
+          cache-from: type=gha
+
+  deploy:
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    concurrency:
+      group: pulumi-swing-toulouse
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+      SCW_ACCESS_KEY: ${{ secrets.SCW_ACCESS_KEY }}
+      SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
+      SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCW_DEFAULT_ORGANIZATION_ID }}
+      # The S3 state backend reads the Scaleway key under the AWS names.
+      AWS_ACCESS_KEY_ID: ${{ secrets.SCW_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SCW_SECRET_KEY }}
+      AWS_REGION: fr-par
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: infra/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: infra
+      - uses: pulumi/actions@v6
+        with:
+          pulumi-version: ${{ env.PULUMI_VERSION }}
+          command: up
+          work-dir: infra
+          stack-name: prod
+          # No refresh: a schema Job past its TTL would be recreated and re-run.
+          refresh: false
+          config-map: '${{ format(''{{"swing:imageTag": {{"value": "{0}", "secret": false}}}}'', github.sha) }}'

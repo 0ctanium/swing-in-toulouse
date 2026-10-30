@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import type { NextConfig } from "next";
 import { withPostHogConfig } from "@posthog/nextjs-config";
 import createMDX from "@next/mdx";
@@ -13,6 +15,11 @@ const withMDX = createMDX({
 });
 
 const nextConfig: NextConfig = {
+  // Self-contained server for the container image (Dockerfile). The tracing root is pinned so
+  // that `.next/standalone/server.js` lands at the same place whatever the parent directories
+  // contain (Next otherwise walks up looking for a workspace lockfile).
+  output: "standalone",
+  outputFileTracingRoot: path.join(import.meta.dirname),
   cacheComponents: true,
   pageExtensions: ["ts", "tsx", "md", "mdx"],
   serverExternalPackages: ["node-ical", "pg"],

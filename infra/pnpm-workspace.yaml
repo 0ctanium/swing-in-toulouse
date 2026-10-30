@@ -1,0 +1,9 @@
+# Dependencies allowed to run install scripts (pnpm blocks all others). The Pulumi SDKs only run
+# `pulumi plugin install`; the CLI installs plugins on demand anyway.
+allowBuilds:
+  esbuild: true
+  protobufjs: false
+  '@pulumi/cloudflare': false
+  '@pulumi/kubernetes': false
+  '@pulumi/random': false
+  '@pulumiverse/scaleway': false

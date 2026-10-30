@@ -8,3 +8,9 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   utf-8-validate: true
+
+# Install native binaries for both Mac architectures: the shell may run under Rosetta (x64)
+# while Node itself is arm64.
+supportedArchitectures:
+  os: [current]
+  cpu: [current, arm64, x64]

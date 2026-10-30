@@ -79,6 +79,10 @@ See **[docs/donnees.md](./docs/donnees.md)** for how to add organizers, sources,
 
 ## Production
 
-Use any PostgreSQL provider — set `DATABASE_URL` to a standard `postgresql://` connection string.
+The site runs on a shared Scaleway Kapsule cluster (the `platform` repository), described in
+Pulumi TypeScript in [`infra/`](./infra): one namespace, a Postgres with nightly backups, the
+schema job, the web app, its Ingress and DNS. Every merge to `main` builds the images
+(`Dockerfile`) and deploys. Setup, cut-over from Vercel and operations: [docs/runbook.md](./docs/runbook.md).
 
-For QStash in production, set `CRON_SYNC_URL` to your deployed `/api/cron/sync` URL.
+Uploaded iCal files live in an S3 bucket (`S3_*` variables); QStash keeps calling the public
+`/api/cron/*` URLs.

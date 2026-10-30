@@ -1,4 +1,7 @@
-import { drizzle as drizzleNodePostgres } from "drizzle-orm/node-postgres";
+import {
+  drizzle as drizzleNodePostgres,
+  type NodePgDatabase,
+} from "drizzle-orm/node-postgres";
 import { drizzle as drizzleNeonHttp } from "drizzle-orm/neon-http";
 import { neonConfig } from "@neondatabase/serverless";
 
@@ -15,15 +18,24 @@ if (env.NEON_LOCAL) {
 
 const drizzleConfig = {
   schema,
-  logger: env.DATABASE_LOG,
+  // Strictly boolean: with SKIP_ENV_VALIDATION (image builds) the raw string "false" would be
+  // taken for a Logger object and every query would fail with `logQuery is not a function`.
+  logger: env.DATABASE_LOG === true,
 } as const satisfies DrizzleConfig<typeof schema>;
 
-export const db = drizzleNeonHttp(env.DATABASE_URL, drizzleConfig);
-
-// export const db =
-//   env.DATABASE_DRIVER === "node-postgres"
-//     ? drizzleNodePostgres(env.DATABASE_URL, drizzleConfig)
-//     : drizzleNeonHttp(env.DATABASE_URL, drizzleConfig);
+// `node-postgres` for a plain Postgres (production on the cluster, docker-compose); `neon-http`
+// for Neon. Local Neon (`neon_local`) needs DATABASE_DRIVER=neon-http and NEON_LOCAL=true.
+// Typed as the node-postgres database: the two drivers share the query API, and a union type
+// would collapse Drizzle's overloads (`.returning({...})` stops compiling).
+// node-postgres is the default (as in env.ts), and the only one that tolerates the image build,
+// where no DATABASE_URL exists: `pg` connects lazily, at the first query.
+export const db: NodePgDatabase<typeof schema> =
+  env.DATABASE_DRIVER === "neon-http"
+    ? (drizzleNeonHttp(
+        env.DATABASE_URL,
+        drizzleConfig,
+      ) as unknown as NodePgDatabase<typeof schema>)
+    : drizzleNodePostgres(env.DATABASE_URL, drizzleConfig);
 
 export type Db = typeof db;
 export type Transaction = Parameters<Parameters<Db["transaction"]>[0]>[0];

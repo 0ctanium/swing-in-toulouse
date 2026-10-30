@@ -1,0 +1,11 @@
+name: swing-toulouse
+description: swing-toulouse.fr on the shared Kapsule cluster (github.com/0ctanium/platform)
+runtime:
+  name: nodejs
+  options:
+    typescript: false
+    nodeargs: '--import tsx'
+    packagemanager: pnpm
+main: src/index.ts
+backend:
+  url: s3://paselio-pulumi-state?endpoint=s3.fr-par.scw.cloud&region=fr-par&s3ForcePathStyle=true

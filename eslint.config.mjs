@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "tools/**",
+    // Its own package with its own lint (Pulumi program).
+    "infra/**",
   ]),
 ]);
 
