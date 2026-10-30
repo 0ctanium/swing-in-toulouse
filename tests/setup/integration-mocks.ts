@@ -42,6 +42,13 @@ vi.mock("@upstash/qstash/nextjs", () => ({
     handler,
 }));
 
+// Route handlers call connection() before reading the URL (Cache Components); the tests call
+// them outside a request scope, where the real one throws.
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  connection: vi.fn(async () => {}),
+}));
+
 vi.mock("next/headers", () => ({
   cookies: vi.fn(async () => ({
     get: vi.fn(),
