@@ -7,6 +7,22 @@ import { platform, provider } from './platform'
 
 const postgresPods = { 'cnpg.io/cluster': 'swing-db' }
 
+/**
+ * The API server as the pods reach it. On Kapsule it sits in the cluster's private network,
+ * which allow-internet excludes, so it is read from the cluster rather than assumed public.
+ */
+const apiServer = k8s.discovery.v1.EndpointSlice.get('kube-apiserver', 'default/kubernetes', {
+  provider,
+})
+const apiServerPeers = apiServer.endpoints.apply((endpoints) =>
+  endpoints.flatMap((endpoint) =>
+    endpoint.addresses.map((address) => ({ ipBlock: { cidr: `${address}/32` } })),
+  ),
+)
+const apiServerPorts = apiServer.ports.apply((ports) =>
+  ports.map((port) => ({ protocol: 'TCP', port: port.port })),
+)
+
 function policy(name: string, spec: pulumi.Input<k8s.types.input.networking.v1.NetworkPolicySpec>) {
   return new k8s.networking.v1.NetworkPolicy(
     name,
@@ -21,8 +37,8 @@ const namespaceSelector = (name: pulumi.Input<string>) => ({
 
 /**
  * Deny by default, then open exactly what the site needs: DNS, the internet (Clerk, QStash,
- * PostHog, Resend, Google, object storage, the Kubernetes API), Traefik to the web pod, the
- * web pod and the operator to Postgres. Nothing here reaches another project's database.
+ * PostHog, Resend, Google, object storage), Traefik to the web pod, the web pod and the operator
+ * to Postgres, Postgres to the API server. Nothing here reaches another project's database.
  */
 export const policies = [
   policy('default-deny', { podSelector: {}, policyTypes: ['Ingress', 'Egress'] }),
@@ -109,9 +125,14 @@ export const policies = [
     ],
   }),
 
+  // Postgres pods talk to each other, to object storage (allow-internet) and, through the
+  // instance manager, to the API server.
   policy('allow-postgres-egress', {
     podSelector: { matchLabels: postgresPods },
     policyTypes: ['Egress'],
-    egress: [{ to: [{ podSelector: { matchLabels: postgresPods } }] }],
+    egress: [
+      { to: [{ podSelector: { matchLabels: postgresPods } }] },
+      { to: apiServerPeers, ports: apiServerPorts },
+    ],
   }),
 ]
