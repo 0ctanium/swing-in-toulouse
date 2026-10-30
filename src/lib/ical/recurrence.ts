@@ -1,5 +1,5 @@
 import { addMonths, startOfDay, subMonths } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
 import { formatInTimeZone } from "date-fns-tz";
 
@@ -52,7 +52,11 @@ export function getDefaultExpansionWindow(
 }
 
 export function getDefaultFromDate(date = new Date()) {
-  return startOfDay(toZonedTime(date, siteConfig.timezone));
+  // Midnight in the site timezone as an instant, whatever timezone the server runs in.
+  return fromZonedTime(
+    startOfDay(toZonedTime(date, siteConfig.timezone)),
+    siteConfig.timezone,
+  );
 }
 
 async function loadNodeIcal(): Promise<NodeIcalModule> {
