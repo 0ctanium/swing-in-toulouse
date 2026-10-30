@@ -134,7 +134,8 @@ Order matters: data first, DNS last. Lower the TTL of the Vercel records to 300 
 
    It prints how many sources were still on Blob and one line per file; rows already holding a
    key are skipped, so it can be run again. Until it has run, those sources fail to sync with
-   "Fichier iCal encore sur Vercel Blob".
+   "Fichier iCal encore sur Vercel Blob". With only a file or two, skip the script and upload
+   them again from the admin (source → replace the file) once the site runs on the cluster.
 4. **DNS.** In Cloudflare, delete Vercel's `A swing-toulouse.fr` and `CNAME www` (imported in
    step 1.2). Then `pulumi config set swing:dns true` and `pulumi up` (or commit the stack file
    and let the Deploy job run): Pulumi creates the `A` and `CNAME` records on the cluster IP.
