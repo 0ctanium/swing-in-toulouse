@@ -35,7 +35,8 @@ export const web = new k8s.apps.v1.Deployment(
         spec: {
           imagePullSecrets: [{ name: pullSecret.metadata.name }],
           priorityClassName: platform.priorityClasses.app,
-          securityContext: { runAsNonRoot: true },
+          // The image runs as `node` (uid 1000); the kubelet needs the number to enforce runAsNonRoot.
+          securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000 },
           containers: [
             {
               name: 'web',
