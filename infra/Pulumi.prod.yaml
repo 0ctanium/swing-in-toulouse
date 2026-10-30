@@ -23,7 +23,7 @@ config:
   swing:dns: 'true'
   swing:postgres:
     storageGi: 10
-    maxConnections: 30
+    maxConnections: 50
   cloudflare:apiToken:
     secure: v1:5h6Vlb8mj+20hyKX:Fw7ltjw54Qf2kFtTMsUd5MYn0a8E0GFpnjg5+R2boX9jQcsu3NbqQ66ZtG8lGSWuoV8WVL3ratgYpsbga+Nx+P8AoLZH
   swing:env:
