@@ -1,6 +1,7 @@
 import { connection, NextRequest, NextResponse } from "next/server";
 
 import { GOOGLE_MAPS_HTTP_CACHE_CONTROL } from "@/lib/cache/google";
+import { invalidateGooglePlaceCache } from "@/lib/cache/invalidate";
 import { isGoogleMapsConfigured } from "@/env";
 import { getPlacePhotoImage } from "@/lib/google/cached-media";
 
@@ -20,6 +21,9 @@ export async function GET(request: NextRequest) {
 
   const image = await getPlacePhotoImage(name);
   if (!image) {
+    // Photo names expire while the place stays cached for 30 days (Google: "retrieve it from
+    // Places API endpoints"): forget the place, so the next render fetches fresh names.
+    await invalidateGooglePlaceCache(name.split("/")[1]!);
     return new NextResponse(null, { status: 502 });
   }
 

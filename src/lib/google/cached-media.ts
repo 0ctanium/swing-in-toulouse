@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { cache } from "react";
 import { cacheTag } from "next/cache";
 
@@ -61,9 +62,10 @@ async function getPlacePhotoImageCached(
 ): Promise<CachedImagePayload | null> {
   "use cache";
   applyGoogleMapsCacheLife();
+  // Photo names run to 400 characters; tags are capped at 256.
   cacheTag(
     CACHE_TAGS.googleMapsMedia,
-    `${CACHE_TAGS.googleMapsMedia}-photo-${photoName}`,
+    `${CACHE_TAGS.googleMapsMedia}-photo-${createHash("sha1").update(photoName).digest("hex")}`,
   );
 
   if (!isGoogleMapsConfigured() || !PHOTO_NAME_PATTERN.test(photoName)) {
