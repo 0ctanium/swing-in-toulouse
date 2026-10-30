@@ -20,7 +20,7 @@ config:
   # platform:proxyProtocolTrustedIps / forwardedHeaders cover Cloudflare's ranges.
   swing:cloudflareProxied: 'false'
   # DNS records are created once this is true: the cut-over step of docs/runbook.md.
-  swing:dns: 'false'
+  swing:dns: 'true'
   swing:postgres:
     storageGi: 10
     maxConnections: 30
@@ -49,10 +49,6 @@ config:
       secure: v1:oTbz3wxcwSuzlxWt:/nrmZIa7OZJujRXLoJ6sXMqkQu3nNn6/GVVj/JkSbGD3sxfuMcrf3Q==
     POSTHOG_API_KEY:
       secure: v1:XxB8i3giphIxSg4K:ibhkHp6A21PXrxR3z/d8F9uOt4sjZkihvZOgb53nDRtg8C8KuzQLZWo7bsSpTlJn05Eqo/8IHx6rAkH3BKcLqQlSTcY=
-    BLOB_STORE_ID:
-      secure: v1:SGE2oD1bmk6kJ3oO:ByBhnmOPKS5veCjOD8ZmfS5P07XE1KUoPbPWdUaCnyNb4zlp7rY=
-    BLOB_READ_WRITE_TOKEN:
-      secure: v1:Vw+lFEOslS2QF8Vg:YQAcupUPARPsES5uXnRnSnmQ9f2RrfF9uP3za9OUEX6DOdwSd56AytZBfcNMaUtGJMfPibGQo5ZnekjOpzqv/+1OF5gwcEzPt41Yq735
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       secure: v1:HJdm5aCDAKysWLw5:9XantpfI86fOJ/dAbukZs/GAvOIGuM/cL32roy3AK+GmAf68jBsK9m5xHfYWM8ZhU6pb2rLFTDU=
     CLERK_SECRET_KEY:
@@ -71,5 +67,4 @@ config:
       secure: v1:5XGqGm/unVKX4dQV:lPY9ntgf5qlBawJ3v4z9RhRx
     CONTACT_NOTIFY_PHONE:
       secure: v1:AxZLxzWBqbMcpdCN:KcOBYz+H198OP4hNVsylxI6sSOeLhr+x1v+cLQ==
-  swing:imageTag: 26b80ad0000000000000000000000000000000000
 encryptionsalt: v1:zMt/5tF+Mts=:v1:j8XyHPv5EZvEFmEr:c5AaHQjr3dY800Oaqb1MlK2mmrKp0g==

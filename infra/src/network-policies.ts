@@ -95,6 +95,23 @@ export const policies = [
     ],
   }),
 
+  // cert-manager's HTTP-01 solver pods answer Let's Encrypt through Traefik (port 8089).
+  policy('allow-acme-solver-from-traefik', {
+    podSelector: { matchLabels: { 'acme.cert-manager.io/http01-solver': 'true' } },
+    policyTypes: ['Ingress'],
+    ingress: [
+      {
+        from: [
+          {
+            ...namespaceSelector(platform.traefikNamespace),
+            podSelector: { matchLabels: { 'app.kubernetes.io/name': 'traefik' } },
+          },
+        ],
+        ports: [{ protocol: 'TCP', port: 8089 }],
+      },
+    ],
+  }),
+
   policy('allow-postgres', {
     podSelector: { matchLabels: postgresPods },
     policyTypes: ['Ingress'],
