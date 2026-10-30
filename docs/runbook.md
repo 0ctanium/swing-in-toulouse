@@ -112,11 +112,29 @@ Order matters: data first, DNS last. Lower the TTL of the Vercel records to 300 
    `--clean` drops what the schema Job created; the restore brings Neon's schema and data. The
    next deploy's `drizzle-kit push` then finds nothing to change.
 
-3. **iCal files.** With `.env.local` holding Neon's `DATABASE_URL` replaced by `$SWING_URL`,
-   `DATABASE_DRIVER=node-postgres`, the old `BLOB_READ_WRITE_TOKEN` and the new `S3_*` (from
-   `pulumi stack output` on the `ical` key, or the Scaleway console):
-   `pnpm tsx scripts/migrate-blobs-to-s3.ts`. It copies every file still on Vercel Blob and
-   stores the object key in `sources.ical_blob_url`.
+3. **iCal files.** The sources imported from a file keep their `.ics` on Vercel Blob; the
+   restored rows still point there (`sources.ical_blob_url` = `https://…`). The script below,
+   run from your laptop, downloads each one with the old Blob token, uploads it to the
+   Scaleway bucket and stores the object key in the row. It needs the cluster's values
+   (`DATABASE_URL` through the port-forward of step 2, and the `S3_*` the app itself uses, read
+   from the `swing-app-env` Secret) plus the Blob token still in your `.env.local`. They go in
+   a one-off file that `ENV_FILE` points the app's loader at, so `.env.local` stays untouched:
+
+   ```bash
+   {
+     kubectl -n swing-toulouse get secret swing-app-env -o json \
+       | jq -r '.data | to_entries[] | select(.key | startswith("S3_")) | "\(.key)=\(.value | @base64d)"'
+     echo "DATABASE_URL=$SWING_URL"
+     echo "DATABASE_DRIVER=node-postgres"
+     grep '^BLOB_READ_WRITE_TOKEN=' .env.local
+   } > .env.migration
+   ENV_FILE=.env.migration pnpm tsx scripts/migrate-blobs-to-s3.ts
+   rm .env.migration
+   ```
+
+   It prints how many sources were still on Blob and one line per file; rows already holding a
+   key are skipped, so it can be run again. Until it has run, those sources fail to sync with
+   "Fichier iCal encore sur Vercel Blob".
 4. **DNS.** In Cloudflare, delete Vercel's `A swing-toulouse.fr` and `CNAME www` (imported in
    step 1.2). Then `pulumi config set swing:dns true` and `pulumi up` (or commit the stack file
    and let the Deploy job run): Pulumi creates the `A` and `CNAME` records on the cluster IP.
