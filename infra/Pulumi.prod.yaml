@@ -26,7 +26,7 @@ config:
     maxConnections: 30
   cloudflare:apiToken:
     secure: v1:5h6Vlb8mj+20hyKX:Fw7ltjw54Qf2kFtTMsUd5MYn0a8E0GFpnjg5+R2boX9jQcsu3NbqQ66ZtG8lGSWuoV8WVL3ratgYpsbga+Nx+P8AoLZH
-  swing-toulouse:env:
+  swing:env:
     NEXT_PUBLIC_SITE_URL:
       secure: v1:owG7XBZ1kMARdh0A:uJ4zmIm+rcsc5h7vqaYVIoQ5FKkHw7o5R8YeB2i4H56IKRaNcnyzr7Q=
     CRON_SYNC_URL:
@@ -71,4 +71,5 @@ config:
       secure: v1:5XGqGm/unVKX4dQV:lPY9ntgf5qlBawJ3v4z9RhRx
     CONTACT_NOTIFY_PHONE:
       secure: v1:AxZLxzWBqbMcpdCN:KcOBYz+H198OP4hNVsylxI6sSOeLhr+x1v+cLQ==
+  swing:imageTag: 26b80ad0000000000000000000000000000000000
 encryptionsalt: v1:zMt/5tF+Mts=:v1:j8XyHPv5EZvEFmEr:c5AaHQjr3dY800Oaqb1MlK2mmrKp0g==
