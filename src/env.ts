@@ -32,6 +32,13 @@ export const env = createEnv({
     QSTASH_CURRENT_SIGNING_KEY: z.string(),
     QSTASH_NEXT_SIGNING_KEY: z.string(),
     GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
+    // Uploaded iCal files (S3 API; Scaleway Object Storage in production).
+    S3_ENDPOINT: z.string().url().optional(),
+    S3_REGION: z.string().min(1).default("fr-par"),
+    S3_BUCKET: z.string().min(1).optional(),
+    S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+    S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    // Only read by scripts/migrate-blobs-to-s3.ts, to copy files out of Vercel Blob.
     BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
     RESEND_API_KEY: z.string().min(1).optional(),
     CONTACT_EMAIL_FROM: z.string().min(1).optional(),
@@ -68,6 +75,11 @@ export const env = createEnv({
     QSTASH_CURRENT_SIGNING_KEY: process.env.QSTASH_CURRENT_SIGNING_KEY,
     QSTASH_NEXT_SIGNING_KEY: process.env.QSTASH_NEXT_SIGNING_KEY,
     GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
+    S3_ENDPOINT: process.env.S3_ENDPOINT,
+    S3_REGION: process.env.S3_REGION,
+    S3_BUCKET: process.env.S3_BUCKET,
+    S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID,
+    S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
     BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
@@ -110,4 +122,13 @@ export function isQStashConfigured() {
 
 export function isGoogleMapsConfigured() {
   return Boolean(env.GOOGLE_MAPS_API_KEY);
+}
+
+export function isBlobStorageConfigured() {
+  return Boolean(
+    env.S3_ENDPOINT &&
+    env.S3_BUCKET &&
+    env.S3_ACCESS_KEY_ID &&
+    env.S3_SECRET_ACCESS_KEY,
+  );
 }
