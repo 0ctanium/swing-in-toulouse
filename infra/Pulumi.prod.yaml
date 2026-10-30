@@ -15,12 +15,12 @@ config:
   scaleway:projectId: 79620135-0c6a-4dbd-951c-b172f1cdf311
   swing:platformStack: organization/platform/prod
   swing:host: swing-toulouse.fr
-  swing:cloudflareZoneId: "4494575c84d1318b6c82a682429fef68"
+  swing:cloudflareZoneId: '4494575c84d1318b6c82a682429fef68'
   # Grey cloud at first (Traefik sees the real client address). Set true once
   # platform:proxyProtocolTrustedIps / forwardedHeaders cover Cloudflare's ranges.
-  swing:cloudflareProxied: "false"
+  swing:cloudflareProxied: 'false'
   # DNS records are created once this is true: the cut-over step of docs/runbook.md.
-  swing:dns: "false"
+  swing:dns: 'false'
   swing:postgres:
     storageGi: 10
     maxConnections: 30
