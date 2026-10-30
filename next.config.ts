@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
   // contain (Next otherwise walks up looking for a workspace lockfile).
   output: "standalone",
   outputFileTracingRoot: path.join(import.meta.dirname),
+  // node-ical requires temporal-polyfill; on Node 22.12+ `require()` takes its `module-sync`
+  // export (ESM), which the tracing, resolving the `require` condition, does not copy.
+  outputFileTracingIncludes: {
+    "/**/*": ["./node_modules/.pnpm/temporal-polyfill@*/node_modules/temporal-polyfill/**/*"],
+  },
   cacheComponents: true,
   pageExtensions: ["ts", "tsx", "md", "mdx"],
   serverExternalPackages: ["node-ical", "pg"],

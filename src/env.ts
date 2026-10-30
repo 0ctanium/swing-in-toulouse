@@ -24,6 +24,9 @@ export const env = createEnv({
       .enum(["node-postgres", "neon-http"])
       .default("node-postgres"),
     DATABASE_LOG: booleanStringSchema.default(false),
+    // Connections per process (node-postgres pool). The image build prerenders in several
+    // workers at once, each with its own pool: the Dockerfile sets it to 2 there.
+    DATABASE_POOL_MAX: z.coerce.number().int().positive().optional(),
     NEON_LOCAL: booleanStringSchema.default(false),
     CRON_SYNC_URL: z.string().url().optional(),
     CRON_PROJECT_OCCURRENCES_URL: z.string().url().optional(),
@@ -95,6 +98,7 @@ export const env = createEnv({
     WHATSAPP_TEMPLATE_NAME: process.env.WHATSAPP_TEMPLATE_NAME,
     WHATSAPP_TEMPLATE_LANGUAGE: process.env.WHATSAPP_TEMPLATE_LANGUAGE,
     DATABASE_LOG: process.env.DATABASE_LOG,
+    DATABASE_POOL_MAX: process.env.DATABASE_POOL_MAX,
     PROJECTION_MONTHS_AHEAD: process.env.PROJECTION_MONTHS_AHEAD,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

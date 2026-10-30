@@ -35,7 +35,14 @@ export const db: NodePgDatabase<typeof schema> =
         env.DATABASE_URL,
         drizzleConfig,
       ) as unknown as NodePgDatabase<typeof schema>)
-    : drizzleNodePostgres(env.DATABASE_URL, drizzleConfig);
+    : drizzleNodePostgres({
+        // Number(): with SKIP_ENV_VALIDATION the value is the raw string.
+        connection: {
+          connectionString: env.DATABASE_URL,
+          max: Number(env.DATABASE_POOL_MAX) || undefined,
+        },
+        ...drizzleConfig,
+      });
 
 export type Db = typeof db;
 export type Transaction = Parameters<Parameters<Db["transaction"]>[0]>[0];

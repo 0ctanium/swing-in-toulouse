@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { connection, NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { assertPlatformAdminApi } from "@/lib/admin/auth";
@@ -13,6 +13,8 @@ const querySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  // Reads the URL: rendered per request, never prerendered (Cache Components).
+  await connection();
   const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;

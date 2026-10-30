@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { connection, NextRequest, NextResponse } from "next/server";
 
 import { assertPlatformAdminApi } from "@/lib/admin/auth";
 import { listAdminCategoryTags } from "@/lib/event-category-tags/admin";
@@ -6,6 +6,8 @@ import { patchCategoryTagResponse } from "@/lib/event-category-tags/patch-catego
 import { patchCategoryTagRequestSchema } from "@/lib/event-category-tags/patch-schema";
 
 export async function GET(request: NextRequest) {
+  // Reads the URL: rendered per request, never prerendered (Cache Components).
+  await connection();
   const authError = await assertPlatformAdminApi();
   if (authError) {
     return authError;

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { connection, NextRequest, NextResponse } from "next/server";
 
 import { GOOGLE_MAPS_HTTP_CACHE_CONTROL } from "@/lib/cache/google";
 import { isGoogleMapsConfigured } from "@/env";
@@ -23,6 +23,8 @@ function parseCoordinate(value: string | null, min: number, max: number) {
 }
 
 export async function GET(request: NextRequest) {
+  // Reads the URL: rendered per request, never prerendered (Cache Components).
+  await connection();
   if (!isGoogleMapsConfigured()) {
     return new NextResponse(null, { status: 404 });
   }

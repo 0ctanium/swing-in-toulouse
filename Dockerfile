@@ -22,7 +22,7 @@ ARG NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
 # cluster, see .github/workflows/ci.yml). Source maps go to PostHog when its personal key is
 # given; SKIP_POSTHOG=true skips the upload.
 ARG SKIP_POSTHOG=false
-ENV SKIP_ENV_VALIDATION=1 NEXT_TELEMETRY_DISABLED=1 DATABASE_DRIVER=node-postgres
+ENV SKIP_ENV_VALIDATION=1 NEXT_TELEMETRY_DISABLED=1 DATABASE_DRIVER=node-postgres DATABASE_POOL_MAX=2
 COPY . .
 RUN --mount=type=secret,id=DATABASE_URL --mount=type=secret,id=POSTHOG_API_KEY \
     DATABASE_URL="$(cat /run/secrets/DATABASE_URL)" \
